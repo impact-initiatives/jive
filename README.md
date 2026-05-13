@@ -1,5 +1,8 @@
 # JIVE — Jira IMPACT Validation Engine
 
+**JIVE** (Jira IMPACT Validation Engine) is an asynchronous, event-driven tool that automates RQA workflow. It bridges Jira Service Desk with the rqa-validator engine to automatically download submitted datasets, run validation pipelines and post structured error reports back to the Jira ticket.
+
+
 ## Overview
 
 Research data collected through household surveys, market assessments, and key informant interviews undergoes a rigorous quality assurance process before it can be published. Historically, this process was manual: country teams would run validation scripts locally, interpret the output, and post summary results through Excel file sent by email, Microsoft Teams chat and now in Jira tickets. This is slow, error-prone, and creates a bottleneck that delays data publication.
