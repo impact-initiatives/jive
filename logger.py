@@ -1,0 +1,48 @@
+import logging
+import json
+import sys
+from datetime import datetime, timezone
+
+
+class JSONFormatter(logging.Formatter):
+    """Formats log records as JSON for Azure Log Analytics ingestion."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        for key in ("issue_key", "rule", "duration_ms", "status_code", 
+                     "method", "url", "dequeue_count", "queue"):
+            value = getattr(record, key, None)
+            if value is not None:
+                log_entry[key] = value
+
+        if record.exc_info and record.exc_info[1]:
+            log_entry["exception"] = str(record.exc_info[1])
+            log_entry["exception_type"] = type(record.exc_info[1]).__name__
+
+        return json.dumps(log_entry)
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Returns a JSON-formatted logger.
+    
+    Args:
+        name: Logger name (typically module name).
+    
+    Returns:
+        Configured logger instance.
+    """
+    logger = logging.getLogger(name)
+
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(JSONFormatter())
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+
+    return logger

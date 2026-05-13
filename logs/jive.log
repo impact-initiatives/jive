@@ -1,0 +1,254 @@
+2026-05-13 11:34:22,871 - INFO - Job queued
+2026-05-13 11:34:22,875 - INFO - Processing message
+2026-05-13 11:34:22,876 - INFO - Downloading dataset from secure link
+2026-05-13 11:34:22,876 - INFO - Running validation pipeline
+2026-05-13 11:34:47,997 - INFO - Job queued
+2026-05-13 11:34:48,002 - INFO - Processing message
+2026-05-13 11:34:48,003 - INFO - Downloading dataset from secure link
+2026-05-13 11:34:48,004 - INFO - Running validation pipeline
+2026-05-13 11:34:48,004 - INFO - Pipeline completed
+2026-05-13 11:34:48,005 - INFO - Uploading attachment
+2026-05-13 11:34:48,006 - INFO - Posting summary comment
+2026-05-13 11:34:48,006 - INFO - Job completed
+2026-05-13 12:43:13,790 - INFO - Job queued
+2026-05-13 12:43:13,794 - INFO - Processing message
+2026-05-13 12:43:13,795 - INFO - Downloading dataset from secure link
+2026-05-13 12:43:13,796 - INFO - Running validation pipeline
+2026-05-13 12:43:13,796 - INFO - Pipeline completed
+2026-05-13 12:43:13,796 - INFO - Uploading attachment
+2026-05-13 12:43:13,797 - INFO - Posting summary comment
+2026-05-13 12:43:13,798 - INFO - Job completed
+2026-05-13 12:43:13,811 - INFO - Job queued
+2026-05-13 12:43:13,818 - WARNING - Unauthorized request
+2026-05-13 12:43:13,901 - WARNING - Unauthorized request
+2026-05-13 16:23:59,547 - INFO - Job queued
+2026-05-13 16:23:59,555 - INFO - Processing message
+2026-05-13 16:23:59,558 - INFO - Downloading dataset from secure link
+2026-05-13 16:23:59,558 - INFO - Running validation pipeline
+2026-05-13 16:23:59,558 - INFO - Pipeline completed
+2026-05-13 16:23:59,559 - INFO - Uploading attachment
+2026-05-13 16:23:59,560 - INFO - Posting summary comment
+2026-05-13 16:23:59,560 - INFO - Job completed
+2026-05-13 16:23:59,582 - INFO - Job queued
+2026-05-13 16:23:59,590 - WARNING - Unauthorized request
+2026-05-13 16:23:59,601 - WARNING - Unauthorized request
+2026-05-13 16:25:09,656 - INFO - Job queued
+2026-05-13 16:25:09,661 - INFO - Processing message
+2026-05-13 16:25:09,663 - INFO - Downloading dataset from secure link
+2026-05-13 16:25:09,663 - INFO - Running validation pipeline
+2026-05-13 16:25:09,663 - INFO - Pipeline completed
+2026-05-13 16:25:09,663 - INFO - Uploading attachment
+2026-05-13 16:25:09,664 - INFO - Posting summary comment
+2026-05-13 16:25:09,664 - INFO - Job completed
+2026-05-13 16:25:09,675 - INFO - Job queued
+2026-05-13 16:25:09,680 - WARNING - Unauthorized request
+2026-05-13 16:25:09,689 - WARNING - Unauthorized request
+2026-05-13 16:29:25,299 - INFO - Job queued
+2026-05-13 16:29:25,302 - INFO - Processing message
+2026-05-13 16:29:25,303 - INFO - Downloading dataset from secure link
+2026-05-13 16:29:25,303 - INFO - Running validation pipeline
+2026-05-13 16:29:25,304 - INFO - Pipeline completed
+2026-05-13 16:29:25,305 - INFO - Uploading attachment
+2026-05-13 16:29:25,305 - INFO - Posting summary comment
+2026-05-13 16:29:25,305 - INFO - Job completed
+2026-05-13 16:29:25,316 - INFO - Job queued
+2026-05-13 16:29:25,322 - WARNING - Unauthorized request
+2026-05-13 16:29:25,334 - WARNING - Unauthorized request
+2026-05-13 17:11:59,525 - WARNING - Unauthorized request
+2026-05-13 17:12:00,003 - INFO - Processing message
+2026-05-13 17:12:00,005 - INFO - Downloading dataset from secure link
+2026-05-13 17:12:00,006 - INFO - Running validation pipeline
+2026-05-13 17:12:00,006 - INFO - Pipeline completed
+2026-05-13 17:12:00,007 - INFO - Uploading attachment
+2026-05-13 17:12:00,008 - INFO - Posting summary comment
+2026-05-13 17:12:00,008 - INFO - Job completed
+2026-05-13 17:12:00,028 - INFO - Job queued
+2026-05-13 17:12:00,038 - WARNING - Unauthorized request
+2026-05-13 17:12:00,054 - WARNING - Unauthorized request
+2026-05-13 17:13:16,256 - INFO - Job queued
+2026-05-13 17:13:16,264 - INFO - Processing message
+2026-05-13 17:13:16,266 - INFO - Downloading dataset from secure link
+2026-05-13 17:13:16,266 - INFO - Running validation pipeline
+2026-05-13 17:13:16,266 - INFO - Pipeline completed
+2026-05-13 17:13:16,267 - INFO - Uploading attachment
+2026-05-13 17:13:16,267 - INFO - Posting summary comment
+2026-05-13 17:13:16,268 - INFO - Job completed
+2026-05-13 17:13:16,290 - INFO - Job queued
+2026-05-13 17:13:16,299 - WARNING - Unauthorized request
+2026-05-13 17:13:16,315 - WARNING - Unauthorized request
+2026-05-13 17:19:01,661 - CRITICAL - Message dead-lettered after 4 attempts
+2026-05-13 17:19:01,668 - CRITICAL - Message dead-lettered after 3 attempts
+2026-05-13 17:19:01,673 - CRITICAL - Message dead-lettered after 5 attempts
+2026-05-13 17:19:01,674 - ERROR - Failed to post dead-letter notification to Jira
+2026-05-13 17:19:56,904 - ERROR - Queue polling error
+Traceback (most recent call last):
+  File "C:\Users\FrancescoGIZZARELLI\Desktop\projects\jira_poc\worker.py", line 166, in main
+    messages = queue_client.receive_messages(max_messages=1, visibility_timeout=300)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1200, in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+StopIteration
+2026-05-13 17:19:56,906 - ERROR - Queue polling error
+Traceback (most recent call last):
+  File "C:\Users\FrancescoGIZZARELLI\Desktop\projects\jira_poc\worker.py", line 166, in main
+    messages = queue_client.receive_messages(max_messages=1, visibility_timeout=300)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1200, in _execute_mock_call
+    result = next(effect)
+             ^^^^^^^^^^^^
+StopIteration
+2026-05-13 17:22:32,795 - CRITICAL - Message dead-lettered after 4 attempts
+2026-05-13 17:22:32,800 - CRITICAL - Message dead-lettered after 3 attempts
+2026-05-13 17:22:32,806 - CRITICAL - Message dead-lettered after 5 attempts
+2026-05-13 17:22:32,808 - ERROR - Failed to post dead-letter notification to Jira
+Traceback (most recent call last):
+  File "C:\Users\FrancescoGIZZARELLI\Desktop\projects\jira_poc\worker.py", line 75, in dead_letter_message
+    jira.post_comment(payload.issue_key, error_adf)
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+Exception: Jira is down
+2026-05-13 17:22:32,885 - ERROR - AZURE_STORAGE_CONNECTION_STRING not set. Exiting.
+2026-05-13 17:22:32,891 - INFO - Worker started
+2026-05-13 17:22:32,898 - INFO - Worker started
+2026-05-13 17:22:32,903 - INFO - Worker started
+2026-05-13 17:22:32,904 - ERROR - Error processing message
+Traceback (most recent call last):
+  File "C:\Users\FrancescoGIZZARELLI\Desktop\projects\jira_poc\worker.py", line 185, in main
+    process_message(msg)
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError: Pipeline crashed
+2026-05-13 17:22:33,364 - INFO - Worker started
+2026-05-13 17:22:46,060 - INFO - Job queued
+2026-05-13 17:22:46,065 - INFO - Processing message
+2026-05-13 17:22:46,066 - INFO - Downloading dataset from secure link
+2026-05-13 17:22:46,067 - INFO - Running validation pipeline
+2026-05-13 17:22:46,067 - INFO - Pipeline completed
+2026-05-13 17:22:46,069 - INFO - Uploading attachment
+2026-05-13 17:22:46,070 - INFO - Posting summary comment
+2026-05-13 17:22:46,070 - INFO - Job completed
+2026-05-13 17:22:46,083 - INFO - Job queued
+2026-05-13 17:22:46,093 - WARNING - Unauthorized request
+2026-05-13 17:22:46,105 - WARNING - Unauthorized request
+2026-05-13 17:22:46,110 - CRITICAL - Message dead-lettered after 4 attempts
+2026-05-13 17:22:46,113 - CRITICAL - Message dead-lettered after 3 attempts
+2026-05-13 17:22:46,116 - CRITICAL - Message dead-lettered after 5 attempts
+2026-05-13 17:22:46,117 - ERROR - Failed to post dead-letter notification to Jira
+2026-05-13 17:26:14,395 - INFO - Job queued
+2026-05-13 17:26:14,399 - INFO - Processing message
+2026-05-13 17:26:14,401 - INFO - Downloading dataset from secure link
+2026-05-13 17:26:14,402 - INFO - Running validation pipeline2026-05-13 17:30:02,839 - INFO - Job queued
+2026-05-13 17:30:02,844 - INFO - Processing message
+2026-05-13 17:30:02,846 - INFO - Downloading dataset from secure link
+2026-05-13 17:30:02,846 - INFO - Running validation pipeline
+2026-05-13 17:30:02,846 - INFO - Pipeline completed
+2026-05-13 17:30:02,847 - INFO - Uploading attachment
+2026-05-13 17:30:02,847 - INFO - Posting summary comment
+2026-05-13 17:30:02,847 - INFO - Job completed
+2026-05-13 17:30:02,857 - INFO - Job queued
+2026-05-13 17:30:02,865 - WARNING - Unauthorized request
+2026-05-13 17:30:02,874 - WARNING - Unauthorized request
+2026-05-13 17:30:02,877 - CRITICAL - Message dead-lettered after 4 attempts
+2026-05-13 17:30:02,877 - CRITICAL - Message dead-lettered after 3 attempts
+2026-05-13 17:30:02,883 - CRITICAL - Message dead-lettered after 5 attempts
+2026-05-13 17:30:02,884 - ERROR - Failed to post dead-letter notification to Jira
+Traceback (most recent call last):
+  File "C:\Users\FrancescoGIZZARELLI\Desktop\projects\jira_poc\worker.py", line 75, in dead_letter_message
+    jira.post_comment(payload.issue_key, error_adf)
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+Exception: Jira is down
+2026-05-13 17:30:02,885 - ERROR - AZURE_STORAGE_CONNECTION_STRING not set. Exiting.
+2026-05-13 17:30:02,885 - INFO - Worker started
+2026-05-13 17:30:02,891 - INFO - Worker started
+2026-05-13 17:30:02,895 - INFO - Worker started
+2026-05-13 17:30:02,896 - ERROR - Error processing message
+Traceback (most recent call last):
+  File "C:\Users\FrancescoGIZZARELLI\Desktop\projects\jira_poc\worker.py", line 185, in main
+    process_message(msg)
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError: Pipeline crashed
+2026-05-13 17:30:02,909 - INFO - Worker started
+2026-05-13 17:30:54,871 - INFO - Job queued
+2026-05-13 17:30:54,874 - INFO - Processing message
+2026-05-13 17:30:54,875 - INFO - Downloading dataset from secure link
+2026-05-13 17:30:54,875 - INFO - Running validation pipeline
+2026-05-13 17:30:54,876 - INFO - Pipeline completed
+2026-05-13 17:30:54,877 - INFO - Uploading attachment
+2026-05-13 17:30:54,877 - INFO - Posting summary comment
+2026-05-13 17:30:54,877 - INFO - Job completed
+2026-05-13 17:30:54,890 - INFO - Job queued
+2026-05-13 17:30:54,897 - WARNING - Unauthorized request
+2026-05-13 17:30:54,910 - WARNING - Unauthorized request
+2026-05-13 17:30:54,913 - CRITICAL - Message dead-lettered after 4 attempts
+2026-05-13 17:30:54,915 - CRITICAL - Message dead-lettered after 3 attempts
+2026-05-13 17:30:54,921 - CRITICAL - Message dead-lettered after 5 attempts
+2026-05-13 17:30:54,921 - ERROR - Failed to post dead-letter notification to Jira
+Traceback (most recent call last):
+  File "C:\Users\FrancescoGIZZARELLI\Desktop\projects\jira_poc\worker.py", line 75, in dead_letter_message
+    jira.post_comment(payload.issue_key, error_adf)
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+Exception: Jira is down
+2026-05-13 17:30:54,925 - ERROR - AZURE_STORAGE_CONNECTION_STRING not set. Exiting.
+2026-05-13 17:30:54,926 - INFO - Worker started
+2026-05-13 17:30:54,928 - INFO - Worker started
+2026-05-13 17:30:54,931 - INFO - Worker started
+2026-05-13 17:30:54,931 - ERROR - Error processing message
+Traceback (most recent call last):
+  File "C:\Users\FrancescoGIZZARELLI\Desktop\projects\jira_poc\worker.py", line 185, in main
+    process_message(msg)
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\FrancescoGIZZARELLI\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError: Pipeline crashed
+2026-05-13 17:30:54,945 - INFO - Worker started
