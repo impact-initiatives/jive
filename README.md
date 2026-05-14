@@ -11,7 +11,7 @@ JIVE aims to automate this workflow freeing capacity of country teams and RQA to
 
 ### Asynchronous design
 
-Data validation can be computationally expensive. A single dataset can contain from hundreds to thousands of rows across multiple sheets, requiring cross-referencing against cleaning logs, schema definitions, and categorical choice lists. Validation can take time depending on the size of the dataset. If this ran synchronously inside a Jira webhook handler (max 20s response time), the HTTP connection would time out and Jira would register a failure or not acknowledge at all the webhook.
+Data validation can be computationally expensive. A single dataset can contain from hundreds to thousands of rows across multiple sheets, requiring cross-referencing against cleaning logs, schema definitions, and categorical choice lists. Validation can take time depending on the size of the dataset. If this ran synchronously inside a [Jira webhook handler](https://developer.atlassian.com/server/jira/platform/jira-service-desk-webhooks/) (max 20s response time), the HTTP connection would time out and Jira would register a failure or not acknowledge at all the webhook.
 
 JIVE solves this by decoupling ingestion from processing using an Azure Storage Queue. The webhook handler returns immediately (`HTTP 202 Accepted`), and a background worker processes the job asynchronously. The queue is monitored and scaled, scaling the worker containers from zero when no jobs are present and scaling up as jobs are added (the system incurs no additional compute cost when no jobs are queued).
 
@@ -173,4 +173,4 @@ az containerapp update --name jive-worker \
 
 ## Related Repositories
 
-- [`rqa-validator`](https://github.com/impact-initiatives/rqa-validator) — The core data validation engine
+- [`rqa-validator`](https://github.com/gim-am/rqa-validator) — The core data validation engine
