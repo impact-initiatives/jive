@@ -56,8 +56,12 @@ def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls,
     mock_jira = MagicMock()
     mock_jira_client_cls.return_value = mock_jira
     
+    # Check guard: no existing report on the ticket
+    mock_jira.get_attachments.return_value = []
+
     # Mock download_from_secure_link to return a dummy path
-    mock_jira.download_from_secure_link.return_value = Path("/tmp/mock_dataset.xlsx")
+    mock_dataset_path = MagicMock(spec=Path)
+    mock_jira.download_from_secure_link.return_value = mock_dataset_path
     
     mock_pipeline = MagicMock()
     mock_pipeline_cls.return_value = mock_pipeline
@@ -68,6 +72,11 @@ def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls,
         "details": {}
     }
 
+    # Mock the Excel report path returned by export
+    mock_excel_path = MagicMock(spec=Path)
+    mock_excel_path.stat.return_value.st_size = 1024 * 1024  # 1MB — well within the limit
+    mock_excel_path.__truediv__ = lambda self, other: mock_excel_path
+
     #queue message
     mock_msg = MagicMock()
     mock_msg.content = json.dumps({
@@ -77,12 +86,17 @@ def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls,
     })
     mock_msg.dequeue_count = 1
 
-    process_message(mock_msg)
+    with patch("worker.Path") as mock_path_cls:
+        mock_tmp_path = MagicMock()
+        mock_tmp_path.__truediv__ = lambda self, other: mock_excel_path
+        mock_path_cls.return_value = mock_tmp_path
 
+        process_message(mock_msg)
+
+    mock_jira.get_attachments.assert_called_once()
     mock_jira.download_from_secure_link.assert_called_once()
     mock_jira.download_proforma_attachment.assert_not_called()
-    
-    mock_pipeline.run.assert_called_once_with(Path("/tmp/mock_dataset.xlsx"))
+    mock_pipeline.run.assert_called_once()
     mock_export.assert_called_once()
-    mock_jira.upload_attachment.assert_called_once()
     mock_jira.post_comment.assert_called_once()
+

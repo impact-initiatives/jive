@@ -11,7 +11,7 @@ from report_formatter import format_comment_adf
 from logger import get_logger
 
 from rqa_validator.orchestrator.validation_pipeline import ValidationPipeline
-from rqa_validator.utils.report_exporter import export_response_to_excel
+from excel_exporter import export_response_to_excel
 from rqa_validator.models.api_models import PipelineResponse
 
 logger = get_logger("jive.worker")
@@ -20,6 +20,7 @@ QUEUE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 QUEUE_NAME = os.getenv("JIVE_QUEUE_NAME", "jive-validation-queue")
 POISON_QUEUE_NAME = f"{QUEUE_NAME}-poison"
 MAX_RETRIES = int(os.getenv("JIVE_MAX_RETRIES", "3"))
+MAX_JIRA_ATTACHMENT_MB = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250"))
 
 
 def get_queue_client(queue_name: str = QUEUE_NAME) -> QueueClient:
@@ -89,6 +90,19 @@ def process_message(msg):
     logger.info("Processing message", extra={"issue_key": payload.issue_key, "dequeue_count": msg.dequeue_count})
 
     jira = JiraClient()
+
+    # Fetch attachments once — used for both idempotency and download
+    attachments = jira.get_attachments(payload.issue_key)
+
+    # Idempotency guard: skip if a JIVE report already exists on this ticket
+    expected_report_name = f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
+    if any(a.get("filename") == expected_report_name for a in attachments):
+        logger.warning(
+            "Idempotency: JIVE report already attached — skipping re-validation",
+            extra={"issue_key": payload.issue_key, "report": expected_report_name},
+        )
+        return
+
     start_time = time.monotonic()
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -99,7 +113,7 @@ def process_message(msg):
             dataset_path = jira.download_from_secure_link(payload.secure_link, tmp_path)
         else:
             logger.info("Downloading dataset from Jira attachments", extra={"issue_key": payload.issue_key})
-            dataset_path = jira.download_proforma_attachment(payload.issue_key, tmp_path)
+            dataset_path = jira.download_proforma_attachment(payload.issue_key, tmp_path, attachments=attachments)
 
         if not dataset_path:
             error_adf = {
@@ -143,8 +157,25 @@ def process_message(msg):
         #blob_url = upload_to_blob(excel_report_path)
         #adf_summary = format_comment_adf(response, blob_url)
 
-        logger.info("Uploading attachment", extra={"issue_key": payload.issue_key})
-        jira.upload_attachment(payload.issue_key, excel_report_path)
+
+        file_size_mb = excel_report_path.stat().st_size / (1024 * 1024)
+        if file_size_mb > MAX_JIRA_ATTACHMENT_MB:
+            logger.warning(
+                "Excel report too large for Jira attachment — skipping upload",
+                extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2), "limit_mb": MAX_JIRA_ATTACHMENT_MB},
+            )
+
+            adf_summary["content"].append({
+                "type": "paragraph",
+                "content": [{
+                    "type": "text",
+                    "text": f"⚠️ The validation report ({file_size_mb:.1f}MB) exceeds the Jira attachment limit ({MAX_JIRA_ATTACHMENT_MB}MB). Please contact the JIVE team to retrieve the full report.",
+                    "marks": [{"type": "strong"}],
+                }],
+            })
+        else:
+            logger.info("Uploading attachment", extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2)})
+            jira.upload_attachment(payload.issue_key, excel_report_path)
 
         logger.info("Posting summary comment", extra={"issue_key": payload.issue_key})
         jira.post_comment(payload.issue_key, adf_summary)

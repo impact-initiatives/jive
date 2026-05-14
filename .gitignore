@@ -11,4 +11,7 @@ htmlcov/
 .DS_Store
 .dockerignore
 .github/
+output/
 uv.lock
+infra/modules/
+logs/

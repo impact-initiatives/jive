@@ -58,6 +58,7 @@ jira_poc/
 ├── models.py                Pydantic models for inbound Jira webhook payloads
 ├── report_formatter.py      Transforms PipelineResponse into Atlassian Document Format (ADF)
 ├── logger.py                JSON-structured logging for Azure Log Analytics
+├── excel_exporter.py        Generates multi-sheet Excel validation reports
 ├── Dockerfile               Build image for acr and container apps
 ├── pyproject.toml           Dependencies and project metadata
 ├── tests/
@@ -165,7 +166,7 @@ az containerapp update --name jive-worker \
 ## Roadmap
 
 - [ ] Upload validation reports to Azure Blob Storage and include a SAS download link in the Jira comment instead of attaching the file directly (avoids Jira attachment size limits)
-- [ ] Transition the Jira ticket to a target status automatically based on validation results (e.g., move to "Approved" on pass, "Needs Revision" on fail)
+- [ ] Transition the Jira ticket to a target status automatically based on validation results (e.g., move to "Approved" on pass (default: JIRA_TRANSITION_APPROVED), "Needs Revision" on fail (default: JIRA_TRANSITION_REVISION))
 - [ ] Add support for multiple dataset types beyond JMMI (MSNA, ESNFI) with automatic schema detection
 - [ ] Implement Azure Managed Identity for Key Vault secret retrieval at runtime, removing the need for connection strings in environment variables
 - [ ] Add a `/status/{issue_key}` endpoint to the ingress so users or dashboards can poll for job progress

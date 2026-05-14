@@ -121,31 +121,44 @@ class JiraClient:
             )
             return False
 
+    def get_attachments(self, issue_key: str) -> list:
+        """Fetches the attachment list for a Jira ticket. Returns a list of attachment dicts.
+        
+        This is the single source of truth for attachment data — call this once
+        and pass the result to both idempotency checks and download logic.
+        """
+        url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=attachment"
+        try:
+            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=(5, 30))
+            _check_retryable(response)
+            if response.status_code != 200:
+                logger.error(
+                    "Failed to fetch attachments",
+                    extra={"issue_key": issue_key, "status_code": response.status_code},
+                )
+                return []
+            return response.json().get("fields", {}).get("attachment", [])
+        except Exception as e:
+            logger.error("Error fetching attachments", exc_info=e, extra={"issue_key": issue_key})
+            return []
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
         retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def download_proforma_attachment(self, issue_key: str, output_dir: Path) -> Optional[Path]:
-        """Downloads the first Excel attachment from the Jira ticket."""
-        url = f"{self.base_url}/rest/api/3/issue/{issue_key}"
-
-        start = time.monotonic()
-        response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=(5, 30))
-        duration_ms = int((time.monotonic() - start) * 1000)
-
-        _check_retryable(response)
-
-        if response.status_code != 200:
-            logger.error(
-                "Failed to fetch issue",
-                extra={"issue_key": issue_key, "status_code": response.status_code, "duration_ms": duration_ms},
-            )
-            return None
-
-        data = response.json()
-        attachments = data.get("fields", {}).get("attachment", [])
+    def download_proforma_attachment(self, issue_key: str, output_dir: Path, attachments: list | None = None) -> Optional[Path]:
+        """Downloads the most recent Excel attachment from the Jira ticket.
+        
+        Args:
+            issue_key: The Jira issue key.
+            output_dir: Directory to save the downloaded file.
+            attachments: Pre-fetched attachment list from get_attachments(). 
+                         If None, fetches fresh (backward compatible).
+        """
+        if attachments is None:
+            attachments = self.get_attachments(issue_key)
 
         xlsx_attachments = [
             a for a in attachments 
@@ -215,3 +228,27 @@ class JiraClient:
         if success:
             return output_path
         return None
+
+    def attachment_exists(self, issue_key: str, filename: str) -> bool:
+        """Returns True if an attachment with the given filename already exists on the ticket.
+        
+           Prevent re-processing the same ticket twice.
+        """
+        url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=attachment"
+        try:
+            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=(5, 30))
+            if response.status_code != 200:
+                logger.warning(
+                    "Could not fetch attachments for idempotency check",
+                    extra={"issue_key": issue_key, "status_code": response.status_code},
+                )
+                return False
+            attachments = response.json().get("fields", {}).get("attachment", [])
+            return any(a.get("filename") == filename for a in attachments)
+        except Exception as e:
+            logger.warning(
+                "Idempotency check failed — proceeding with validation",
+                exc_info=e,
+                extra={"issue_key": issue_key},
+            )
+            return False

@@ -18,7 +18,9 @@ RUN uv pip install --system --no-cache \
     requests>=2.32.3 \
     pydantic>=2.8.2 \
     azure-storage-queue>=12.10.0 \
-    tenacity>=8.2.0
+    tenacity>=8.2.0 \
+    polars>=1.0.0 \
+    xlsxwriter>=3.2.0
 
 COPY . /app
 

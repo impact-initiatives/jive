@@ -6,17 +6,23 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from report_formatter import format_comment_adf
 
 
-def _make_response(success: bool, errors: int = 0, warnings: int = 0, info: int = 0):
+def _make_response(success: bool, errors=None, warnings=None, passed=None):
     """Helper to build a minimal PipelineResponse-like object for testing."""
     from unittest.mock import MagicMock
 
     response = MagicMock()
     response.success = success
-    response.summary.errors = errors
-    response.summary.admin_errors = 0
-    response.summary.warnings = warnings
-    response.summary.info = info
+    
+    #Mock metadata
     response.metadata.dataset_type = "jmmi"
+    response.metadata.timestamp = "2023-01-01T12:00:00Z"
+    
+    #Lists of dicts for the new formatter
+    response.errors = errors if errors else []
+    response.warnings = warnings if warnings else []
+    response.admin_errors = []
+    response.passed = passed if passed else []
+    
     return response
 
 
@@ -30,7 +36,7 @@ class TestFormatCommentAdf:
         assert adf["version"] == 1
         assert adf["type"] == "doc"
         assert isinstance(adf["content"], list)
-        assert len(adf["content"]) >= 3
+        assert len(adf["content"]) >= 3  # Heading, Dataset Type, Note
 
     def test_passing_response_contains_passed_text(self):
         response = _make_response(success=True)
@@ -41,7 +47,7 @@ class TestFormatCommentAdf:
         assert "PASSED" in heading_text
 
     def test_failing_response_contains_failed_text(self):
-        response = _make_response(success=False, errors=5, warnings=2)
+        response = _make_response(success=False, errors=[{"rule": "Mandatory"}])
         adf = format_comment_adf(response)
 
         heading = adf["content"][0]
@@ -49,10 +55,9 @@ class TestFormatCommentAdf:
         assert "FAILED" in heading_text
 
     def test_failing_response_mentions_attachment(self):
-        response = _make_response(success=False, errors=3)
+        response = _make_response(success=False, errors=[{"rule": "Mandatory"}])
         adf = format_comment_adf(response)
 
-        # The last paragraph should mention the Excel attachment
         last_paragraph = adf["content"][-1]
         last_text = last_paragraph["content"][0]["text"]
         assert "Excel" in last_text or "attached" in last_text.lower()
@@ -65,17 +70,6 @@ class TestFormatCommentAdf:
         last_text = last_paragraph["content"][0]["text"]
         assert "ready" in last_text.lower() or "meets" in last_text.lower()
 
-    def test_summary_counts_displayed(self):
-        response = _make_response(success=False, errors=7, warnings=3, info=1)
-        adf = format_comment_adf(response)
-
-        # The summary paragraph (index 2) should contain the counts
-        summary_paragraph = adf["content"][2]
-        full_text = " ".join(node["text"] for node in summary_paragraph["content"])
-        assert "7" in full_text  # errors + admin_errors
-        assert "3" in full_text  # warnings
-        assert "1" in full_text  # info
-
     def test_dataset_type_displayed(self):
         response = _make_response(success=True)
         adf = format_comment_adf(response)
@@ -83,6 +77,43 @@ class TestFormatCommentAdf:
         dataset_paragraph = adf["content"][1]
         full_text = " ".join(node["text"] for node in dataset_paragraph["content"])
         assert "jmmi" in full_text.lower()
+
+    def test_table_generated_for_errors(self):
+        response = _make_response(
+            success=False, 
+            errors=[{"rule": "Mandatory"}, {"rule": "Mandatory"}], 
+            warnings=[{"rule": "MissingSheet"}]
+        )
+        adf = format_comment_adf(response)
+        
+        # Heading (0), Dataset Type (1), Table (2), Note (3)
+        assert len(adf["content"]) == 4
+        
+        table = adf["content"][2]
+        assert table["type"] == "table"
+        
+        # Header + 2 rules
+        assert len(table["content"]) == 3 
+        
+        # First row after header is Mandatory, with count 2
+        first_rule_row = table["content"][1]
+        cells = first_rule_row["content"]
+        assert "Mandatory" in cells[0]["content"][0]["content"][0]["text"]
+        assert "2" in cells[2]["content"][0]["content"][0]["text"]
+
+    def test_passed_checks_listed_in_note(self):
+        response = _make_response(
+            success=True, 
+            passed=[{"rule": "DuplicateSheetMatches"}, {"rule": "UniqueColumn"}]
+        )
+        adf = format_comment_adf(response)
+        
+        last_paragraph = adf["content"][-1]
+        last_text = last_paragraph["content"][0]["text"]
+        
+        assert "2 checks passed successfully" in last_text
+        assert "DuplicateSheetMatches" in last_text
+        assert "UniqueColumn" in last_text
 
     def test_adf_has_required_keys(self):
         response = _make_response(success=True)

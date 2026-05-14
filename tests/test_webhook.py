@@ -6,13 +6,13 @@ from unittest.mock import patch, MagicMock
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# Ensure test API key is set before importing main (which reads at module level)
+os.environ.setdefault("JIVE_API_KEY", "test-secret-ZZZZZZZZZZZZZZ")
+
 from httpx import AsyncClient, ASGITransport
 from main import app
 
-
-@pytest.fixture
-def api_key():
-    return os.getenv("JIVE_API_KEY", "dev-secret-key")
+TEST_API_KEY = os.environ["JIVE_API_KEY"]
 
 
 @pytest.mark.asyncio
@@ -25,7 +25,7 @@ async def test_healthz():
 
 
 @pytest.mark.asyncio
-async def test_webhook_valid_payload(api_key):
+async def test_webhook_valid_payload():
     """Valid payload with correct API key should return 202."""
     transport = ASGITransport(app=app)
     payload = {
@@ -43,7 +43,7 @@ async def test_webhook_valid_payload(api_key):
             response = await client.post(
                 "/api/webhook",
                 json=payload,
-                headers={"x-functions-key": api_key},
+                headers={"x-functions-key": TEST_API_KEY},
             )
 
     assert response.status_code == 202
@@ -77,7 +77,7 @@ async def test_webhook_missing_issue_key():
         response = await client.post(
             "/api/webhook",
             json=payload,
-            headers={"x-functions-key": os.getenv("JIVE_API_KEY", "dev-secret-key")},
+            headers={"x-functions-key": TEST_API_KEY},
         )
 
     assert response.status_code == 422

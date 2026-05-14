@@ -15,10 +15,15 @@ class JSONFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
-        for key in ("issue_key", "rule", "duration_ms", "status_code", 
-                     "method", "url", "dequeue_count", "queue"):
-            value = getattr(record, key, None)
-            if value is not None:
+        # Include any custom extra fields dynamically
+        standard_attrs = {
+            "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
+            "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
+            "created", "msecs", "relativeCreated", "thread", "threadName",
+            "processName", "process", "message"
+        }
+        for key, value in record.__dict__.items():
+            if key not in standard_attrs:
                 log_entry[key] = value
 
         if record.exc_info and record.exc_info[1]:
