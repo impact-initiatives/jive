@@ -169,8 +169,7 @@ az containerapp update --name jive-worker \
 - [ ] Transition the Jira ticket to a target status automatically based on validation results (e.g., move to "Approved" on pass (default: JIRA_TRANSITION_APPROVED), "Needs Revision" on fail (default: JIRA_TRANSITION_REVISION))
 - [ ] Add support for multiple dataset types beyond JMMI (MSNA, ESNFI) with automatic schema detection
 - [ ] Implement Azure Managed Identity for Key Vault secret retrieval at runtime, removing the need for connection strings in environment variables
-- [ ] Add a `/status/{issue_key}` endpoint to the ingress so users or dashboards can poll for job progress
-- [ ] Integrate with Azure Application Insights for end-to-end distributed tracing across ingress, queue, and worker
+
 
 ## Related Repositories
 
