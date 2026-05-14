@@ -55,14 +55,20 @@ def handle_jira_webhook(
     try:
         queue_client = get_queue_client()
         message_body = payload.model_dump_json()
-        queue_client.send_message(message_body)
+        try:
+            queue_client.send_message(message_body)
+        except Exception:
+            # Auto-create queue if it doesn't exist (common in local Azurite testing)
+            logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
+            queue_client.create_queue()
+            queue_client.send_message(message_body)
     except Exception as e:
         logger.error(
             "Failed to enqueue message",
             exc_info=e,
-            extra={"issue_key": payload.issue_key},
+            extra={"issue_key": payload.issue_key, "error": str(e)},
         )
-        raise HTTPException(status_code=500, detail="Failed to enqueue validation job")
+        raise HTTPException(status_code=500, detail=f"Failed to enqueue validation job: {str(e)}")
 
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(

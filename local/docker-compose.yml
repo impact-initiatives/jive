@@ -1,0 +1,47 @@
+services:
+  # ──────────────────────────────────────────────────────────────
+  # 1. Azurite: Local Azure Storage Emulator
+  # ──────────────────────────────────────────────────────────────
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: jive-azurite
+    hostname: azurite
+    ports:
+      - "10001:10001" # Queue service
+    command: azurite-queue --queueHost 0.0.0.0 --skipApiVersionCheck
+
+  # ──────────────────────────────────────────────────────────────
+  # 2. JIVE Ingress: Webhook Handler
+  # ──────────────────────────────────────────────────────────────
+  jive-ingress:
+    build:
+      context: ..
+      dockerfile: jira_poc/Dockerfile.local
+    container_name: jive-ingress
+    ports:
+      - "8000:8000"
+    environment:
+      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;
+      - JIVE_QUEUE_NAME=jive-validation-queue
+      - JIVE_API_KEY=local-dev-key
+      - JIRA_BASE_URL=https://reach-initiative.atlassian.net
+    depends_on:
+      - azurite
+
+  # ──────────────────────────────────────────────────────────────
+  # 3. JIVE Worker: Queue Consumer
+  # ──────────────────────────────────────────────────────────────
+  jive-worker:
+    build:
+      context: ..
+      dockerfile: jira_poc/Dockerfile.local
+    container_name: jive-worker
+    command: [ "python", "worker.py" ]
+    environment:
+      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;
+      - JIVE_QUEUE_NAME=jive-validation-queue
+      - JIRA_API_EMAIL=${JIRA_API_EMAIL:-placeholder@example.com}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-placeholder-token}
+      - JIRA_BASE_URL=https://reach-initiative.atlassian.net
+    depends_on:
+      - azurite

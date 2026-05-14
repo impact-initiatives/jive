@@ -190,6 +190,12 @@ def main():
         return
 
     queue_client = get_queue_client()
+    try:
+        queue_client.get_queue_properties()
+    except Exception:
+        logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
+        queue_client.create_queue()
+        
     logger.info("Worker started", extra={"queue": QUEUE_NAME})
 
     while True:
