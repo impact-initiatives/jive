@@ -108,12 +108,17 @@ def process_message(msg):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
 
-        if payload.secure_link:
-            logger.info("Downloading dataset from secure link", extra={"issue_key": payload.issue_key})
-            dataset_path = jira.download_from_secure_link(payload.secure_link, tmp_path)
-        else:
-            logger.info("Downloading dataset from Jira attachments", extra={"issue_key": payload.issue_key})
-            dataset_path = jira.download_proforma_attachment(payload.issue_key, tmp_path, attachments=attachments)
+        # Resolve issue ID once to reuse
+        resolved_issue_id = jira.get_issue_id(payload.issue_key)
+
+        logger.info("Resolving dataset file", extra={"issue_key": payload.issue_key})
+        dataset_path = jira.resolve_dataset(
+            payload.issue_key,
+            tmp_path,
+            issue_id=resolved_issue_id,
+            attachments=attachments,
+            secure_link=payload.secure_link,
+        )
 
         if not dataset_path:
             error_adf = {
@@ -125,18 +130,38 @@ def process_message(msg):
                         "content": [
                             {
                                 "type": "text",
-                                "text": "Failed to download dataset. No valid Excel attachment found.",
+                                "text": "Failed to download dataset. No valid Excel attachment or repository link found.",
                             }
                         ],
                     }
                 ],
             }
             jira.post_comment(payload.issue_key, error_adf)
-            logger.warning("No Excel attachment found", extra={"issue_key": payload.issue_key})
+            logger.warning("No Excel dataset resolved", extra={"issue_key": payload.issue_key})
             return
 
-        logger.info("Running validation pipeline", extra={"issue_key": payload.issue_key})
-        pipeline = ValidationPipeline(dataset_type=payload.dataset_type)
+        # Dynamically detect dataset type from ProForma answers if available
+        dataset_type = payload.dataset_type
+        if resolved_issue_id:
+            proforma_answers = jira.get_proforma_answers(resolved_issue_id)
+            needle = jira.proforma_dataset_type_label.lower()
+            for label, val in proforma_answers.items():
+                if needle in label.lower():
+                    val_clean = val.strip().lower()
+                    if "jmmi" in val_clean:
+                        dataset_type = "jmmi"
+                    elif "msna" in val_clean:
+                        dataset_type = "msna"
+                    elif "esnfi" in val_clean:
+                        dataset_type = "esnfi"
+                    else:
+                        dataset_type = val_clean
+                    logger.info("Detected dataset type dynamically from ProForma answers", 
+                                extra={"issue_key": payload.issue_key, "dataset_type": dataset_type})
+                    break
+
+        logger.info("Running validation pipeline", extra={"issue_key": payload.issue_key, "dataset_type": dataset_type})
+        pipeline = ValidationPipeline(dataset_type=dataset_type)
         response_dict = pipeline.run(dataset_path)
         response = PipelineResponse(**response_dict)
 
