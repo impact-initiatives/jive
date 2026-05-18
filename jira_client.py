@@ -125,12 +125,101 @@ class JiraClient:
                     "duration_ms": duration_ms,
                 },
             )
+            try:
+                attachments_data = response.json()
+                if attachments_data and isinstance(attachments_data, list):
+                    return attachments_data[0].get("content")
+            except Exception:
+                pass
             return True
         else:
             logger.error(
                 "Failed to upload attachment",
                 extra={"issue_key": issue_key, "status_code": response.status_code},
             )
+            return None
+
+    def get_service_desk_id(self, project_key: str) -> Optional[str]:
+        """Fetch the Service Desk ID associated with a project key."""
+        url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{project_key}"
+        try:
+            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=15)
+            _check_retryable(response)
+            if response.status_code == 200:
+                return response.json().get("id")
+            else:
+                logger.warning("Service Desk lookup returned non-200 status", extra={"project_key": project_key, "status_code": response.status_code})
+        except Exception as e:
+            logger.warning(f"Could not fetch Service Desk ID for project {project_key}", exc_info=e)
+        return None
+
+    def upload_public_jsm_attachment(self, issue_key: str, project_key: str, file_path: Path) -> bool:
+        """Uploads an attachment publicly to a Jira Service Management ticket so it is visible directly on the portal."""
+        # 1. Fetch Service Desk ID
+        service_desk_id = self.get_service_desk_id(project_key)
+        if not service_desk_id:
+            logger.error("Failed to upload JSM attachment: could not resolve service desk ID for project", extra={"project_key": project_key})
+            return False
+
+        # 2. Upload temporary file
+        upload_url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{service_desk_id}/attachTemporaryFile"
+        headers = {
+            "X-Atlassian-Token": "no-check",
+            "Accept": "application/json",
+        }
+        
+        try:
+            with open(file_path, "rb") as f:
+                files = {
+                    "file": (
+                        file_path.name,
+                        f,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+                }
+                logger.info("Uploading temporary JSM attachment", extra={"issue_key": issue_key, "service_desk_id": service_desk_id})
+                response = self.session.post(upload_url, headers=headers, auth=self.auth, files=files, timeout=(5, 120))
+                _check_retryable(response)
+                
+                if response.status_code != 201:
+                    logger.error("Failed to upload temporary JSM attachment", extra={"issue_key": issue_key, "status_code": response.status_code})
+                    return False
+                
+                temp_attachments = response.json().get("temporaryAttachments", [])
+                if not temp_attachments:
+                    logger.error("Temporary JSM attachment response contained no attachments", extra={"issue_key": issue_key})
+                    return False
+                
+                temp_attachment_id = temp_attachments[0].get("temporaryAttachmentId")
+                logger.info("Temporary JSM attachment uploaded successfully", extra={"issue_key": issue_key, "temp_id": temp_attachment_id})
+        except Exception as e:
+            logger.error("Failed to upload temporary JSM attachment", exc_info=e, extra={"issue_key": issue_key})
+            return False
+
+        # 3. Attach temporary file to request publicly
+        attach_url = f"{self.base_url}/rest/servicedeskapi/request/{issue_key}/attachment"
+        attach_headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        payload = {
+            "temporaryAttachmentIds": [temp_attachment_id],
+            "public": True
+        }
+        
+        try:
+            logger.info("Confirming public JSM attachment on request", extra={"issue_key": issue_key})
+            response = self.session.post(attach_url, headers=attach_headers, auth=self.auth, json=payload, timeout=(5, 30))
+            _check_retryable(response)
+            
+            if response.status_code == 201:
+                logger.info("Successfully attached file publicly to JSM portal request", extra={"issue_key": issue_key})
+                return True
+            else:
+                logger.error("Failed to attach file publicly to JSM request", extra={"issue_key": issue_key, "status_code": response.status_code})
+                return False
+        except Exception as e:
+            logger.error("Failed to attach file publicly to JSM request", exc_info=e, extra={"issue_key": issue_key})
             return False
 
     def get_attachments(self, issue_key: str) -> list:
@@ -192,7 +281,7 @@ class JiraClient:
         
         logger.info(
             "Downloading most recent attachment",
-            extra={"issue_key": issue_key, "url": content_url, "created": latest_attachment.get("created")}
+            extra={"issue_key": issue_key, "url": content_url, "attachment_created": latest_attachment.get("created")}
         )
 
         output_path = output_dir / filename

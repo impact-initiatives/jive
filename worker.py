@@ -94,9 +94,10 @@ def process_message(msg):
     # Fetch attachments once — used for both idempotency and download
     attachments = jira.get_attachments(payload.issue_key)
 
-    # Idempotency guard: skip if a JIVE report already exists on this ticket
+    # Idempotency guard: skip if a JIVE report already exists on this ticket (unless forced)
     expected_report_name = f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
-    if any(a.get("filename") == expected_report_name for a in attachments):
+    force_validation = os.getenv("JIVE_FORCE_VALIDATION", "False").lower() in ("true", "1")
+    if not force_validation and any(a.get("filename") == expected_report_name for a in attachments):
         logger.warning(
             "Idempotency: JIVE report already attached — skipping re-validation",
             extra={"issue_key": payload.issue_key, "report": expected_report_name},
@@ -140,10 +141,14 @@ def process_message(msg):
             logger.warning("No Excel dataset resolved", extra={"issue_key": payload.issue_key})
             return
 
-        # Dynamically detect dataset type from ProForma answers if available
+        # Dynamically detect dataset type and other context fields from ProForma answers if available
         dataset_type = payload.dataset_type
+        repo_url = None
+        repo_action = None
         if resolved_issue_id:
             proforma_answers = jira.get_proforma_answers(resolved_issue_id)
+            
+            # Extract dataset type
             needle = jira.proforma_dataset_type_label.lower()
             for label, val in proforma_answers.items():
                 if needle in label.lower():
@@ -158,10 +163,27 @@ def process_message(msg):
                         dataset_type = val_clean
                     logger.info("Detected dataset type dynamically from ProForma answers", 
                                 extra={"issue_key": payload.issue_key, "dataset_type": dataset_type})
-                    break
+            
+            # Extract repository resource URL and action type
+            for label, val in proforma_answers.items():
+                if "link to the resource" in label.lower() or "repository" in label.lower():
+                    if val and val.strip().startswith("http"):
+                        repo_url = val.strip()
+                if "published or archived" in label.lower():
+                    repo_action = val.strip()
 
-        logger.info("Running validation pipeline", extra={"issue_key": payload.issue_key, "dataset_type": dataset_type})
-        pipeline = ValidationPipeline(dataset_type=dataset_type)
+        # Ensure we only pass supported types to the pipeline, otherwise fall back to generic "other"
+        SUPPORTED_SCHEMA_TYPES = {"jmmi", "msna", "other"}
+        pipeline_dataset_type = dataset_type
+        if dataset_type not in SUPPORTED_SCHEMA_TYPES:
+            logger.info(
+                "Unrecognized dataset type - falling back to generic 'other' dynamic validation",
+                extra={"issue_key": payload.issue_key, "original_type": dataset_type, "fallback_type": "other"}
+            )
+            pipeline_dataset_type = "other"
+
+        logger.info("Running validation pipeline", extra={"issue_key": payload.issue_key, "dataset_type": dataset_type, "pipeline_type": pipeline_dataset_type})
+        pipeline = ValidationPipeline(dataset_type=pipeline_dataset_type)
         response_dict = pipeline.run(dataset_path)
         response = PipelineResponse(**response_dict)
 
@@ -170,8 +192,6 @@ def process_message(msg):
             "Pipeline completed",
             extra={"issue_key": payload.issue_key, "duration_ms": duration_ms},
         )
-
-        adf_summary = format_comment_adf(response)
 
         excel_report_path = tmp_path / f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
         export_response_to_excel(response, excel_report_path)
@@ -182,14 +202,27 @@ def process_message(msg):
         #blob_url = upload_to_blob(excel_report_path)
         #adf_summary = format_comment_adf(response, blob_url)
 
-
+        attachment_url = None
         file_size_mb = excel_report_path.stat().st_size / (1024 * 1024)
         if file_size_mb > MAX_JIRA_ATTACHMENT_MB:
             logger.warning(
                 "Excel report too large for Jira attachment — skipping upload",
                 extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2), "limit_mb": MAX_JIRA_ATTACHMENT_MB},
             )
+        else:
+            logger.info("Uploading public JSM attachment", extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2)})
+            jira.upload_public_jsm_attachment(payload.issue_key, payload.project_key, excel_report_path)
 
+        # Format comment (the report will be attached directly to the ticket and visible on the portal)
+        adf_summary = format_comment_adf(
+            response,
+            attachment_url=None,
+            repo_url=repo_url,
+            repo_action=repo_action,
+            original_dataset_type=dataset_type
+        )
+
+        if file_size_mb > MAX_JIRA_ATTACHMENT_MB:
             adf_summary["content"].append({
                 "type": "paragraph",
                 "content": [{
@@ -198,9 +231,6 @@ def process_message(msg):
                     "marks": [{"type": "strong"}],
                 }],
             })
-        else:
-            logger.info("Uploading attachment", extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2)})
-            jira.upload_attachment(payload.issue_key, excel_report_path)
 
         logger.info("Posting summary comment", extra={"issue_key": payload.issue_key})
         jira.post_comment(payload.issue_key, adf_summary)
