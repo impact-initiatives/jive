@@ -116,8 +116,7 @@ def process_message(msg):
             skip_validation = report_attachment.get("created", "") > latest_dataset.get("created", "")
         else:
             # Report exists, but no source dataset exists in Jira attachments.
-            # This means the dataset is either coming from an external link or is missing entirely.
-            # We cannot check the timestamp of external links reliably, so we must re-validate.
+            # Cannot check timestamp of external links, so we validate again (Can be fixed? --> 2 Check)
             skip_validation = False
 
     force_validation = os.getenv("JIVE_FORCE_VALIDATION", "False").lower() in ("true", "1")
@@ -234,14 +233,8 @@ def process_message(msg):
                 extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2), "limit_mb": MAX_JIRA_ATTACHMENT_MB},
             )
         else:
-            logger.info("Attempting to upload public JSM attachment", extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2)})
-            jsm_success = False
-            if payload.project_key:
-                jsm_success = jira.upload_public_jsm_attachment(payload.issue_key, payload.project_key, excel_report_path)
-            
-            if not jsm_success:
-                logger.info("JSM public upload failed or skipped (missing project_key). Falling back to standard Jira attachment.", extra={"issue_key": payload.issue_key})
-                jira.upload_attachment(payload.issue_key, excel_report_path)
+            logger.info("Uploading public JSM attachment", extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2)})
+            jira.upload_public_jsm_attachment(payload.issue_key, payload.project_key, excel_report_path)
 
         # Format comment (the report will be attached directly to the ticket and visible on the portal)
         adf_summary = format_comment_adf(
