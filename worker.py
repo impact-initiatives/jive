@@ -95,12 +95,35 @@ def process_message(msg):
     # Fetch attachments once — used for both idempotency and download
     attachments = jira.get_attachments(payload.issue_key)
 
-    # Idempotency guard: skip if a JIVE report already exists on this ticket (unless forced)
+    # Idempotency guard: skip if a JIVE report already exists and is newer than the newest dataset
     expected_report_name = f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
+    
+    report_attachment = next((a for a in attachments if a.get("filename") == expected_report_name), None)
+    
+    # Find all non-report Excel dataset attachments
+    dataset_attachments = [
+        a for a in attachments
+        if a.get("filename", "").endswith(".xlsx") and a.get("filename") != expected_report_name
+    ]
+    # Sort dataset attachments with newest first
+    dataset_attachments.sort(key=lambda a: a.get("created", ""), reverse=True)
+    latest_dataset = dataset_attachments[0] if dataset_attachments else None
+    
+    skip_validation = False
+    if report_attachment:
+        if latest_dataset:
+            # Skip only if the report is newer than the latest dataset sheet upload
+            skip_validation = report_attachment.get("created", "") > latest_dataset.get("created", "")
+        else:
+            # Report exists, but no source dataset exists in Jira attachments.
+            # This means the dataset is either coming from an external link or is missing entirely.
+            # We cannot check the timestamp of external links reliably, so we must re-validate.
+            skip_validation = False
+
     force_validation = os.getenv("JIVE_FORCE_VALIDATION", "False").lower() in ("true", "1")
-    if not force_validation and any(a.get("filename") == expected_report_name for a in attachments):
+    if not force_validation and skip_validation:
         logger.warning(
-            "Idempotency: JIVE report already attached — skipping re-validation",
+            "Idempotency: JIVE report is up to date — skipping re-validation",
             extra={"issue_key": payload.issue_key, "report": expected_report_name},
         )
         return
@@ -211,8 +234,14 @@ def process_message(msg):
                 extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2), "limit_mb": MAX_JIRA_ATTACHMENT_MB},
             )
         else:
-            logger.info("Uploading public JSM attachment", extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2)})
-            jira.upload_public_jsm_attachment(payload.issue_key, payload.project_key, excel_report_path)
+            logger.info("Attempting to upload public JSM attachment", extra={"issue_key": payload.issue_key, "size_mb": round(file_size_mb, 2)})
+            jsm_success = False
+            if payload.project_key:
+                jsm_success = jira.upload_public_jsm_attachment(payload.issue_key, payload.project_key, excel_report_path)
+            
+            if not jsm_success:
+                logger.info("JSM public upload failed or skipped (missing project_key). Falling back to standard Jira attachment.", extra={"issue_key": payload.issue_key})
+                jira.upload_attachment(payload.issue_key, excel_report_path)
 
         # Format comment (the report will be attached directly to the ticket and visible on the portal)
         adf_summary = format_comment_adf(

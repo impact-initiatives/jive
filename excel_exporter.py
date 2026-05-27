@@ -63,6 +63,7 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
         if details and isinstance(details, dict) and any(isinstance(v, list) for v in details.values()):
             try:
                 df = pl.DataFrame(details)
+                df = df.with_columns(pl.all().cast(pl.String))
                 df = df.with_columns([
                     pl.lit(severity).alias("Severity"),
                     pl.lit(rule).alias("Rule")
