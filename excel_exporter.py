@@ -30,10 +30,15 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
 
     if not all_issues:
         #Empty excel file with headers for the summary sheet if there are no issues
-        df = pl.DataFrame({
-            "Severity": [], "Rule": [], "Sheet Name": [], 
-            "Column Name": [], "Message": []
-        })
+        df = pl.DataFrame(
+            schema={
+                "Severity": pl.String,
+                "Rule": pl.String,
+                "Sheet Name": pl.String,
+                "Column Name": pl.String,
+                "Message": pl.String,
+            }
+        )
         with xlsxwriter.Workbook(str(output_path)) as workbook:
             df.write_excel(workbook=workbook, worksheet="Validation Summary")
         return

@@ -4,6 +4,7 @@ import secrets
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 from azure.storage.queue import QueueClient
+from functools import lru_cache
 from models import JiraSubmissionPayload
 from logger import get_logger
 
@@ -16,6 +17,7 @@ QUEUE_NAME = os.getenv("JIVE_QUEUE_NAME", "jive-validation-queue")
 API_KEY = os.getenv("JIVE_API_KEY", "")
 
 
+@lru_cache(maxsize=1)
 def get_queue_client() -> QueueClient:
     if not QUEUE_CONNECTION_STRING:
         raise RuntimeError("AZURE_STORAGE_CONNECTION_STRING is not set")
