@@ -4,6 +4,7 @@ import secrets
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 from azure.storage.queue import QueueClient
+from azure.core.exceptions import ResourceNotFoundError
 from functools import lru_cache
 from models import JiraSubmissionPayload
 from logger import get_logger
@@ -59,8 +60,8 @@ def handle_jira_webhook(
         message_body = payload.model_dump_json()
         try:
             queue_client.send_message(message_body)
-        except Exception:
-            # Auto-create queue if it doesn't exist (common in local Azurite testing)
+        except ResourceNotFoundError:
+            # Auto-create queue if it genuinely doesn't exist (common in local Azurite testing)
             logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
             queue_client.create_queue()
             queue_client.send_message(message_body)

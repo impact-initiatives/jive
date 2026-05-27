@@ -63,7 +63,7 @@ def main():
 
     ticket = create_ticket(summary)
     issue_key = ticket.get("issueKey", "")
-    console.print(f"[green]✓ Created → {issue_key}[/green]")
+    console.print(f"[green]SUCCESS: Created -> {issue_key}[/green]")
     console.print(f"  {JIRA_URL}/browse/{issue_key}")
 
 

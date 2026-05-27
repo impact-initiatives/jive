@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 from azure.storage.queue import QueueClient
+from azure.core.exceptions import ResourceNotFoundError
 from models import JiraSubmissionPayload
 from jira_client import JiraClient
 from report_formatter import format_comment_adf
@@ -247,7 +248,7 @@ def main():
     queue_client = get_queue_client()
     try:
         queue_client.get_queue_properties()
-    except Exception:
+    except ResourceNotFoundError:
         logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
         queue_client.create_queue()
         
