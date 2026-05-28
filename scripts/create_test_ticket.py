@@ -58,7 +58,7 @@ def create_ticket(summary: str) -> dict:
 def main():
     summary = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SUMMARY
 
-    console.print(f"\n[bold green]JIVE - Create Test Ticket (GDT dev)[/bold green]")
+    console.print("\n[bold green]JIVE - Create Test Ticket (GDT dev)[/bold green]")
     console.print(f"  Summary : [cyan]{summary}[/cyan]\n")
 
     ticket = create_ticket(summary)

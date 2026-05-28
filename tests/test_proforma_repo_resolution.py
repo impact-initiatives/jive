@@ -1,7 +1,5 @@
 import os
 import sys
-import pytest
-import requests
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
@@ -16,7 +14,7 @@ os.environ["JIRA_API_TOKEN"] = "mock-jira-token"
 os.environ["REPO_USERNAME"] = "mock-wp-username@example.com"
 os.environ["REPO_PASSWORD"] = "mock-wp-password"
 
-from jira_client import JiraClient, JiraAPIError  # noqa: E402
+from jira_client import JiraClient  # noqa: E402
 
 
 @patch("jira_client.requests.Session")

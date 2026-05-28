@@ -1,5 +1,4 @@
 import requests
-import json
 import sys
 
 URL = "http://localhost:8000/api/webhook"

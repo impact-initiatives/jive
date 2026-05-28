@@ -141,7 +141,7 @@ def fetch_issue_createmeta(project_key: str) -> dict:
 
 
 def main():
-    console.print(f"\n[bold green]JIVE - Phase 1: GDT Service Desk Field Exploration[/bold green]")
+    console.print("\n[bold green]JIVE - Phase 1: GDT Service Desk Field Exploration[/bold green]")
     console.print(f"  URL  : {JIRA_URL}")
     console.print(f"  User : {JIRA_EMAIL}")
     console.print(f"  Portal {SERVICEDESK_ID} › Request type {REQUEST_TYPE_ID}\n")

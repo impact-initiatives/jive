@@ -1,7 +1,6 @@
 import os
 import re
 import time
-import tempfile
 import requests
 from pathlib import Path
 from typing import Optional
