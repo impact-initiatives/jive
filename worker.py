@@ -24,7 +24,6 @@ QUEUE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 QUEUE_NAME = os.getenv("JIVE_QUEUE_NAME", "jive-validation-queue")
 POISON_QUEUE_NAME = f"{QUEUE_NAME}-poison"
 MAX_RETRIES = int(os.getenv("JIVE_MAX_RETRIES", "3"))
-MAX_JIRA_ATTACHMENT_MB = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250"))
 
 
 def get_queue_client(queue_name: str = QUEUE_NAME) -> QueueClient:
@@ -89,9 +88,6 @@ def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception):
             exc_info=notify_err,
             extra={"issue_key": payload.issue_key},
         )
-
-
-
 
 
 def process_message(msg):

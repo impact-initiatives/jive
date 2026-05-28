@@ -1,7 +1,11 @@
 from typing import Optional
+from importlib.metadata import version, PackageNotFoundError
 from rqa_validator.models.api_models import PipelineResponse
 
-JIVE_VERSION = "0.1.0"
+try:
+    JIVE_VERSION = version("jive-jira-integration")
+except PackageNotFoundError:
+    JIVE_VERSION = "0.1.0"
 
 def format_comment_adf(
     response: PipelineResponse, 
@@ -193,7 +197,7 @@ def format_comment_adf(
         })
  
     # 4. Clear Actionable Portal Next-Steps
-    passed_items = getattr(response, 'passed', [])
+    passed_items = getattr(response, 'passed', None) or []
     passed_rules = set()
     for item in passed_items:
         rule = item.get('rule') if isinstance(item, dict) else getattr(item, 'rule', 'Unknown')

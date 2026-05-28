@@ -14,7 +14,6 @@ dependencies = [
     "polars>=1.0.0",
     "xlsxwriter>=3.2.0",
     "rqa-validator",
-    "rich>=15.0.0",
 ]
 
 [tool.uv.sources]

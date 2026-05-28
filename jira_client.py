@@ -8,6 +8,8 @@ from logger import get_logger
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
 import logging
 
+REPO_SESSION_TTL_SECONDS = int(os.getenv("REPO_SESSION_TTL_SECONDS", "43200"))  # 12 hours
+
 logger = get_logger("jive.jira_client")
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
@@ -48,6 +50,7 @@ class JiraClient:
         self.repo_username = os.getenv("REPO_USERNAME")
         self.repo_password = os.getenv("REPO_PASSWORD")
         self.repo_session = None
+        self.repo_session_created_at = None
 
         #ProForma matching labels
         self.proforma_repo_label = os.getenv("PROFORMA_REPO_LABEL", "IMPACT Repository")
@@ -156,6 +159,12 @@ class JiraClient:
             logger.warning("Service Desk lookup returned non-200 status", extra={"project_key": project_key, "status_code": response.status_code})
             return None
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+    )
     def upload_public_jsm_attachment(self, issue_key: str, project_key: str, file_path: Path) -> bool:
         """Uploads an attachment publicly to a Jira Service Management ticket so it is visible directly on the portal."""
         # 1. Fetch Service Desk ID
@@ -433,9 +442,17 @@ class JiraClient:
             return {}
 
     def _get_repo_session(self) -> requests.Session:
-        """Return an authenticated Session for the IMPACT Repository (WordPress cookie auth)."""
+        """Return an authenticated Session for the IMPACT Repository (WordPress cookie auth).
+        
+        Sessions are cached but automatically re-authenticated after REPO_SESSION_TTL_SECONDS
+        (default 12h) to prevent stale WordPress cookie failures on long-running workers.
+        """
         if self.repo_session is not None:
-            return self.repo_session
+            elapsed = time.monotonic() - (self.repo_session_created_at or 0)
+            if elapsed < REPO_SESSION_TTL_SECONDS:
+                return self.repo_session
+            logger.info("Repository session expired after %ds — re-authenticating", int(elapsed))
+            self.repo_session = None
 
         if not self.repo_username or not self.repo_password:
             raise EnvironmentError("REPO_USERNAME and REPO_PASSWORD environment variables must be set")
@@ -471,6 +488,7 @@ class JiraClient:
         response.raise_for_status()
         
         self.repo_session = session
+        self.repo_session_created_at = time.monotonic()
         logger.info("Authenticated session created for IMPACT Repository successfully")
         return session
 
