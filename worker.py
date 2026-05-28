@@ -179,10 +179,16 @@ def main():
                     process_message(msg)
                     queue_client.delete_message(msg)
                 except Exception as e:
+                    issue_key = "UNKNOWN"
+                    try:
+                        issue_key = json.loads(msg.content).get("issue_key", "UNKNOWN")
+                    except Exception:
+                        pass
+                    
                     logger.error(
                         "Error processing message",
                         exc_info=e,
-                        extra={"issue_key": getattr(msg, "id", "unknown")},
+                        extra={"issue_key": issue_key},
                     )
 
             if not has_message:
