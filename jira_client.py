@@ -128,7 +128,8 @@ class JiraClient:
             try:
                 attachments_data = response.json()
                 if attachments_data and isinstance(attachments_data, list):
-                    return attachments_data[0].get("content")
+                    content_url = attachments_data[0].get("content")
+                    logger.info("Attachment content URL", extra={"issue_key": issue_key, "content_url": content_url})
             except Exception:
                 pass
             return True
@@ -137,21 +138,24 @@ class JiraClient:
                 "Failed to upload attachment",
                 extra={"issue_key": issue_key, "status_code": response.status_code},
             )
-            return None
+            return False
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+    )
     def get_service_desk_id(self, project_key: str) -> Optional[str]:
         """Fetch the Service Desk ID associated with a project key."""
         url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{project_key}"
-        try:
-            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=15)
-            _check_retryable(response)
-            if response.status_code == 200:
-                return response.json().get("id")
-            else:
-                logger.warning("Service Desk lookup returned non-200 status", extra={"project_key": project_key, "status_code": response.status_code})
-        except Exception as e:
-            logger.warning(f"Could not fetch Service Desk ID for project {project_key}", exc_info=e)
-        return None
+        response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=15)
+        _check_retryable(response)
+        if response.status_code == 200:
+            return response.json().get("id")
+        else:
+            logger.warning("Service Desk lookup returned non-200 status", extra={"project_key": project_key, "status_code": response.status_code})
+            return None
 
     def upload_public_jsm_attachment(self, issue_key: str, project_key: str, file_path: Path) -> bool:
         """Uploads an attachment publicly to a Jira Service Management ticket so it is visible directly on the portal."""
@@ -222,6 +226,12 @@ class JiraClient:
             logger.error("Failed to attach file publicly to JSM request", exc_info=e, extra={"issue_key": issue_key})
             return False
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+    )
     def get_attachments(self, issue_key: str) -> list:
         """Fetches the attachment list for a Jira ticket. Returns a list of attachment dicts.
         
@@ -229,19 +239,15 @@ class JiraClient:
         and pass the result to both idempotency checks and download logic.
         """
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=attachment"
-        try:
-            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=(5, 30))
-            _check_retryable(response)
-            if response.status_code != 200:
-                logger.error(
-                    "Failed to fetch attachments",
-                    extra={"issue_key": issue_key, "status_code": response.status_code},
-                )
-                return []
-            return response.json().get("fields", {}).get("attachment", [])
-        except Exception as e:
-            logger.error("Error fetching attachments", exc_info=e, extra={"issue_key": issue_key})
+        response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=(5, 30))
+        _check_retryable(response)
+        if response.status_code != 200:
+            logger.error(
+                "Failed to fetch attachments",
+                extra={"issue_key": issue_key, "status_code": response.status_code},
+            )
             return []
+        return response.json().get("fields", {}).get("attachment", [])
 
     @retry(
         stop=stop_after_attempt(3),
@@ -337,29 +343,6 @@ class JiraClient:
             return output_path
         return None
 
-    def attachment_exists(self, issue_key: str, filename: str) -> bool:
-        """Returns True if an attachment with the given filename already exists on the ticket.
-        
-           Prevent re-processing the same ticket twice.
-        """
-        url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=attachment"
-        try:
-            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=(5, 30))
-            if response.status_code != 200:
-                logger.warning(
-                    "Could not fetch attachments for idempotency check",
-                    extra={"issue_key": issue_key, "status_code": response.status_code},
-                )
-                return False
-            attachments = response.json().get("fields", {}).get("attachment", [])
-            return any(a.get("filename") == filename for a in attachments)
-        except Exception as e:
-            logger.warning(
-                "Idempotency check failed — proceeding with validation",
-                exc_info=e,
-                extra={"issue_key": issue_key},
-            )
-            return False
 
     @retry(
         stop=stop_after_attempt(3),
@@ -515,22 +498,27 @@ class JiraClient:
             logger.error("Failed to scrape Excel URL from repository page", exc_info=e, extra={"page_url": page_url})
             return None
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+    )
     def get_issue_id(self, issue_key: str) -> Optional[str]:
         """Fetch the internal issue ID (integer string) using the issue key."""
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=id"
         logger.info("Resolving issue ID from key", extra={"issue_key": issue_key, "url": url})
-        try:
-            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=15)
-            _check_retryable(response)
-            response.raise_for_status()
+        response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=15)
+        _check_retryable(response)
+        if response.status_code == 200:
             issue_id = response.json().get("id")
             logger.info("Resolved issue ID successfully", extra={"issue_key": issue_key, "issue_id": issue_id})
             return issue_id
-        except Exception as e:
-            logger.error("Failed to resolve issue ID from key", exc_info=e, extra={"issue_key": issue_key})
+        else:
+            logger.error("Failed to resolve issue ID from key", extra={"issue_key": issue_key, "status_code": response.status_code})
             return None
 
-    def resolve_dataset(self, issue_key: str, output_dir: Path, issue_id: Optional[str] = None, attachments: Optional[list] = None, secure_link: Optional[str] = None) -> Optional[Path]:
+    def resolve_dataset(self, issue_key: str, output_dir: Path, issue_id: Optional[str] = None, attachments: Optional[list] = None, secure_link: Optional[str] = None, proforma_answers: Optional[dict] = None) -> Optional[Path]:
         """Orchestrates resolving the dataset using a fallback/priority strategy:
         
         1. Direct Attachment (Highest Priority): Check for any .xlsx/.xls files attached directly to the Jira ticket.
@@ -551,7 +539,8 @@ class JiraClient:
         
         resolved_issue_id = issue_id or self.get_issue_id(issue_key)
         if resolved_issue_id:
-            proforma_answers = self.get_proforma_answers(resolved_issue_id)
+            if proforma_answers is None:
+                proforma_answers = self.get_proforma_answers(resolved_issue_id)
             
             # Find label matching the repo label pattern (case-insensitive)
             page_url = None

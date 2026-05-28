@@ -29,3 +29,5 @@ dev = [
     "mypy>=1.10.0",
 ]
 
+[tool.pytest.ini_options]
+asyncio_mode = "strict"

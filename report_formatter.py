@@ -1,6 +1,8 @@
 from typing import Optional
 from rqa_validator.models.api_models import PipelineResponse
 
+JIVE_VERSION = "0.1.0"
+
 def format_comment_adf(
     response: PipelineResponse, 
     attachment_url: Optional[str] = None,
@@ -290,7 +292,7 @@ def format_comment_adf(
     adf_document["content"].append({
         "type": "paragraph",
         "content": [
-            {"type": "text", "text": "JIVE Automated Validation Engine v2.0 | ", "marks": [{"type": "em"}]},
+            {"type": "text", "text": f"JIVE Automated Validation Engine v{JIVE_VERSION} | ", "marks": [{"type": "em"}]},
             {"type": "text", "text": "Validated at: ", "marks": [{"type": "em"}, {"type": "strong"}]},
             {"type": "text", "text": timestamp_str, "marks": [{"type": "em"}]}
         ]

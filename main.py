@@ -15,8 +15,9 @@ app = FastAPI(title="JIVE Ingress Webhook")
 
 QUEUE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 QUEUE_NAME = os.getenv("JIVE_QUEUE_NAME", "jive-validation-queue")
-API_KEY = os.getenv("JIVE_API_KEY", "")
-
+API_KEY = os.getenv("JIVE_API_KEY")
+if not API_KEY:
+    raise RuntimeError("JIVE_API_KEY environment variable must be set")
 
 @lru_cache(maxsize=1)
 def get_queue_client() -> QueueClient:

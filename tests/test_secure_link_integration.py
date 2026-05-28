@@ -46,7 +46,7 @@ def test_webhook_ingress_with_secure_link(mock_get_queue_client):
     assert enqueued_payload["secure_link"] == "https://example.com/dataset.xlsx"
 
 @patch("worker.JiraClient")
-@patch("worker.ValidationPipeline")
+@patch("worker_utils.ValidationPipeline")
 @patch("worker.export_response_to_excel")
 
 def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls, mock_jira_client_cls):
