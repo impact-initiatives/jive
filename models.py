@@ -15,6 +15,7 @@ class JiraSubmissionPayload(BaseModel):
     rcid: str = Field(default="", description="The RCID from the ticket summary")
     dataset_type: str = Field(default="jmmi", description="The type of assessment")
     secure_link: str | None = Field(default=None, description="Optional URL to download the dataset from instead of Jira attachments")
+    force_revalidation: bool = Field(default=False, description="If true, bypasses the idempotency guard and forces validation to run")
 
     model_config = ConfigDict(extra="ignore")
 

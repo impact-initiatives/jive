@@ -32,8 +32,15 @@ def check_idempotency(payload: JiraSubmissionPayload, attachments: list) -> bool
         if latest_dataset:
             skip_validation = report_attachment.get("created", "") > latest_dataset.get("created", "")
         else:
-            skip_validation = False
+            # If there's no dataset attachment, the dataset is externally hosted (ProForma link, secure_link).
+            # We must skip validation to prevent infinite loops when the JIVE report attachment itself 
+            # triggers an issue_updated webhook.
+            skip_validation = True
             
+    if payload.force_revalidation:
+        logger.info("Idempotency guard bypassed via webhook payload flag", extra={"issue_key": payload.issue_key})
+        return False
+        
     force_validation = os.getenv("JIVE_FORCE_VALIDATION", "False").lower() in ("true", "1")
     if not force_validation and skip_validation:
         logger.warning(
