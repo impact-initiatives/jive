@@ -156,6 +156,7 @@ def publish_results(jira: JiraClient, payload: JiraSubmissionPayload, response: 
 
     # Format comment (the report will be attached directly to the ticket and visible on the portal)
     adf_summary = format_comment_adf(
+        payload.issue_key,
         response,
         attachment_url=None,
         repo_url=repo_url,

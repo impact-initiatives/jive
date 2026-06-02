@@ -12,6 +12,11 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
     Sheet 1: 'Validation Summary' (High-level errors and warnings)
     Sheet 2: 'Detailed Findings' (Expanded rows for row-level details)
     """
+    def _get_field(item, field: str, default=None):
+        if isinstance(item, dict):
+            return item.get(field, default)
+        return getattr(item, field, default)
+
     summary_rows = []
     detail_dfs = []
     
@@ -45,12 +50,12 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
 
     for item in all_issues:
         # Pydantic/ Dict safety
-        severity = item.get("severity", "").upper() if isinstance(item, dict) else getattr(item, "severity", "").upper()
-        rule = item.get("rule", "") if isinstance(item, dict) else getattr(item, "rule", "")
-        sheet_name = item.get("sheet_name", "") if isinstance(item, dict) else getattr(item, "sheet_name", "")
-        col_name = item.get("column_name", "") if isinstance(item, dict) else getattr(item, "column_name", "")
-        message = item.get("message", "") if isinstance(item, dict) else getattr(item, "message", "")
-        details = item.get("details", None) if isinstance(item, dict) else getattr(item, "details", None)
+        severity = (_get_field(item, "severity") or "").upper()
+        rule = _get_field(item, "rule", "")
+        sheet_name = _get_field(item, "sheet_name", "")
+        col_name = _get_field(item, "column_name", "")
+        message = _get_field(item, "message", "")
+        details = _get_field(item, "details", None)
 
         summary_rows.append({
             "Severity": severity,

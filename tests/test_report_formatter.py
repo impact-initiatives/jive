@@ -41,7 +41,7 @@ class TestFormatCommentAdf:
 
     def test_passing_response_structure(self):
         response = _make_response(success=True)
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
 
         assert adf["version"] == 1
         assert adf["type"] == "doc"
@@ -50,7 +50,7 @@ class TestFormatCommentAdf:
 
     def test_passing_response_contains_passed_text(self):
         response = _make_response(success=True)
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
 
         heading = adf["content"][0]
         heading_text = heading["content"][0]["content"][0]["text"]
@@ -58,7 +58,7 @@ class TestFormatCommentAdf:
 
     def test_failing_response_contains_failed_text(self):
         response = _make_response(success=False, errors=[{"rule": "Mandatory"}])
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
 
         heading = adf["content"][0]
         heading_text = heading["content"][0]["content"][0]["text"]
@@ -66,21 +66,21 @@ class TestFormatCommentAdf:
 
     def test_failing_response_mentions_attachment(self):
         response = _make_response(success=False, errors=[{"rule": "Mandatory"}])
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
 
         full_text = self._get_all_text(adf)
         assert "report" in full_text.lower() or "attachment" in full_text.lower() or "excel" in full_text.lower()
 
     def test_passing_response_mentions_ready(self):
         response = _make_response(success=True)
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
 
         full_text = self._get_all_text(adf)
         assert "no further action" in full_text.lower() or "ready" in full_text.lower() or "meets" in full_text.lower()
 
     def test_dataset_type_displayed(self):
         response = _make_response(success=True)
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
 
         full_text = self._get_all_text(adf)
         assert "jmmi" in full_text.lower()
@@ -91,7 +91,7 @@ class TestFormatCommentAdf:
             errors=[{"rule": "Mandatory"}, {"rule": "Mandatory"}], 
             warnings=[{"rule": "MissingSheet"}]
         )
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
         
         # Panel (0), Panel (1), Paragraph (2), Table (3), etc.
         table = adf["content"][3]
@@ -111,7 +111,7 @@ class TestFormatCommentAdf:
             success=True, 
             passed=[{"rule": "DuplicateSheetMatches"}, {"rule": "UniqueColumn"}]
         )
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
         
         full_text = self._get_all_text(adf)
         assert "2 core quality checks passed" in full_text or "2 checks passed" in full_text
@@ -120,7 +120,7 @@ class TestFormatCommentAdf:
 
     def test_adf_has_required_keys(self):
         response = _make_response(success=True)
-        adf = format_comment_adf(response)
+        adf = format_comment_adf("RQA-123", response)
 
         assert "version" in adf
         assert "type" in adf

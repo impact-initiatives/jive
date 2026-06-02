@@ -33,7 +33,7 @@ def get_queue_client(queue_name: str = QUEUE_NAME) -> QueueClient:
     )
 
 
-def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception):
+def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception, jira: JiraClient | None = None):
     """Moves a failed message to the poison queue with full metadata."""
     poison_message = {
         "original_message_id": msg.id,
@@ -64,7 +64,8 @@ def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception):
 
     #Notify on the Jira ticket
     try:
-        jira = JiraClient()
+        if jira is None:
+            jira = JiraClient()
         error_adf = {
             "version": 1,
             "type": "doc",

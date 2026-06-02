@@ -8,6 +8,7 @@ except PackageNotFoundError:
     JIVE_VERSION = "0.1.0"
 
 def format_comment_adf(
+    issue_key: str,
     response: PipelineResponse, 
     attachment_url: Optional[str] = None,
     repo_url: Optional[str] = None,
@@ -231,7 +232,7 @@ def format_comment_adf(
                             "type": "paragraph",
                             "content": [
                                 {"type": "text", "text": "Download the newly generated report spreadsheet "},
-                                {"type": "text", "text": f"JIVE_Validation_Report_{getattr(response.metadata, 'issue_key', 'ticket')}.xlsx", "marks": [{"type": "strong"}]},
+                                {"type": "text", "text": f"JIVE_Validation_Report_{issue_key}.xlsx", "marks": [{"type": "strong"}]},
                                 {"type": "text", "text": " directly from this ticket's "},
                                 {"type": "text", "text": "Attachments files list", "marks": [{"type": "strong"}]},
                                 {"type": "text", "text": "."}

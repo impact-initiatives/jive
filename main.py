@@ -121,7 +121,7 @@ def handle_jira_webhook(
             exc_info=e,
             extra={"issue_key": payload.issue_key, "error": str(e)},
         )
-        raise HTTPException(status_code=500, detail=f"Failed to enqueue validation job: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to enqueue validation job")#: {str(e)}") internal message
 
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(
