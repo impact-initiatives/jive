@@ -1,8 +1,10 @@
 import os
 import time
 import secrets
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from azure.storage.queue import QueueClient
 from azure.core.exceptions import ResourceNotFoundError
 from functools import lru_cache
@@ -12,6 +14,53 @@ from logger import get_logger
 logger = get_logger("jive.ingress")
 
 app = FastAPI(title="JIVE Ingress Webhook")
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    logger.warning(
+        f"HTTP Exception: {exc.detail}",
+        extra={
+            "status_code": exc.status_code,
+            "path": request.url.path,
+            "method": request.method,
+        }
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(
+        "Request Validation Error",
+        extra={
+            "status_code": 422,
+            "path": request.url.path,
+            "method": request.method,
+            "errors": exc.errors(),
+        }
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(
+        f"Unhandled Internal Server Error: {str(exc)}",
+        exc_info=True,
+        extra={
+            "status_code": 500,
+            "path": request.url.path,
+            "method": request.method,
+        }
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"},
+    )
 
 QUEUE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 QUEUE_NAME = os.getenv("JIVE_QUEUE_NAME", "jive-validation-queue")
