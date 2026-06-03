@@ -98,7 +98,8 @@ def test_get_repo_session():
     responses.add(
         responses.POST,
         "https://repository.impact-initiatives.org/wp-login.php",
-        status=200
+        status=200,
+        headers={"Set-Cookie": "wordpress_logged_in_abc123=user%7C123; Path=/"}
     )
 
     client = ImpactRepoClient()
@@ -141,12 +142,9 @@ def test_scrape_excel_url():
 
 
 @patch("worker_utils.JiraClient.download_proforma_attachment")
-@patch("worker_utils.JiraClient.get_issue_id")
-@patch("worker_utils.ProformaParser.get_answers")
 @patch("worker_utils.ImpactRepoClient.scrape_excel_url")
-@patch("worker_utils.ImpactRepoClient.get_authenticated_session")
-@patch("worker_utils.JiraClient._download_file_with_retry")
-def test_resolve_dataset_workflow(mock_download_file, mock_repo_session, mock_scrape_url, mock_proforma, mock_issue_id, mock_download_att):
+@patch("worker_utils.ImpactRepoClient.download_excel")
+def test_resolve_dataset_workflow(mock_download_excel, mock_scrape_url, mock_download_att):
     """Test unified fallback priority resolver strategy."""
     jira = JiraClient()
     proforma = ProformaParser(jira.session, jira.auth, jira.base_url)
@@ -156,24 +154,21 @@ def test_resolve_dataset_workflow(mock_download_file, mock_repo_session, mock_sc
     # ──── Case A: Direct Attachment  ────
     mock_download_att.return_value = Path("/tmp/mock-dir/attachment.xlsx")
     
-    resolved_path = resolve_dataset(jira, proforma, impact_repo, "RQA-123", tmp_path)
+    resolved_path = resolve_dataset(jira, proforma, impact_repo, "RQA-123", tmp_path,
+                                     issue_id="10400", proforma_answers={})
     assert resolved_path == Path("/tmp/mock-dir/attachment.xlsx")
-    
-    mock_issue_id.assert_not_called()
     
     # ──── Case B: ProForma & Repository Scraping ────
     mock_download_att.return_value = None  
-    mock_issue_id.return_value = "10400"
-    mock_proforma.return_value = {
+    proforma_answers = {
         "IMPACT Repository": "https://repository.impact-initiatives.org/Ukraine_JMMI_R40"
     }
     mock_scrape_url.return_value = "https://repository.impact-initiatives.org/Ukraine_JMMI_R40.xlsx"
-    mock_download_file.return_value = True
+    mock_download_excel.return_value = True
 
-    resolved_path = resolve_dataset(jira, proforma, impact_repo, "RQA-123", tmp_path)
+    resolved_path = resolve_dataset(jira, proforma, impact_repo, "RQA-123", tmp_path,
+                                     issue_id="10400", proforma_answers=proforma_answers)
     assert resolved_path == tmp_path / "Ukraine_JMMI_R40.xlsx"
     
-    mock_issue_id.assert_called_once_with("RQA-123")
-    mock_proforma.assert_called_once_with("10400")
     mock_scrape_url.assert_called_once_with("https://repository.impact-initiatives.org/Ukraine_JMMI_R40")
-    mock_download_file.assert_called_once()
+    mock_download_excel.assert_called_once()

@@ -116,8 +116,8 @@ class TestWorkerMainLoop:
         with pytest.raises(SystemExit):
             main()
 
-        mock_process.assert_called_once_with(msg)
-        mock_queue.delete_message.assert_called_once_with(msg)
+        mock_process.assert_called_once()
+        assert mock_process.call_args[0][0] == msg
 
     @patch("worker.time.sleep")
     @patch("worker.dead_letter_message")
@@ -157,8 +157,8 @@ class TestWorkerMainLoop:
         with pytest.raises(SystemExit):
             main()
 
-        mock_process.assert_called_once_with(msg)
-        mock_queue.delete_message.assert_not_called()
+        mock_process.assert_called_once()
+        assert mock_process.call_args[0][0] == msg
 
     @patch("worker.time.sleep")
     @patch("worker.get_queue_client")

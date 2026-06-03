@@ -96,11 +96,8 @@ def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception, j
         )
 
 
-def process_message(msg):
+def process_message(msg, payload: JiraSubmissionPayload):
     """Processes a single Jira validation job."""
-    payload_data = json.loads(msg.content)
-    payload = JiraSubmissionPayload(**payload_data)
-
     logger.info("Processing message", extra={"issue_key": payload.issue_key, "dequeue_count": msg.dequeue_count})
 
     jira = JiraClient()
@@ -123,8 +120,6 @@ def process_message(msg):
         proforma_answers = proforma.get_answers(resolved_issue_id) if resolved_issue_id else {}
 
         dataset_path = download_dataset(jira, proforma, impact_repo, payload, tmp_path, resolved_issue_id, attachments, proforma_answers)
-        if not dataset_path:
-            return
 
         dataset_type, repo_url, repo_action = resolve_context(proforma, payload, resolved_issue_id, proforma_answers)
         
@@ -167,32 +162,33 @@ def main():
             for msg in messages:
                 has_message = True
 
+                # Parse payload once — used by both dead-letter and processing
+                try:
+                    payload_data = json.loads(msg.content)
+                    payload = JiraSubmissionPayload(**payload_data)
+                except Exception:
+                    logger.error(
+                        "Malformed message — dead-lettering immediately",
+                        extra={"msg_id": msg.id, "content": str(msg.content)[:200]},
+                    )
+                    dead_letter_message(msg, JiraSubmissionPayload(issue_key="UNKNOWN"), ValueError("Malformed JSON payload"))
+                    queue_client.delete_message(msg)
+                    continue
+
                 # Dead-letter check
                 if msg.dequeue_count > MAX_RETRIES:
-                    try:
-                        payload_data = json.loads(msg.content)
-                        payload = JiraSubmissionPayload(**payload_data)
-                    except Exception:
-                        payload = JiraSubmissionPayload(issue_key="UNKNOWN")
-
                     dead_letter_message(msg, payload, RuntimeError(f"Exceeded {MAX_RETRIES} retries"))
                     queue_client.delete_message(msg)
                     continue
 
                 try:
-                    process_message(msg)
+                    process_message(msg, payload)
                     queue_client.delete_message(msg)
                 except Exception as e:
-                    issue_key = "UNKNOWN"
-                    try:
-                        issue_key = json.loads(msg.content).get("issue_key", "UNKNOWN")
-                    except Exception:
-                        pass
-                    
                     logger.error(
                         "Error processing message",
                         exc_info=e,
-                        extra={"issue_key": issue_key},
+                        extra={"issue_key": payload.issue_key},
                     )
 
             if not has_message:

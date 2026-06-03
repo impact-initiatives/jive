@@ -13,6 +13,11 @@ from rqa_validator.models.api_models import PipelineResponse
 logger = get_logger("jive.worker_utils")
 MAX_JIRA_ATTACHMENT_MB = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250"))
 
+
+class DatasetResolutionError(Exception):
+    """Raised when no dataset can be downloaded from any source."""
+    pass
+
 def check_idempotency(payload: JiraSubmissionPayload, attachments: list) -> bool:
     """Returns True if the validation should be skipped due to an up-to-date report."""
     # Idempotency guard: skip if a JIVE report already exists and is newer than the newest dataset
@@ -81,10 +86,7 @@ def resolve_dataset(
     # ── 2. IMPACT Repository via ProForma (Secondary) ──
     logger.info("No direct attachment found, attempting ProForma form parsing", extra={"issue_key": issue_key})
     
-    resolved_issue_id = issue_id or jira.get_issue_id(issue_key)
-    if resolved_issue_id:
-        if proforma_answers is None:
-            proforma_answers = proforma.get_answers(resolved_issue_id)
+    if issue_id and proforma_answers:
         
         # Find label matching the repo label pattern (case-insensitive)
         page_url = None
@@ -102,8 +104,7 @@ def resolve_dataset(
                 output_path = output_dir / filename
                 
                 logger.info("Downloading scraped Excel file from Repository", extra={"issue_key": issue_key, "url": excel_url})
-                session = impact_repo.get_authenticated_session()
-                success = jira._download_file_with_retry(excel_url, output_path, auth=None, session=session)
+                success = impact_repo.download_excel(excel_url, output_path)
                 if success:
                     logger.info("Successfully resolved dataset from IMPACT Repository scraping", 
                                 extra={"issue_key": issue_key, "resolved_filename": filename})
@@ -168,7 +169,7 @@ def download_dataset(
         }
         jira.post_comment(payload.issue_key, error_adf)
         logger.warning("No Excel dataset resolved", extra={"issue_key": payload.issue_key})
-        return None
+        raise DatasetResolutionError(f"No dataset resolved for {payload.issue_key}")
         
     return dataset_path
 

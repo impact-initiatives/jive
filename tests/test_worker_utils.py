@@ -80,10 +80,11 @@ def test_download_dataset_success(mock_jira_client, mock_proforma, mock_impact_r
 
 
 def test_download_dataset_failure(mock_jira_client, mock_proforma, mock_impact_repo, payload, tmp_path):
+    from worker_utils import DatasetResolutionError
     with patch("worker_utils.resolve_dataset") as mock_resolve:
         mock_resolve.return_value = None
-        result = download_dataset(mock_jira_client, mock_proforma, mock_impact_repo, payload, tmp_path, "1000", [], {})
-        assert result is None
+        with pytest.raises(DatasetResolutionError):
+            download_dataset(mock_jira_client, mock_proforma, mock_impact_repo, payload, tmp_path, "1000", [], {})
         mock_jira_client.post_comment.assert_called_once()
 
 

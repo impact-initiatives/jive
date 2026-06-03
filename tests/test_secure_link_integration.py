@@ -80,19 +80,23 @@ def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls,
 
     #queue message
     mock_msg = MagicMock()
-    mock_msg.content = json.dumps({
+    payload_data = {
         "issue_key": "RQA-123",
         "dataset_type": "jmmi",
         "secure_link": "https://example.com/dataset.xlsx"
-    })
+    }
+    mock_msg.content = json.dumps(payload_data)
     mock_msg.dequeue_count = 1
+
+    from models import JiraSubmissionPayload
+    payload = JiraSubmissionPayload(**payload_data)
 
     with patch("worker.Path") as mock_path_cls:
         mock_tmp_path = MagicMock()
         mock_tmp_path.__truediv__ = lambda self, other: mock_excel_path
         mock_path_cls.return_value = mock_tmp_path
 
-        process_message(mock_msg)
+        process_message(mock_msg, payload)
 
     mock_jira.get_attachments.assert_called_once()
     mock_download_dataset.assert_called_once()
