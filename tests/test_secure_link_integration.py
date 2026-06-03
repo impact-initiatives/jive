@@ -46,10 +46,12 @@ def test_webhook_ingress_with_secure_link(mock_get_queue_client):
     assert enqueued_payload["secure_link"] == "https://example.com/dataset.xlsx"
 
 @patch("worker.JiraClient")
+@patch("worker.ProformaParser")
+@patch("worker.ImpactRepoClient")
+@patch("worker.download_dataset")
 @patch("worker_utils.ValidationPipeline")
 @patch("worker.export_response_to_excel")
-
-def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls, mock_jira_client_cls):
+def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls, mock_download_dataset, mock_impact_repo_cls, mock_proforma_cls, mock_jira_client_cls):
     """Test that the worker correctly delegates to download_from_secure_link."""
     # Setup mocks
     mock_jira = MagicMock()
@@ -60,7 +62,7 @@ def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls,
 
     # Mock resolve_dataset to return a dummy path
     mock_dataset_path = MagicMock(spec=Path)
-    mock_jira.resolve_dataset.return_value = mock_dataset_path
+    mock_download_dataset.return_value = mock_dataset_path
     
     mock_pipeline = MagicMock()
     mock_pipeline_cls.return_value = mock_pipeline
@@ -93,7 +95,7 @@ def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls,
         process_message(mock_msg)
 
     mock_jira.get_attachments.assert_called_once()
-    mock_jira.resolve_dataset.assert_called_once()
+    mock_download_dataset.assert_called_once()
     mock_pipeline.run.assert_called_once()
     mock_export.assert_called_once()
     mock_jira.post_comment.assert_called_once()

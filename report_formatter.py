@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 from importlib.metadata import version, PackageNotFoundError
 from rqa_validator.models.api_models import PipelineResponse
 
@@ -24,7 +24,7 @@ def format_comment_adf(
     status_text = "✅ JIVE VALIDATION PASSED" if is_success else "❌ JIVE VALIDATION FAILED"
     
     # Base structure for ADF
-    adf_document = {
+    adf_document: dict[str, Any] = {
         "version": 1,
         "type": "doc",
         "content": []
@@ -198,14 +198,20 @@ def format_comment_adf(
         })
  
     # 4. Clear Actionable Portal Next-Steps
+    
+    # Collect all rules that had at least one error/warning
+    actionable_rule_names = {rule for rule, severity, icon, count in actionable_issues}
+    
     passed_items = getattr(response, 'passed', None) or []
     passed_rules = set()
     for item in passed_items:
         rule = item.get('rule') if isinstance(item, dict) else getattr(item, 'rule', 'Unknown')
-        passed_rules.add(rule)
+        # Only consider a rule "passed" if it never triggered an error/warning
+        if rule not in actionable_rule_names:
+            passed_rules.add(rule)
         
     num_passed = len(passed_rules)
-    passed_list_str = ", ".join(sorted(passed_rules))
+    passed_list_str = ", ".join(sorted([str(r) for r in passed_rules if r is not None]))
     passed_msg = f"{num_passed} core quality checks passed successfully ✅ ({passed_list_str})." if num_passed > 0 else "No core checks passed."
     
     adf_document["content"].append({

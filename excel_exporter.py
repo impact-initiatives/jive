@@ -21,7 +21,7 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
     detail_dfs = []
     
     #Consolidate results
-    all_issues = []
+    all_issues: list[dict | object] = []
     
     errors = getattr(response, 'errors', [])
     admin_errors = getattr(response, 'admin_errors', [])

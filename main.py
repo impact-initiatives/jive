@@ -97,7 +97,7 @@ def handle_jira_webhook(
     start = time.monotonic()
 
     #Authenticate Request
-    if not x_functions_key or not secrets.compare_digest(x_functions_key, API_KEY):
+    if not x_functions_key or not secrets.compare_digest(str(x_functions_key), str(API_KEY)):
         logger.warning(
             "Unauthorized request",
             extra={"issue_key": payload.issue_key, "status_code": 401},
@@ -121,7 +121,7 @@ def handle_jira_webhook(
             exc_info=e,
             extra={"issue_key": payload.issue_key, "error": str(e)},
         )
-        raise HTTPException(status_code=500, detail=f"Failed to enqueue validation job")#: {str(e)}") internal message
+        raise HTTPException(status_code=500, detail="Failed to enqueue validation job")#: {str(e)}") internal message
 
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(

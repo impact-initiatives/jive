@@ -15,6 +15,17 @@ from rqa_validator.models.api_models import PipelineResponse
 def mock_jira_client():
     return MagicMock()
 
+@pytest.fixture
+def mock_proforma():
+    proforma = MagicMock()
+    proforma.dataset_type_label = "Dataset type"
+    proforma.repo_label = "IMPACT Repository"
+    return proforma
+
+@pytest.fixture
+def mock_impact_repo():
+    return MagicMock()
+
 
 @pytest.fixture
 def payload():
@@ -60,35 +71,36 @@ def test_check_idempotency_external_link_prevent_loop(payload):
     assert check_idempotency(payload, attachments) is True
 
 
-def test_download_dataset_success(mock_jira_client, payload, tmp_path):
-    mock_jira_client.resolve_dataset.return_value = tmp_path / "test.xlsx"
-    result = download_dataset(mock_jira_client, payload, tmp_path, "1000", [], {})
-    assert result == tmp_path / "test.xlsx"
-    mock_jira_client.post_comment.assert_not_called()
+def test_download_dataset_success(mock_jira_client, mock_proforma, mock_impact_repo, payload, tmp_path):
+    with patch("worker_utils.resolve_dataset") as mock_resolve:
+        mock_resolve.return_value = tmp_path / "test.xlsx"
+        result = download_dataset(mock_jira_client, mock_proforma, mock_impact_repo, payload, tmp_path, "1000", [], {})
+        assert result == tmp_path / "test.xlsx"
+        mock_jira_client.post_comment.assert_not_called()
 
 
-def test_download_dataset_failure(mock_jira_client, payload, tmp_path):
-    mock_jira_client.resolve_dataset.return_value = None
-    result = download_dataset(mock_jira_client, payload, tmp_path, "1000", [], {})
-    assert result is None
-    mock_jira_client.post_comment.assert_called_once()
+def test_download_dataset_failure(mock_jira_client, mock_proforma, mock_impact_repo, payload, tmp_path):
+    with patch("worker_utils.resolve_dataset") as mock_resolve:
+        mock_resolve.return_value = None
+        result = download_dataset(mock_jira_client, mock_proforma, mock_impact_repo, payload, tmp_path, "1000", [], {})
+        assert result is None
+        mock_jira_client.post_comment.assert_called_once()
 
 
-def test_resolve_context_default(mock_jira_client, payload):
-    dt, repo, action = resolve_context(mock_jira_client, payload, "1000", {})
+def test_resolve_context_default(mock_proforma, payload):
+    dt, repo, action = resolve_context(mock_proforma, payload, "1000", {})
     assert dt == "jmmi"
     assert repo is None
     assert action is None
 
 
-def test_resolve_context_with_proforma(mock_jira_client, payload):
-    mock_jira_client.proforma_dataset_type_label = "Dataset type"
+def test_resolve_context_with_proforma(mock_proforma, payload):
     answers = {
         "Dataset type": "MSNA",
         "Link to the resource": "https://repository.example.com/msna",
         "Published or archived": "Archived"
     }
-    dt, repo, action = resolve_context(mock_jira_client, payload, "1000", answers)
+    dt, repo, action = resolve_context(mock_proforma, payload, "1000", answers)
     assert dt == "msna"
     assert repo == "https://repository.example.com/msna"
     assert action == "Archived"
