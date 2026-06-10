@@ -13,7 +13,7 @@ def main():
     print("Initializing JiraClient and loading credentials...")
     client = JiraClient()
     
-    url = "https://repository.impact-initiatives.org/resources/view-resource/?id=66050"
+    url = "https://repository.impact-initiatives.org/resources/view-resource/?id=75856"
     print(f"Target URL: {url}")
     
     try:

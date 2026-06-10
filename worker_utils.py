@@ -131,9 +131,27 @@ def run_validation(dataset_path: Path, dataset_type: str, payload: JiraSubmissio
         pipeline_dataset_type = "other"
 
     logger.info("Running validation pipeline", extra={"issue_key": payload.issue_key, "dataset_type": dataset_type, "pipeline_type": pipeline_dataset_type})
-    pipeline = ValidationPipeline(dataset_type=pipeline_dataset_type)
-    response_dict = pipeline.run(dataset_path)
-    return PipelineResponse(**response_dict)
+    pipeline = ValidationPipeline()
+    response_dict = pipeline.run_all(dataset_path, dataset_type=pipeline_dataset_type)
+    
+    # Map the output dict keys to match Pydantic PipelineResponse schema
+    mapped_dict = {
+        "success": response_dict.get("success", False),
+        "metadata": response_dict.get("metadata", {"dataset_type": pipeline_dataset_type}),
+        "info": response_dict.get("info", []),
+        "warnings": response_dict.get("warning", []),
+        "errors": response_dict.get("error", []),
+        "admin_errors": response_dict.get("admin_error", []),
+        "passed": response_dict.get("passed", []),
+        "summary": {
+            "info": response_dict.get("summary", {}).get("info", 0),
+            "warnings": response_dict.get("summary", {}).get("warning", 0),
+            "errors": response_dict.get("summary", {}).get("error", 0),
+            "admin_errors": response_dict.get("summary", {}).get("admin_error", 0),
+            "passed": response_dict.get("summary", {}).get("passed", 0),
+        }
+    }
+    return PipelineResponse(**mapped_dict)
 
 def publish_results(jira: JiraClient, payload: JiraSubmissionPayload, response: PipelineResponse, excel_report_path: Path, repo_url: str | None, repo_action: str | None, dataset_type: str):
     """Handles uploading the report file to Jira and posting the summary ADF comment."""
