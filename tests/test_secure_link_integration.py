@@ -5,7 +5,6 @@ from pathlib import Path
 import os
 import sys
 
-# Add project rqa-validator path to sys.path and MOCK env vars
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.append(str(project_root.parent / "rqa-validator"))
@@ -14,8 +13,8 @@ os.environ["JIVE_API_KEY"] = "test-secret-ZZZZZZZZZZZZZZ"
 os.environ["SECURE_LINK_USERNAME"] = "XXXXXXX"
 os.environ["SECURE_LINK_PASSWORD"] = "YYYYYYY"
 
-from main import app  # noqa: E402
-from worker import process_message  # noqa: E402
+from main import app
+from worker import process_message
 
 client = TestClient(app)
 
@@ -47,7 +46,7 @@ def test_webhook_ingress_with_secure_link(mock_get_queue_client):
     assert enqueued_payload["secure_link"] == "https://example.com/dataset.xlsx"
 
 @patch("worker.JiraClient")
-@patch("worker.ValidationPipeline")
+@patch("worker_utils.ValidationPipeline")
 @patch("worker.export_response_to_excel")
 
 def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls, mock_jira_client_cls):
@@ -59,9 +58,9 @@ def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls,
     # Check guard: no existing report on the ticket
     mock_jira.get_attachments.return_value = []
 
-    # Mock download_from_secure_link to return a dummy path
+    # Mock resolve_dataset to return a dummy path
     mock_dataset_path = MagicMock(spec=Path)
-    mock_jira.download_from_secure_link.return_value = mock_dataset_path
+    mock_jira.resolve_dataset.return_value = mock_dataset_path
     
     mock_pipeline = MagicMock()
     mock_pipeline_cls.return_value = mock_pipeline
@@ -94,8 +93,7 @@ def test_worker_process_message_with_secure_link(mock_export, mock_pipeline_cls,
         process_message(mock_msg)
 
     mock_jira.get_attachments.assert_called_once()
-    mock_jira.download_from_secure_link.assert_called_once()
-    mock_jira.download_proforma_attachment.assert_not_called()
+    mock_jira.resolve_dataset.assert_called_once()
     mock_pipeline.run.assert_called_once()
     mock_export.assert_called_once()
     mock_jira.post_comment.assert_called_once()

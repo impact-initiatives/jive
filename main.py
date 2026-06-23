@@ -1,9 +1,13 @@
 import os
 import time
 import secrets
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from azure.storage.queue import QueueClient
+from azure.core.exceptions import ResourceNotFoundError
+from functools import lru_cache
 from models import JiraSubmissionPayload
 from logger import get_logger
 
@@ -11,11 +15,60 @@ logger = get_logger("jive.ingress")
 
 app = FastAPI(title="JIVE Ingress Webhook")
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    logger.warning(
+        f"HTTP Exception: {exc.detail}",
+        extra={
+            "status_code": exc.status_code,
+            "path": request.url.path,
+            "method": request.method,
+        }
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(
+        "Request Validation Error",
+        extra={
+            "status_code": 422,
+            "path": request.url.path,
+            "method": request.method,
+            "errors": exc.errors(),
+        }
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(
+        f"Unhandled Internal Server Error: {str(exc)}",
+        exc_info=True,
+        extra={
+            "status_code": 500,
+            "path": request.url.path,
+            "method": request.method,
+        }
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"},
+    )
+
 QUEUE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 QUEUE_NAME = os.getenv("JIVE_QUEUE_NAME", "jive-validation-queue")
-API_KEY = os.getenv("JIVE_API_KEY", "")
+API_KEY = os.getenv("JIVE_API_KEY")
+if not API_KEY:
+    raise RuntimeError("JIVE_API_KEY environment variable must be set")
 
-
+@lru_cache(maxsize=1)
 def get_queue_client() -> QueueClient:
     if not QUEUE_CONNECTION_STRING:
         raise RuntimeError("AZURE_STORAGE_CONNECTION_STRING is not set")
@@ -55,14 +108,20 @@ def handle_jira_webhook(
     try:
         queue_client = get_queue_client()
         message_body = payload.model_dump_json()
-        queue_client.send_message(message_body)
+        try:
+            queue_client.send_message(message_body)
+        except ResourceNotFoundError:
+            # Auto-create queue if it genuinely doesn't exist (common in local Azurite testing)
+            logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
+            queue_client.create_queue()
+            queue_client.send_message(message_body)
     except Exception as e:
         logger.error(
             "Failed to enqueue message",
             exc_info=e,
-            extra={"issue_key": payload.issue_key},
+            extra={"issue_key": payload.issue_key, "error": str(e)},
         )
-        raise HTTPException(status_code=500, detail="Failed to enqueue validation job")
+        raise HTTPException(status_code=500, detail=f"Failed to enqueue validation job")#: {str(e)}") internal message
 
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(

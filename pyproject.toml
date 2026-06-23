@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-rqa-validator = { path = "../rqa-validator" }
+rqa-validator = { path = "../rqa-validator", editable = true }
 
 [project.optional-dependencies]
 dev = [
@@ -28,3 +28,5 @@ dev = [
     "mypy>=1.10.0",
 ]
 
+[tool.pytest.ini_options]
+asyncio_mode = "strict"

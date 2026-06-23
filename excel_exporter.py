@@ -12,6 +12,11 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
     Sheet 1: 'Validation Summary' (High-level errors and warnings)
     Sheet 2: 'Detailed Findings' (Expanded rows for row-level details)
     """
+    def _get_field(item, field: str, default=None):
+        if isinstance(item, dict):
+            return item.get(field, default)
+        return getattr(item, field, default)
+
     summary_rows = []
     detail_dfs = []
     
@@ -30,22 +35,27 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
 
     if not all_issues:
         #Empty excel file with headers for the summary sheet if there are no issues
-        df = pl.DataFrame({
-            "Severity": [], "Rule": [], "Sheet Name": [], 
-            "Column Name": [], "Message": []
-        })
+        df = pl.DataFrame(
+            schema={
+                "Severity": pl.String,
+                "Rule": pl.String,
+                "Sheet Name": pl.String,
+                "Column Name": pl.String,
+                "Message": pl.String,
+            }
+        )
         with xlsxwriter.Workbook(str(output_path)) as workbook:
             df.write_excel(workbook=workbook, worksheet="Validation Summary")
         return
 
     for item in all_issues:
         # Pydantic/ Dict safety
-        severity = item.get("severity", "").upper() if isinstance(item, dict) else getattr(item, "severity", "").upper()
-        rule = item.get("rule", "") if isinstance(item, dict) else getattr(item, "rule", "")
-        sheet_name = item.get("sheet_name", "") if isinstance(item, dict) else getattr(item, "sheet_name", "")
-        col_name = item.get("column_name", "") if isinstance(item, dict) else getattr(item, "column_name", "")
-        message = item.get("message", "") if isinstance(item, dict) else getattr(item, "message", "")
-        details = item.get("details", None) if isinstance(item, dict) else getattr(item, "details", None)
+        severity = (_get_field(item, "severity") or "").upper()
+        rule = _get_field(item, "rule", "")
+        sheet_name = _get_field(item, "sheet_name", "")
+        col_name = _get_field(item, "column_name", "")
+        message = _get_field(item, "message", "")
+        details = _get_field(item, "details", None)
 
         summary_rows.append({
             "Severity": severity,
@@ -58,6 +68,7 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
         if details and isinstance(details, dict) and any(isinstance(v, list) for v in details.values()):
             try:
                 df = pl.DataFrame(details)
+                df = df.with_columns(pl.all().cast(pl.String))
                 df = df.with_columns([
                     pl.lit(severity).alias("Severity"),
                     pl.lit(rule).alias("Rule")

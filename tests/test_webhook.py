@@ -93,3 +93,52 @@ async def test_webhook_no_api_key_header():
         response = await client.post("/api/webhook", json=payload)
 
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_webhook_404_not_found():
+    """Invalid path should return 404 via our custom handler."""
+    transport = ASGITransport(app=app)
+    
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/does-not-exist")
+
+    assert response.status_code == 404
+    assert "detail" in response.json()
+
+
+@pytest.mark.asyncio
+async def test_webhook_405_method_not_allowed():
+    """Wrong HTTP method should return 405 via our custom handler."""
+    transport = ASGITransport(app=app)
+    
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Send GET to a POST endpoint
+        response = await client.get("/api/webhook")
+
+    assert response.status_code == 405
+    assert "detail" in response.json()
+
+
+@pytest.mark.asyncio
+async def test_webhook_500_internal_error():
+    """Unhandled Python exceptions should return 500 via the global exception handler."""
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    payload = {
+        "issue_key": "RQA-100",
+        "project_key": "RQA",
+        "rcid": "RCID-001",
+        "dataset_type": "jmmi",
+    }
+    
+    # Mock something internal to raise a raw Exception
+    with patch("main.secrets.compare_digest", side_effect=ValueError("Simulated crash")):
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/webhook",
+                json=payload,
+                headers={"x-functions-key": TEST_API_KEY},
+            )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Internal Server Error"

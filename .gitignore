@@ -13,5 +13,5 @@ htmlcov/
 .github/
 output/
 uv.lock
-infra/modules/
 logs/
+scripts/

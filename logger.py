@@ -26,9 +26,9 @@ class JSONFormatter(logging.Formatter):
             if key not in standard_attrs:
                 log_entry[key] = value
 
-        if record.exc_info and record.exc_info[1]:
-            log_entry["exception"] = str(record.exc_info[1])
-            log_entry["exception_type"] = type(record.exc_info[1]).__name__
+        if record.exc_info:
+            log_entry["exception"] = self.formatException(record.exc_info)
+            log_entry["exception_type"] = type(record.exc_info[1]).__name__ if record.exc_info[1] else "Exception"
 
         return json.dumps(log_entry)
 
