@@ -27,18 +27,22 @@ COPY . /app
 #Step 2: Runtime Stage
 FROM python:3.12-slim-trixie
 
+#Run as a non-root user
+RUN useradd --create-home --no-log-init jive
+
 #Copy Python packages and app code from the builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
-COPY --from=builder /app /app
+COPY --from=builder --chown=jive:jive /app /app
 
 WORKDIR /app
-
-#Run as a non-root user
-RUN useradd --create-home --no-log-init jive
 USER jive
 
 #Default: ingress. Override via Container App command for worker.
 #Ingress:  uvicorn main:app --host 0.0.0.0 --port 8000
 #Worker:   python worker.py
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

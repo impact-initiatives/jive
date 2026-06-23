@@ -71,7 +71,8 @@ jira_poc/
 │   ├── test_models.py                Payload validation and normalization tests
 │   ├── test_report_formatter.py      ADF output structure tests
 │   ├── test_webhook.py               FastAPI endpoint integration tests
-│   ├── test_gdt_worker.py            End-to-end integration test for JSM Tickets 
+│   ├── test_worker.py                Worker and queue processing tests
+│   ├── test_worker_utils.py          Pipeline orchestration and utility tests
 │   └── test_secure_link_integration.py  End-to-end secure link workflow tests
 └── infra/
     ├── main.bicep            Bicep orchestrator for all Azure resources
@@ -192,6 +193,7 @@ az containerapp update --name jive-worker \
 - [ ] Transition the Jira ticket to a target status automatically based on validation results (e.g., move to "Approved" on pass (default: JIRA_TRANSITION_APPROVED), "Needs Revision" on fail (default: JIRA_TRANSITION_REVISION))
 - [ ] Add support for multiple dataset types beyond JMMI (MSNA, ESNFI) with automatic schema detection
 - [ ] Implement Azure Managed Identity for Key Vault secret retrieval at runtime, removing the need for connection strings in environment variables
+- [ ] **Pull Model Polling & JQL Pagination**: If JIVE moves from Webhooks to a Pull Model (Polling) in the future (e.g. running a cron job every 5 minutes to fetch all open tickets), implement JQL querying with robust pagination (handling Atlassian's 50-100 issue return limit per page).
 
 
 ## Related Repositories

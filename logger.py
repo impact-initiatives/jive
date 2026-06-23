@@ -9,7 +9,7 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -30,7 +30,7 @@ class JSONFormatter(logging.Formatter):
             log_entry["exception"] = self.formatException(record.exc_info)
             log_entry["exception_type"] = type(record.exc_info[1]).__name__ if record.exc_info[1] else "Exception"
 
-        return json.dumps(log_entry)
+        return json.dumps(log_entry, default=str)
 
 
 def get_logger(name: str) -> logging.Logger:

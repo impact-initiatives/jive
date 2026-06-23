@@ -1,0 +1,142 @@
+{
+  "_expands": [
+    "field"
+  ],
+  "size": 4,
+  "start": 0,
+  "limit": 50,
+  "isLastPage": true,
+  "_links": {
+    "self": "https://impact-initiatives.atlassian.net/rest/servicedeskapi/servicedesk/40/requesttype",
+    "base": "https://impact-initiatives.atlassian.net",
+    "context": ""
+  },
+  "values": [
+    {
+      "_expands": [
+        "field"
+      ],
+      "id": "10249",
+      "_links": {
+        "self": "https://impact-initiatives.atlassian.net/rest/servicedeskapi/servicedesk/40/requesttype/10249"
+      },
+      "name": "Publish or archive request following in-country validation",
+      "description": "DEV VERSION - For research outputs that have gone to in-country review & validation only",
+      "helpText": "",
+      "defaultName": "Publish or archive request following in-country validation",
+      "issueTypeId": "10249",
+      "serviceDeskId": "40",
+      "portalId": "40",
+      "groupIds": [
+        "53"
+      ],
+      "icon": {
+        "id": "10300",
+        "_links": {
+          "iconUrls": {
+            "48x48": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10300?size=large",
+            "24x24": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10300?size=small",
+            "16x16": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10300?size=xsmall",
+            "32x32": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10300?size=medium"
+          }
+        }
+      },
+      "restrictionStatus": "OPEN",
+      "canCreateRequest": true
+    },
+    {
+      "_expands": [
+        "field"
+      ],
+      "id": "10282",
+      "_links": {
+        "self": "https://impact-initiatives.atlassian.net/rest/servicedeskapi/servicedesk/40/requesttype/10282"
+      },
+      "name": "Review & validation request for an ongoing Research Cycle",
+      "description": "DEV VERSION - Submit an output for HQ review and validation.",
+      "helpText": "",
+      "defaultName": "Review & validation request for an ongoing Research Cycle",
+      "issueTypeId": "10282",
+      "serviceDeskId": "40",
+      "portalId": "40",
+      "groupIds": [
+        "53"
+      ],
+      "icon": {
+        "id": "10307",
+        "_links": {
+          "iconUrls": {
+            "48x48": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10307?size=large",
+            "24x24": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10307?size=small",
+            "16x16": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10307?size=xsmall",
+            "32x32": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10307?size=medium"
+          }
+        }
+      },
+      "restrictionStatus": "OPEN",
+      "canCreateRequest": true
+    },
+    {
+      "_expands": [
+        "field"
+      ],
+      "id": "10315",
+      "_links": {
+        "self": "https://impact-initiatives.atlassian.net/rest/servicedeskapi/servicedesk/40/requesttype/10315"
+      },
+      "name": "test",
+      "description": "ssss",
+      "helpText": "",
+      "defaultName": "test",
+      "issueTypeId": "10315",
+      "serviceDeskId": "40",
+      "portalId": "40",
+      "groupIds": [
+        "53"
+      ],
+      "icon": {
+        "id": "10311",
+        "_links": {
+          "iconUrls": {
+            "48x48": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10311?size=large",
+            "24x24": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10311?size=small",
+            "16x16": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10311?size=xsmall",
+            "32x32": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10311?size=medium"
+          }
+        }
+      },
+      "restrictionStatus": "OPEN",
+      "canCreateRequest": true
+    },
+    {
+      "_expands": [
+        "field"
+      ],
+      "id": "10216",
+      "_links": {
+        "self": "https://impact-initiatives.atlassian.net/rest/servicedeskapi/servicedesk/40/requesttype/10216"
+      },
+      "name": "Email request",
+      "description": "Request received from your email support channel.",
+      "helpText": "",
+      "defaultName": "Email request",
+      "issueTypeId": "10216",
+      "serviceDeskId": "40",
+      "portalId": "40",
+      "groupIds": [],
+      "icon": {
+        "id": "10551",
+        "_links": {
+          "iconUrls": {
+            "48x48": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10551?size=large",
+            "24x24": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10551?size=small",
+            "16x16": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10551?size=xsmall",
+            "32x32": "https://impact-initiatives.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10551?size=medium"
+          }
+        }
+      },
+      "restrictionStatus": "OPEN",
+      "canCreateRequest": true
+    }
+  ]
+}

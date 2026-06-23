@@ -159,6 +159,7 @@ class TestWorkerMainLoop:
 
         mock_process.assert_called_once()
         assert mock_process.call_args[0][0] == msg
+        mock_queue.delete_message.assert_not_called()
 
     @patch("worker.time.sleep")
     @patch("worker.get_queue_client")

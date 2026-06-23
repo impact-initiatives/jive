@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from pathlib import Path
 
 from models import JiraSubmissionPayload
@@ -12,11 +13,26 @@ from rqa_validator.models.api_models import PipelineResponse
 
 logger = get_logger("jive.worker_utils")
 MAX_JIRA_ATTACHMENT_MB = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250"))
+SUPPORTED_SCHEMA_TYPES = {"jmmi", "msna", "other"}
 
 
 class DatasetResolutionError(Exception):
     """Raised when no dataset can be downloaded from any source."""
     pass
+
+def _parse_timestamp(ts_str: str) -> datetime:
+    """Parse a Jira ISO 8601 timestamp string to a timezone-aware datetime.
+    
+    Falls back to datetime.min (UTC) if parsing fails, so that items with
+    unparseable timestamps sort to the bottom.
+    """
+    if not ts_str:
+        return datetime.min
+    try:
+        return datetime.fromisoformat(ts_str)
+    except (ValueError, TypeError):
+        return datetime.min
+
 
 def check_idempotency(payload: JiraSubmissionPayload, attachments: list) -> bool:
     """Returns True if the validation should be skipped due to an up-to-date report."""
@@ -31,13 +47,15 @@ def check_idempotency(payload: JiraSubmissionPayload, attachments: list) -> bool
         if a.get("filename", "").endswith(".xlsx") and a.get("filename") != expected_report_name
     ]
     # Sort dataset attachments with newest first
-    dataset_attachments.sort(key=lambda a: a.get("created", ""), reverse=True)
+    dataset_attachments.sort(key=lambda a: _parse_timestamp(a.get("created", "")), reverse=True)
     latest_dataset = dataset_attachments[0] if dataset_attachments else None
     
     skip_validation = False
     if report_attachment:
         if latest_dataset:
-            skip_validation = report_attachment.get("created", "") > latest_dataset.get("created", "")
+            report_ts = _parse_timestamp(report_attachment.get("created", ""))
+            dataset_ts = _parse_timestamp(latest_dataset.get("created", ""))
+            skip_validation = report_ts > dataset_ts
         else:
             # If there's no dataset attachment, the dataset is externally hosted (ProForma link, secure_link).
             # We must skip validation to prevent infinite loops when the JIVE report attachment itself 
@@ -210,7 +228,7 @@ def resolve_context(proforma: ProformaParser, payload: JiraSubmissionPayload, re
 def run_validation(dataset_path: Path, dataset_type: str, payload: JiraSubmissionPayload) -> PipelineResponse:
     """Executes the validation pipeline against the dataset and returns the structured response."""
     # Ensure we only pass supported types to the pipeline, otherwise fall back to generic "other"
-    SUPPORTED_SCHEMA_TYPES = {"jmmi", "msna", "other"}
+
     pipeline_dataset_type = dataset_type
     if dataset_type not in SUPPORTED_SCHEMA_TYPES:
         logger.info(
@@ -222,7 +240,55 @@ def run_validation(dataset_path: Path, dataset_type: str, payload: JiraSubmissio
     logger.info("Running validation pipeline", extra={"issue_key": payload.issue_key, "dataset_type": dataset_type, "pipeline_type": pipeline_dataset_type})
     pipeline = ValidationPipeline(dataset_type=pipeline_dataset_type)
     response_dict = pipeline.run(dataset_path)
-    return PipelineResponse(**response_dict)
+    
+    try:
+        # 1. Attempt strict parsing (standard Pydantic validation)
+        return PipelineResponse(**response_dict)
+    except Exception as e:
+        logger.warning(
+            "Failed strict Pydantic parsing of validation response. Attempting schema-tolerant model_construct fallback.",
+            exc_info=e,
+            extra={"issue_key": payload.issue_key}
+        )
+        try:
+            # 2. Fallback 1: Construct the model directly, bypassing Pydantic input validation.
+            # This handles extra fields, missing optional keys, or slight type discrepancies.
+            return PipelineResponse.model_construct(
+                success=response_dict.get("success", False),
+                summary=response_dict.get("summary", {"passed": False, "admin_errors": 1, "errors": 0, "warnings": 0, "info": 0}),
+                metadata=response_dict.get("metadata", {"dataset_type": dataset_type}),
+                errors=response_dict.get("errors", []),
+                warnings=response_dict.get("warnings", []),
+                info=response_dict.get("info", []),
+                admin_errors=response_dict.get("admin_errors", []),
+            )
+        except Exception as fallback_err:
+            logger.error(
+                "Critical: Schema-tolerant model construction failed. Generating generic error report.",
+                exc_info=fallback_err,
+                extra={"issue_key": payload.issue_key}
+            )
+            # 3. Fallback 2: Generate a generic error response indicating formatting mismatch
+            # so the worker pipeline completes gracefully without dead-lettering.
+            return PipelineResponse.model_construct(
+                success=False,
+                summary={"passed": False, "admin_errors": 1, "errors": 0, "warnings": 0, "info": 0},
+                metadata={"dataset_type": dataset_type},
+                errors=[],
+                warnings=[],
+                info=[],
+                admin_errors=[
+                    {
+                        "severity": "ADMIN",
+                        "rule": "JIVE_SCHEMA_MISMATCH",
+                        "message": (
+                            "The validation pipeline executed successfully, but JIVE encountered "
+                            "a schema format error when reading the results. Please contact support. "
+                            f"Error details: {str(fallback_err)}"
+                        )
+                    }
+                ]
+            )
 
 def publish_results(jira: JiraClient, payload: JiraSubmissionPayload, response: PipelineResponse, excel_report_path: Path, repo_url: str | None, repo_action: str | None, dataset_type: str):
     """Handles uploading the report file to Jira and posting the summary ADF comment."""
@@ -241,7 +307,12 @@ def publish_results(jira: JiraClient, payload: JiraSubmissionPayload, response: 
         
         if not jsm_success:
             logger.info("JSM public upload failed or skipped (missing project_key). Falling back to standard Jira attachment.", extra={"issue_key": payload.issue_key})
-            jira.upload_attachment(payload.issue_key, excel_report_path)
+            upload_ok = jira.upload_attachment(payload.issue_key, excel_report_path)
+            if not upload_ok:
+                logger.error(
+                    "Failed to upload validation report to Jira",
+                    extra={"issue_key": payload.issue_key, "file": str(excel_report_path)},
+                )
 
     # Format comment (the report will be attached directly to the ticket and visible on the portal)
     adf_summary = format_comment_adf(

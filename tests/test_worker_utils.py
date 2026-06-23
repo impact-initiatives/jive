@@ -173,3 +173,43 @@ def test_publish_results_large_file(mock_jira_client, payload, tmp_path):
         args, kwargs = mock_jira_client.post_comment.call_args
         comment_content = str(args[1])
         assert "exceeds the Jira attachment limit" in comment_content
+
+
+@patch("worker_utils.ValidationPipeline")
+def test_run_validation_minor_schema_mismatch(mock_pipeline_class, payload, tmp_path):
+    mock_pipeline_instance = MagicMock()
+    mock_pipeline_class.return_value = mock_pipeline_instance
+    # Simulates an output containing unexpected extra keys and some missing fields that Pydantic would normally reject
+    mock_pipeline_instance.run.return_value = {
+        "success": True,
+        "unexpected_new_field": "some_value",
+        "errors": [{"severity": "error", "rule": "E2", "message": "Schema test"}]
+        # warnings, info, admin_errors are missing
+    }
+    
+    result = run_validation(tmp_path / "data.xlsx", "msna", payload)
+    
+    assert isinstance(result, PipelineResponse)
+    assert result.success is True
+    # Verify Pydantic fallback bypassed validation and constructed lists correctly
+    assert len(result.errors) == 1
+    assert result.errors[0]["rule"] == "E2"
+    assert result.warnings == []
+
+
+@patch("worker_utils.ValidationPipeline")
+def test_run_validation_major_schema_mismatch(mock_pipeline_class, payload, tmp_path):
+    mock_pipeline_instance = MagicMock()
+    mock_pipeline_class.return_value = mock_pipeline_instance
+    # Simulates a completely broken response format (string instead of dict)
+    mock_pipeline_instance.run.return_value = "This is a string not a dict"
+    
+    result = run_validation(tmp_path / "data.xlsx", "msna", payload)
+
+    
+    assert isinstance(result, PipelineResponse)
+    assert result.success is False
+    assert len(result.admin_errors) == 1
+    assert result.admin_errors[0]["rule"] == "JIVE_SCHEMA_MISMATCH"
+    assert "schema format error" in result.admin_errors[0]["message"]
+

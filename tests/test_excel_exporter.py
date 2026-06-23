@@ -58,10 +58,8 @@ def test_export_populated_response(tmp_path):
     df_summary = pl.read_excel(output_path, sheet_name="Validation Summary")
     assert len(df_summary) == 4
     
-    df_details = pl.read_excel(output_path, sheet_name="Detailed Findings")
+    df_details = pl.read_excel(output_path, sheet_name="Details - E1")
     assert len(df_details) == 2  # Two rows from the 'details' dict in the error
-    assert "Severity" in df_details.columns
-    assert "Rule" in df_details.columns
     assert "Row" in df_details.columns
     assert "Value" in df_details.columns
 

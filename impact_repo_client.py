@@ -3,12 +3,21 @@ import re
 import time
 import logging
 import requests
+import urllib.parse
 from pathlib import Path
 from typing import Optional
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
 from logger import get_logger
+from jira_client import ALLOWED_DOMAINS
 
 logger = get_logger("jive.impact_repo_client")
+
+
+def _sanitize_url(url: str) -> str:
+    """Remove query parameters from a URL to prevent token leakage in logs."""
+    parsed = urllib.parse.urlparse(url)
+    return urllib.parse.urlunparse(parsed._replace(query="", fragment=""))
+
 
 REPO_SESSION_TTL_SECONDS = int(os.getenv("REPO_SESSION_TTL_SECONDS", "43200"))  # 12 hours
 
@@ -54,7 +63,7 @@ class ImpactRepoClient:
         })
         
         # Prime testcookie
-        session.get(f"{base_url}/wp-login.php", timeout=15)
+        session.get(f"{base_url}/wp-login.php", timeout=(3.05, 15))
         
         # Submit login form
         response = session.post(
@@ -66,7 +75,7 @@ class ImpactRepoClient:
                 "redirect_to": f"{base_url}/resources/",
                 "testcookie": "1",
             },
-            timeout=15,
+            timeout=(3.05, 15),
             allow_redirects=True,
         )
         response.raise_for_status()
@@ -95,7 +104,7 @@ class ImpactRepoClient:
         logger.info("Scraping IMPACT Repository page for Excel link", extra={"page_url": page_url})
         try:
             session = self.get_authenticated_session()
-            response = session.get(page_url, timeout=15)
+            response = session.get(page_url, timeout=(3.05, 30))
             response.raise_for_status()
             
             match = re.search(
@@ -124,9 +133,20 @@ class ImpactRepoClient:
     def download_excel(self, url: str, output_path: Path) -> bool:
         """Download an Excel file using the authenticated WordPress session."""
         session = self.get_authenticated_session()
-        logger.info("Downloading Excel file from IMPACT Repository", extra={"url": url, "output": str(output_path)})
+        parsed_url = urllib.parse.urlparse(url)
+        if not ALLOWED_DOMAINS:
+            logger.error(
+                "SSRF Protection: ALLOWED_DOMAINS is empty — blocking download (fail-closed)",
+                extra={"url": _sanitize_url(url)},
+            )
+            return False
+        if parsed_url.scheme != "https" or parsed_url.netloc not in ALLOWED_DOMAINS:
+            logger.error("SSRF Protection: URL domain not in allowed list", extra={"url": _sanitize_url(url), "domain": parsed_url.netloc})
+            return False
+
+        logger.info("Downloading Excel file from IMPACT Repository", extra={"url": _sanitize_url(url), "output": str(output_path)})
         max_bytes = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")) * 1024 * 1024
-        response = session.get(url, stream=True, timeout=(5, 300))
+        response = session.get(url, stream=True, timeout=(3.05, 300))
         response.raise_for_status()
 
         downloaded_bytes = 0
@@ -134,7 +154,7 @@ class ImpactRepoClient:
             for chunk in response.iter_content(chunk_size=8192):
                 downloaded_bytes += len(chunk)
                 if downloaded_bytes > max_bytes:
-                    logger.error("Download exceeded maximum allowed size", extra={"url": url, "max_mb": os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")})
+                    logger.error("Download exceeded maximum allowed size", extra={"url": _sanitize_url(url), "max_mb": os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")})
                     response.close()
                     output_path.unlink(missing_ok=True)
                     return False

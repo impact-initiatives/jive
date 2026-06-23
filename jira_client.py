@@ -1,6 +1,7 @@
 import os
 import time
 import requests
+import urllib.parse
 from pathlib import Path
 from typing import Optional
 from logger import get_logger
@@ -11,6 +12,22 @@ import logging
 logger = get_logger("jive.jira_client")
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def _sanitize_url(url: str) -> str:
+    """Remove query parameters from a URL to prevent token leakage in logs."""
+    parsed = urllib.parse.urlparse(url)
+    return urllib.parse.urlunparse(parsed._replace(query="", fragment=""))
+
+
+_DEFAULT_ALLOWED_DOMAINS = "repository.impact-initiatives.org,reach-initiative.atlassian.net"
+ALLOWED_DOMAINS: frozenset[str] = frozenset(
+    filter(None, os.getenv("ALLOWED_DOMAINS", _DEFAULT_ALLOWED_DOMAINS).split(","))
+)
+if not ALLOWED_DOMAINS:
+    logger.warning(
+        "ALLOWED_DOMAINS env var is set but empty — all secure link downloads will be blocked (fail-closed SSRF protection)"
+    )
 
 class JiraAPIError(Exception):
     """Raised when a Jira API call returns a retryable error."""
@@ -46,6 +63,8 @@ class JiraClient:
 
 
         self.session = requests.Session()
+        self.session.auth = self.auth
+        self.session.headers.update(self.headers)
 
     @retry(
         stop=stop_after_attempt(3),
@@ -59,7 +78,7 @@ class JiraClient:
         payload = {"body": adf_content}
 
         start = time.monotonic()
-        response = self.session.post(url, json=payload, auth=self.auth, headers=self.headers, timeout=(5, 30))
+        response = self.session.post(url, json=payload, timeout=(3.05, 30))
         duration_ms = int((time.monotonic() - start) * 1000)
 
         _check_retryable(response)
@@ -101,7 +120,7 @@ class JiraClient:
                 )
             }
             start = time.monotonic()
-            response = self.session.post(url, headers=headers, auth=self.auth, files=files, timeout=(5, 120))
+            response = self.session.post(url, headers=headers, files=files, timeout=(3.05, 120))
             duration_ms = int((time.monotonic() - start) * 1000)
 
         _check_retryable(response)
@@ -139,7 +158,7 @@ class JiraClient:
     def get_service_desk_id(self, project_key: str) -> Optional[str]:
         """Fetch the Service Desk ID associated with a project key."""
         url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{project_key}"
-        response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=15)
+        response = self.session.get(url, timeout=(3.05, 30))
         _check_retryable(response)
         if response.status_code == 200:
             return response.json().get("id")
@@ -178,7 +197,7 @@ class JiraClient:
                     )
                 }
                 logger.info("Uploading temporary JSM attachment", extra={"issue_key": issue_key, "service_desk_id": service_desk_id})
-                response = self.session.post(upload_url, headers=headers, auth=self.auth, files=files, timeout=(5, 120))
+                response = self.session.post(upload_url, headers=headers, files=files, timeout=(3.05, 120))
                 _check_retryable(response)
                 
                 if response.status_code != 201:
@@ -209,7 +228,7 @@ class JiraClient:
         
         try:
             logger.info("Confirming public JSM attachment on request", extra={"issue_key": issue_key})
-            response = self.session.post(attach_url, headers=attach_headers, auth=self.auth, json=payload, timeout=(5, 30))
+            response = self.session.post(attach_url, headers=attach_headers, json=payload, timeout=(3.05, 30))
             _check_retryable(response)
             
             if response.status_code == 201:
@@ -235,7 +254,7 @@ class JiraClient:
         and pass the result to both idempotency checks and download logic.
         """
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=attachment"
-        response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=(5, 30))
+        response = self.session.get(url, timeout=(3.05, 30))
         _check_retryable(response)
         if response.status_code != 200:
             logger.error(
@@ -254,8 +273,8 @@ class JiraClient:
     def get_issue_id(self, issue_key: str) -> Optional[str]:
         """Fetch the internal issue ID (integer string) using the issue key."""
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=id"
-        logger.info("Resolving issue ID from key", extra={"issue_key": issue_key, "url": url})
-        response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=15)
+        logger.info("Resolving issue ID from key", extra={"issue_key": issue_key, "url": _sanitize_url(url)})
+        response = self.session.get(url, timeout=(3.05, 30))
         _check_retryable(response)
         if response.status_code == 200:
             issue_id = response.json().get("id")
@@ -303,11 +322,11 @@ class JiraClient:
         
         logger.info(
             "Downloading most recent attachment",
-            extra={"issue_key": issue_key, "url": content_url, "attachment_created": latest_attachment.get("created")}
+            extra={"issue_key": issue_key, "url": _sanitize_url(content_url), "attachment_created": latest_attachment.get("created")}
         )
 
         output_path = output_dir / filename
-        success = self._download_file_with_retry(content_url, output_path, auth=self.auth)
+        success = self._download_file_with_retry(content_url, output_path)
         if success:
             return output_path
         
@@ -324,9 +343,10 @@ class JiraClient:
         start = time.monotonic()
         http_client = session if session is not None else self.session
         
-        #When using a custom session, we do not pass auth since session carries its own (e.i. WP cookies)
-        kwargs = {"stream": True, "timeout": (5, 300)}
-        if session is None and auth is not None:
+        # When using a custom session, it carries its own auth.
+        # If an explicit auth tuple is provided, we use it (e.g. for secure links).
+        kwargs = {"stream": True, "timeout": (3.05, 300)}
+        if auth is not None:
             kwargs["auth"] = auth
 
         response = http_client.get(url, **kwargs)
@@ -338,15 +358,21 @@ class JiraClient:
             max_bytes = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")) * 1024 * 1024
             downloaded_bytes = 0
             try:
+                exceeded_size = False
                 with open(output_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         downloaded_bytes += len(chunk)
                         if downloaded_bytes > max_bytes:
-                            logger.error("Download exceeded maximum allowed size", extra={"url": url, "max_mb": os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")})
-                            response.close()
-                            output_path.unlink(missing_ok=True)
-                            return False
+                            exceeded_size = True
+                            break
                         f.write(chunk)
+                
+                if exceeded_size:
+                    logger.error("Download exceeded maximum allowed size", extra={"url": _sanitize_url(url), "max_mb": os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")})
+                    response.close()
+                    output_path.unlink(missing_ok=True)
+                    return False
+                    
                 return True
             except Exception as e:
                 logger.error("Failed writing downloaded chunk to disk", exc_info=e)
@@ -355,7 +381,7 @@ class JiraClient:
         else:
             logger.error(
                 "Failed to download file content",
-                extra={"url": url, "status_code": response.status_code, "duration_ms": duration_ms},
+                extra={"url": _sanitize_url(url), "status_code": response.status_code, "duration_ms": duration_ms},
             )
             return False
 
@@ -363,9 +389,23 @@ class JiraClient:
         """Downloads the dataset from a provided secure link using optional Basic Auth."""
         logger.info(
             "Downloading from secure link",
-            extra={"url": url},
+            extra={"url": _sanitize_url(url)},
         )
         
+        parsed_url = urllib.parse.urlparse(url)
+        if not ALLOWED_DOMAINS:
+            logger.error(
+                "SSRF Protection: ALLOWED_DOMAINS is empty — blocking all secure link downloads (fail-closed)",
+                extra={"url": _sanitize_url(url)},
+            )
+            return None
+        if parsed_url.scheme != "https" or parsed_url.netloc not in ALLOWED_DOMAINS:
+            logger.error(
+                "SSRF Protection: URL domain not in allowed list",
+                extra={"url": _sanitize_url(url), "domain": parsed_url.netloc, "allowed": list(ALLOWED_DOMAINS)},
+            )
+            return None
+
         output_path = output_dir / filename
         success = self._download_file_with_retry(url, output_path, auth=self.secure_link_auth)
         if success:

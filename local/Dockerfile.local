@@ -46,8 +46,13 @@ COPY --from=builder /opt/venv /opt/venv
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Run as a non-root user
+RUN useradd --create-home --no-log-init jive
+
 # Copy JIVE microservice code
-COPY ./jira_poc /app
+COPY --chown=jive:jive ./jira_poc /app
+
+USER jive
 
 ENV PYTHONUNBUFFERED=1
 ENV JIRA_BASE_URL=https://reach-initiative.atlassian.net

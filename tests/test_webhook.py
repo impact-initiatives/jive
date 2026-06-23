@@ -142,3 +142,49 @@ async def test_webhook_500_internal_error():
 
     assert response.status_code == 500
     assert response.json()["detail"] == "Internal Server Error"
+
+@pytest.mark.asyncio
+async def test_webhook_azure_queue_not_found():
+    """If the queue does not exist, it should be auto-created and message sent, returning 202."""
+    from azure.core.exceptions import ResourceNotFoundError
+    transport = ASGITransport(app=app)
+    payload = {"issue_key": "RQA-100", "dataset_type": "jmmi"}
+
+    with patch("main.get_queue_client") as mock_queue:
+        mock_client = MagicMock()
+        mock_queue.return_value = mock_client
+        # First send_message fails, second succeeds
+        mock_client.send_message.side_effect = [ResourceNotFoundError("Queue not found"), None]
+
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/webhook",
+                json=payload,
+                headers={"x-functions-key": TEST_API_KEY},
+            )
+
+    assert response.status_code == 202
+    assert response.json()["status"] == "Accepted"
+    mock_client.create_queue.assert_called_once()
+    assert mock_client.send_message.call_count == 2
+
+@pytest.mark.asyncio
+async def test_webhook_azure_queue_unhandled_exception():
+    """If the queue throws an unhandled exception (e.g., connection error), it should return 500."""
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    payload = {"issue_key": "RQA-100", "dataset_type": "jmmi"}
+
+    with patch("main.get_queue_client") as mock_queue:
+        mock_client = MagicMock()
+        mock_queue.return_value = mock_client
+        mock_client.send_message.side_effect = Exception("Connection Refused")
+
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/webhook",
+                json=payload,
+                headers={"x-functions-key": TEST_API_KEY},
+            )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Failed to enqueue validation job"

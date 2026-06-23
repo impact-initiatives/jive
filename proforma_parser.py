@@ -37,7 +37,7 @@ class ProformaParser:
         url = f"{self.base_url}/_edge/tenant_info"
         logger.info("Fetching Atlassian Cloud ID", extra={"url": url})
         
-        response = self.session.get(url, auth=self.auth, timeout=15)
+        response = self.session.get(url, auth=self.auth, timeout=(3.05, 15))
         _check_retryable(response)
         response.raise_for_status()
         
@@ -57,7 +57,7 @@ class ProformaParser:
         logger.info("Fetching ProForma forms list for issue", extra={"issue_id": issue_id, "url": url})
         
         try:
-            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=15)
+            response = self.session.get(url, auth=self.auth, headers=self.headers, timeout=(3.05, 15))
             _check_retryable(response)
             if response.status_code in (403, 404):
                 logger.warning("ProForma API returned status code, forms might not be configured/enabled", 
@@ -76,7 +76,7 @@ class ProformaParser:
             form_detail_url = f"{url}/{form_id}"
             logger.info("Fetching ProForma form details", extra={"issue_id": issue_id, "form_id": form_id})
             
-            detail_response = self.session.get(form_detail_url, auth=self.auth, headers=self.headers, timeout=15)
+            detail_response = self.session.get(form_detail_url, auth=self.auth, headers=self.headers, timeout=(3.05, 15))
             _check_retryable(detail_response)
             detail_response.raise_for_status()
             
@@ -94,7 +94,7 @@ class ProformaParser:
                 choice_ids = answer.get("choices", [])
                 if choice_ids:
                     choice_map = {c["id"]: c["label"] for c in q.get("choices", [])}
-                    value = choice_map.get(choice_ids[0], "").strip()
+                    value = ", ".join(choice_map.get(cid, "").strip() for cid in choice_ids if choice_map.get(cid, "").strip())
                 else:
                     value = answer.get("text", "").strip()
 
