@@ -10,7 +10,8 @@ payload = {
     "project_key": "GDT",
     "rcid": "CHE2602",
     "dataset_type": "testmodel",
-    "secure_link": "https://repository.impact-initiatives.org/resources/view-resource/?id=75856"
+    "secure_link": "https://repository.impact-initiatives.org/resources/view-resource/?id=75856",
+    "force_revalidation": True
 }
 
 try:

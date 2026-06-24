@@ -75,8 +75,14 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path, max_
                 continue
                 
             try:
-                df = pl.DataFrame(details)
+                safe_details = {}
+                for k, v in details.items():
+                    if isinstance(v, list):
+                        safe_details[k] = [str(item) if item is not None else "" for item in v]
+                    else:
+                        safe_details[k] = [str(v)]
                 
+                df = pl.DataFrame(safe_details)
                 # Check if this df puts us over the limit
                 if total_detail_rows + len(df) > MAX_ROWS:
                     df = df.head(MAX_ROWS - total_detail_rows)

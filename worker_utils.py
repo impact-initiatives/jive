@@ -238,12 +238,39 @@ def run_validation(dataset_path: Path, dataset_type: str, payload: JiraSubmissio
         pipeline_dataset_type = "other"
 
     logger.info("Running validation pipeline", extra={"issue_key": payload.issue_key, "dataset_type": dataset_type, "pipeline_type": pipeline_dataset_type})
-    pipeline = ValidationPipeline(dataset_type=pipeline_dataset_type)
-    response_dict = pipeline.run(dataset_path)
+    pipeline = ValidationPipeline()
+    response_dict = pipeline.run_all(dataset_path, pipeline_dataset_type)
     
+    # rqa-validator's ValidationPipeline._compile_results outputs keys like 'error', 'warning', 'admin_error'
+    # but PipelineResponse expects 'errors', 'warnings', 'admin_errors'.
+    # We patch the response_dict before parsing it.
+    key_mapping = {
+        "error": "errors",
+        "warning": "warnings",
+        "admin_error": "admin_errors",
+        "admin_info": "info"
+    }
+    
+    patched_dict = {}
+    for k, v in response_dict.items():
+        if k in key_mapping:
+            patched_dict[key_mapping[k]] = v
+        else:
+            patched_dict[k] = v
+            
+    # Also patch the summary dictionary keys
+    if "summary" in patched_dict and isinstance(patched_dict["summary"], dict):
+        patched_summary = {}
+        for k, v in patched_dict["summary"].items():
+            if k in key_mapping:
+                patched_summary[key_mapping[k]] = v
+            else:
+                patched_summary[k] = v
+        patched_dict["summary"] = patched_summary
+
     try:
         # 1. Attempt strict parsing (standard Pydantic validation)
-        return PipelineResponse(**response_dict)
+        return PipelineResponse(**patched_dict)
     except Exception as e:
         logger.warning(
             "Failed strict Pydantic parsing of validation response. Attempting schema-tolerant model_construct fallback.",
@@ -254,13 +281,14 @@ def run_validation(dataset_path: Path, dataset_type: str, payload: JiraSubmissio
             # 2. Fallback 1: Construct the model directly, bypassing Pydantic input validation.
             # This handles extra fields, missing optional keys, or slight type discrepancies.
             return PipelineResponse.model_construct(
-                success=response_dict.get("success", False),
-                summary=response_dict.get("summary", {"passed": False, "admin_errors": 1, "errors": 0, "warnings": 0, "info": 0}),
-                metadata=response_dict.get("metadata", {"dataset_type": dataset_type}),
-                errors=response_dict.get("errors", []),
-                warnings=response_dict.get("warnings", []),
-                info=response_dict.get("info", []),
-                admin_errors=response_dict.get("admin_errors", []),
+                success=patched_dict.get("success", False),
+                summary=patched_dict.get("summary", {"passed": False, "admin_errors": 1, "errors": 0, "warnings": 0, "info": 0}),
+                metadata=patched_dict.get("metadata", {"dataset_type": dataset_type}),
+                errors=patched_dict.get("errors", []),
+                admin_errors=patched_dict.get("admin_errors", []),
+                warnings=patched_dict.get("warnings", []),
+                info=patched_dict.get("info", []),
+                passed=patched_dict.get("passed", [])
             )
         except Exception as fallback_err:
             logger.error(

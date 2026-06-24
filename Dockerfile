@@ -33,7 +33,9 @@ RUN useradd --create-home --no-log-init jive
 #Copy Python packages and app code from the builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
-COPY --from=builder --chown=jive:jive /app /app
+# Copy JIVE microservice code
+COPY --chown=jive:jive . /app
+COPY --chown=jive:jive /tmp/rqa-validator/locales /app/locales/app
 
 WORKDIR /app
 USER jive

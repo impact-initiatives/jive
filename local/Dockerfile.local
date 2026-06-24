@@ -51,6 +51,7 @@ RUN useradd --create-home --no-log-init jive
 
 # Copy JIVE microservice code
 COPY --chown=jive:jive ./jira_poc /app
+COPY --chown=jive:jive ./rqa-validator/locales /app/locales
 
 USER jive
 

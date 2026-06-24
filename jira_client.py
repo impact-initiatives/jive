@@ -109,6 +109,7 @@ class JiraClient:
         headers = {
             "X-Atlassian-Token": "no-check",
             "Accept": "application/json",
+            "Content-Type": None,
         }
 
         with open(file_path, "rb") as f:
@@ -185,6 +186,7 @@ class JiraClient:
         headers = {
             "X-Atlassian-Token": "no-check",
             "Accept": "application/json",
+            "Content-Type": None,
         }
         
         try:
