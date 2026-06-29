@@ -1,191 +1,149 @@
 # JIVE — Jira IMPACT Validation Engine
 
-**JIVE** (Jira IMPACT Validation Engine) is an asynchronous, event-driven tool that automates RQA workflow. It bridges Jira Service Desk with the rqa-validator engine to automatically download submitted datasets, run validation pipelines and post structured error reports back to the Jira ticket.
-
+**JIVE** (Jira IMPACT Validation Engine) is an asynchronous, event-driven microservice that automates Research Quality Assurance (RQA) workflows. It bridges the Jira Service Management (JSM) portal with the `ARGUS` engine to automatically download submitted datasets, execute validation pipelines, generate Excel reports, and post structured Atlassian Document Format (ADF) comments back to Jira tickets.
 
 ## Overview
 
-Research data collected through household surveys, market assessments, and key informant interviews undergoes a rigorous quality assurance process before it can be published. Historically, this process was manual: country teams would run validation scripts locally, interpret the output, and post summary results through Excel file sent by email, Microsoft Teams chat and now in Jira tickets. This is slow, error-prone, and creates a bottleneck that delays data publication.
+Research data collected through household surveys, market assessments, and key informant interviews undergoes rigorous quality assurance before publication. Historically, this involved manual scripts, downloading files, interpreting output, and back-and-forth communication on Teams or email.
 
-JIVE aims to automate this workflow freeing capacity of country teams and RQA to focus on more research related tasks. It acts as an asynchronous, event-driven tool that bridges the new **RQA Jira Service Desk** with the [`rqa-validator`](https://github.com/gim-am/rqa-validator) data quality engine (planned move to [Impact Initiatives' GitHub](https://github.com/impact-initiatives/rqa-validator)). When a country team member submits a dataset for review via a Jira ticket, JIVE automatically downloads the file, runs the full validation pipeline, generates a report, and posts a structured summary comment directly on the ticket.
+JIVE automates this bottleneck. When a country team member submits a dataset for review via a Jira ticket, JIVE automatically:
+1. Receives the webhook event from Jira.
+2. Extracts dataset context (dataset type, secure links) from Jira ProForma forms.
+3. Downloads the dataset securely.
+4. Executes the full `ARGUS` pipeline.
+5. Generates a multi-sheet Excel report detailing all errors, warnings, and info messages.
+6. Posts a formatted summary comment directly on the Jira ticket and attaches the Excel report.
 
-### Asynchronous design
+### The Asynchronous Queue Architecture
 
-Data validation can be computationally expensive. A single dataset can contain from hundreds to thousands of rows across multiple sheets, requiring cross-referencing against cleaning logs, schema definitions, and categorical choice lists. Validation can take time depending on the size of the dataset. If this ran synchronously inside a Jira webhook handler (max 20s response time), the HTTP connection would time out and Jira would register a failure or not acknowledge at all the webhook.
+Data validation is computationally expensive. Datasets can contain hundreds of thousands of rows across multiple sheets, requiring cross-referencing against cleaning logs and complex schema definitions. If this ran synchronously inside a Jira webhook handler (which requires a response within seconds), the HTTP connection would time out and fail.
 
-JIVE solves this by decoupling ingestion from processing using an Azure Storage Queue. The webhook handler returns immediately (`HTTP 202 Accepted`), and a background worker processes the job asynchronously. The queue is monitored and scaled, scaling the worker containers from zero when no jobs are present and scaling up as jobs are added (the system incurs no additional compute cost when no jobs are queued).
+JIVE solves this by **decoupling ingestion from processing** using Azure Storage Queues and Azure Container Apps:
+- **Ingress**: A lightweight FastAPI gateway immediately returns `HTTP 202 Accepted` to Jira and pushes the payload to the queue.
+- **Worker**: A background python worker asynchronously pulls jobs from the queue. Leveraging **KEDA** (Kubernetes Event-driven Autoscaling), the worker container scales down to 0 when idle (costing nothing) and scales out dynamically based on the queue length.
+
+---
 
 ## Architecture
 
-```
-                              ┌────────────────────────┐
-                              │  Jira Service Desk     │
-                              │  (GDT / RQA Portal)    │
-                              └──────────┬─────────────┘
-                                         │ 1. User submits portal form
-                                         │ 2. Webhook triggers on transition
-                                         ▼
-                              ┌────────────────────────┐
-                              │  jive-ingress (FastAPI)│
-                              │  (Returns HTTP 202)    │
-                              └──────────┬─────────────┘
-                                         │ 3. Pushes payload to queue
-                                         ▼
-                              ┌────────────────────────┐
-                              │  Azure Storage Queue   │
-                              │  (jive-validation-q)   │
-                              └──────────┬─────────────┘
-                                         │ 4. Decoupled async retrieval
-                                         ▼
-                              ┌────────────────────────┐
-                              │  jive-worker           │
-                              │  (worker.py)           │
-                              │                        │
-                              │  - Decouple & download │
-                              │  - Parse Jira Forms    │
-                              │  - Run rqa-validator   │
-                              │  - Public JSM &        │
-                              │    attach Excel report │
-                              │  - Post ADF comment    │
-                              └────────────────────────┘
-```
-
-Both services run from the same Docker image with different entrypoint commands, deployed as separate Azure Container Apps (ACR).
-
-## Project Structure
-
-```
-jira_poc/
-├── main.py                  FastAPI ingress — webhook endpoint
-├── worker.py                Queue consumer — orchestrates validation lifecycle
-├── jira_client.py           Jira / JSM REST API client (connection pooled)
-├── models.py                Pydantic models for inbound Jira webhook payloads
-├── report_formatter.py      Transforms PipelineResponse into Atlassian Document Format (ADF)
-├── logger.py                JSON-structured logging for Azure Log Analytics
-├── excel_exporter.py        Generates multi-sheet Excel validation reports
-├── Dockerfile               Build image for acr and container apps
-├── pyproject.toml           Dependencies and project metadata
-├── local/                   Local exploration and manual API sandbox scripts
-├── scripts/                 General helper scripts 
-├── tests/                   Standard Pytest automated test suite
-│   ├── test_models.py                Payload validation and normalization tests
-│   ├── test_report_formatter.py      ADF output structure tests
-│   ├── test_webhook.py               FastAPI endpoint integration tests
-│   ├── test_worker.py                Worker and queue processing tests
-│   ├── test_worker_utils.py          Pipeline orchestration and utility tests
-│   └── test_secure_link_integration.py  End-to-end secure link workflow tests
-└── infra/
-    ├── main.bicep            Bicep orchestrator for all Azure resources
-    └── modules/              Individual resource definitions (ACA, Queue, etc.)
+```mermaid
+flowchart TD
+    JSM[Jira Service Management] -->|1. Submit Portal Form| WH(Webhook Trigger)
+    WH -->|2. POST Payload| ING[JIVE Ingress (FastAPI)]
+    
+    subgraph Azure Container Apps
+        ING -->|3. Enqueue| Q[(Azure Storage Queue)]
+        Q -->|4. Dequeue| WRK[JIVE Worker (Python)]
+    end
+    
+    WRK <-->|5. Fetch ProForma Context| JSM
+    WRK <-->|6. Download Dataset| SHP[SharePoint / Secure Link]
+    WRK <-->|7. Run Validation| RQA[ARGUS Engine]
+    
+    WRK -->|8. Attach Excel Report| JSM
+    WRK -->|9. Post ADF Comment| JSM
 ```
 
 ---
 
-## The `local/` sandbox
+## Project Structure
 
-The `local/` directory contains exploration scripts and offline test fixtures used during development to verify and shape integration logic without triggering full workflows:
-
-*   **API & Schema Exploration:**
-    *   [`explore_jira_proforma.py`](https://github.com/fgizzarelliDS/jive-integration/blob/feature/local-dev-setup/explore_jira_proforma.py): Interrogates Atlassian's ProForma REST API endpoints to fetch form templates and field answer dictionaries.
-
-*   **Boundary Integration Tests:**
-    *   `test_webhook_local.py`: Dispatches sample HTTP POST payloads locally to test FastAPI webhook parsing and queue client enqueuing in isolation.
-    *   `test_repo_download_local.py`: Verification sandbox for testing credentials and downloader connectivity directly against private repository resources.
-
-* **Docker Compose**
-
-For local development that mirrors the Azure cloud architecture (FastAPI Gateway, Storage Queues, and consumer Workers), a unified local orchestrator is provided at [`local/docker-compose.yml`](https://github.com/fgizzarelliDS/jive-integration/blob/feature/local-dev-setup/local/docker-compose.yml):
-
-   * **Configure Local API Credentials**
-   Docker Compose reads from your shell and host `.env` file. Ensure you have your Jira Service Account variables defined:
-
-```bash
-docker compose -f local/docker-compose.yml up --build
+```text
+jive/
+├── main.py                  FastAPI ingress (webhook endpoint)
+├── worker.py                Queue consumer (orchestrates validation lifecycle)
+├── worker_utils.py          ProForma parsing, secure link resolution, and pipeline execution
+├── jira_client.py           Jira / JSM REST API client (with Tenacity retries & rate-limit handling)
+├── models.py                Pydantic models for inbound Jira webhook payloads
+├── report_formatter.py      Transforms PipelineResponse into Atlassian Document Format (ADF)
+├── excel_exporter.py        Generates multi-sheet Excel validation reports using Polars
+├── logger.py                JSON-structured logging for Azure Log Analytics
+├── Dockerfile               Multi-stage optimized build image
+├── pyproject.toml           Project dependencies (managed via uv)
+├── local/                   Local exploration and Docker Compose setup
+├── tests/                   Standard Pytest automated test suite
+└── infra/                   Bicep IaC templates for Azure deployment
 ```
-
-- **JIVE Ingress Gateway (`jive-ingress`):** Accessible at `http://localhost:8000/api/webhook` to receive webhook payloads and instantly push them to the local queue.
-- **Azurite Emulator (`azurite`):** Emulates Azure Storage Queues at `http://localhost:10001`.
-- **Background Worker (`jive-worker`):** Polls Azurite for jobs, executes validation pipelines, generates Excel reports, uploads JSM portal attachments, and posts premium ADF status comments.
 
 ---
 
 ## Local Development & Configuration
 
 ### Prerequisites
-*   Python 3.12+
-*   [uv](https://docs.astral.sh/uv/) package manager
-*   Azurite (Azure Queue Emulator)
+* Python 3.12+
+* [uv](https://docs.astral.sh/uv/) package manager
+* [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) (Local Azure Storage Emulator)
 
-### Environment variables
-
-Create a `.env` file in the project root with the following variables:
+### Environment Variables
+Create a `.env` file in the project root:
 
 | Variable | Required | Description |
 |---|---|---|
 | `AZURE_STORAGE_CONNECTION_STRING` | Yes | Azure Storage / Azurite connection string |
-| `JIVE_QUEUE_NAME` | No | Target Queue name (default: `jive-validation-queue`) |
-| `JIVE_API_KEY` | Yes | Webhook authorization token |
+| `JIVE_API_KEY` | Yes | Webhook authorization token (e.g., `local-dev-key`) |
 | `JIRA_API_EMAIL` | Yes | Service Account API Email |
 | `JIRA_API_TOKEN` | Yes | Service Account API Basic Token |
+| `JIVE_QUEUE_NAME` | No | Target Queue name (default: `jive-validation-queue`) |
 | `JIRA_BASE_URL` | No | Jira Cloud URL (default: `https://reach-initiative.atlassian.net`) |
-| `JIVE_FORCE_VALIDATION` | No | Set to `True` to bypass idempotency check for manual force-runs |
+| `JIVE_MAX_ATTACHMENT_MB` | No | Prevents out-of-memory errors on massive downloads (default: `250`) |
+
+## [JIVE-ARGUS Demo](https://app.notion.com/p/JIVE-Demo-372e735be74b80cdb994ff0a9d0fbab4)
 
 ### Running the Services Locally
 
-Use [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) to emulate Azure Storage Queues locally:
-
-   ```bash
-   npm install -g azurite
-   azurite-queue --queueHost 127.0.0.1
-   ```
-
-2. **Start the Ingress Gateway:**
-   ```bash
-   uv run uvicorn main:app --host 127.0.0.1 --port 8000 --reload
-   ```
-
-3. **Start the Queue Background Worker:**
-   ```bash
-   uv run python worker.py
-   ```
-
-##### Run test
+We recommend using the provided `docker-compose.yml` to perfectly mirror the Azure architecture (FastAPI Gateway + Azurite + Worker):
 
 ```bash
-uv run pytest tests/ -v 2>&1
+# Build and run the entire stack locally
+docker compose -f local/docker-compose.yml up --build
+```
+* **JIVE Ingress Gateway**: Accessible at `http://localhost:8000/api/webhook`
+* **Azurite Emulator**: Emulates Azure Storage Queues at `http://localhost:10001`
+* **Background Worker**: Polls Azurite for jobs, executes validation, and interacts with Jira.
+
+Alternatively, you can run them via `uv`:
+```bash
+uv run uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+uv run python worker.py
+```
+
+### Running Tests
+The project features a comprehensive `pytest` suite testing webhooks, workers, ProForma parsing, and Excel generation.
+```bash
+uv run pytest tests/ -v
 uv run ruff check .
 ```
 
-### Deployment
+---
 
-Infrastructure is defined in Bicep and deployed via GitHub Actions. See [`NOTION_CICD_INFRASTRUCTURE.md`](./NOTION_CICD_INFRASTRUCTURE.md) for the complete workflow documentation (need to add it)fo.
+## Azure Cloud Deployment
 
-#### Manual deployment
+The entire infrastructure is defined as Code (IaC) using Azure Bicep located in the `infra/` directory.
 
+### Key Infrastructure Features:
+* **Azure Container Apps (ACA)**: Serverless hosting for the Ingress and Worker apps.
+* **KEDA Scaling**: The Worker app automatically scales based on the length of the Azure Storage Queue.
+* **Security**: System-Assigned Managed Identities are used to pull secrets (Jira API keys, connection strings) directly from **Azure Key Vault**. Secrets are never exposed in environment variables.
+* **Observability**: An **Azure Log Analytics** workspace is automatically provisioned and linked to the Container App environment for centralized JSON-structured logging.
+
+### Deployment Commands
 ```bash
-# Deploy infrastructure
+# 1. Deploy all infrastructure (Storage, KeyVault, Container Apps, Log Analytics)
 az deployment group create \
   --resource-group rg-impact-etl \
   --template-file infra/main.bicep \
   --parameters infra/parameters/prod.bicepparam
 
-# Build Docker image (retrieves GitHub PAT securely from Azure Key Vault)
-export GITHUB_PAT=$(az keyvault secret show \
-  --name "github-pat" \
-  --vault-name "<your-keyvault-name>" \
-  --query value -o tsv)
-docker build --secret id=github_token,env=GITHUB_PAT \
-  -t jiveacr.azurecr.io/jive:latest .
-docker push jiveacr.azurecr.io/jive:latest
+# 2. Build and Push Docker Image to Azure Container Registry
+az acr build --registry <your-acr-name> --image jive:latest .
 
-# Update Container Apps
-az containerapp update --name jive-ingress \
-  --resource-group rg-impact-etl \
-  --image jiveacr.azurecr.io/jive:latest
-az containerapp update --name jive-worker \
-  --resource-group rg-impact-etl \
-  --image jiveacr.azurecr.io/jive:latest
+# 3. Update Container Apps to use the latest image
+az containerapp update --name jive-ingress --resource-group rg-impact-etl --image <your-acr-name>.azurecr.io/jive:latest
+az containerapp update --name jive-worker --resource-group rg-impact-etl --image <your-acr-name>.azurecr.io/jive:latest
 ```
+*(Note: Automated CI/CD via GitHub Actions is planned for the near future).*
+
+---
 
 ## Roadmap
 
@@ -193,9 +151,9 @@ az containerapp update --name jive-worker \
 - [ ] Transition the Jira ticket to a target status automatically based on validation results (e.g., move to "Approved" on pass (default: JIRA_TRANSITION_APPROVED), "Needs Revision" on fail (default: JIRA_TRANSITION_REVISION))
 - [ ] Add support for multiple dataset types beyond JMMI (MSNA, ESNFI) with automatic schema detection
 - [ ] Implement Azure Managed Identity for Key Vault secret retrieval at runtime, removing the need for connection strings in environment variables
-- [ ] **Pull Model Polling & JQL Pagination**: If JIVE moves from Webhooks to a Pull Model (Polling) in the future (e.g. running a cron job every 5 minutes to fetch all open tickets), implement JQL querying with robust pagination (handling Atlassian's 50-100 issue return limit per page).
 
+---
 
 ## Related Repositories
-
-- [`rqa-validator`](https://github.com/impact-initiatives/rqa-validator) — The core data validation engine
+- [`impact-initiatives/argus`](https://github.com/impact-initiatives/argus) — A flexible framework for validating standardised and less-standardised datasets.
+- [`impact-initiatives/argus_schemas`](https://github.com/impact-initiatives/argus_schemas) — Configuration files for Argus datasets.
