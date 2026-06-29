@@ -29,11 +29,11 @@ JIVE solves this by **decoupling ingestion from processing** using Azure Storage
 ```mermaid
 flowchart TD
     JSM[Jira Service Management] -->|1. Submit Portal Form| WH(Webhook Trigger)
-    WH -->|2. POST Payload| ING[JIVE Ingress (FastAPI)]
+    WH -->|2. POST Payload| ING["JIVE Ingress (FastAPI)"]
     
     subgraph Azure Container Apps
         ING -->|3. Enqueue| Q[(Azure Storage Queue)]
-        Q -->|4. Dequeue| WRK[JIVE Worker (Python)]
+        Q -->|4. Dequeue| WRK["JIVE Worker (Python)"]
     end
     
     WRK <-->|5. Fetch ProForma Context| JSM
