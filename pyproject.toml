@@ -13,11 +13,11 @@ dependencies = [
     "tenacity>=8.2.0",
     "polars>=1.0.0",
     "xlsxwriter>=3.2.0",
-    "rqa-validator",
+    "argus",
 ]
 
 [tool.uv.sources]
-rqa-validator = { path = "../rqa-validator", editable = true }
+argus = { path = "../argus", editable = true }
 
 [project.optional-dependencies]
 dev = [
@@ -26,7 +26,16 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "ruff>=0.4.0",
     "mypy>=1.10.0",
+    "rich>=15.0.0",
 ]
+
+[tool.ruff]
+exclude = [
+"*.ipynb"
+]
+line-length = 100
+[tool.ruff.lint]
+select = ["UP", "E", "F", "I", "B", "SIM"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"

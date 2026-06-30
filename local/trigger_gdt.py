@@ -1,17 +1,14 @@
 import requests
 
 URL = "http://localhost:8000/api/webhook"
-HEADERS = {
-    "Content-Type": "application/json",
-    "x-functions-key": "local-dev-key"  
-}
+HEADERS = {"Content-Type": "application/json", "x-functions-key": "local-dev-key"}
 payload = {
     "issue_key": "GDT-32",
     "project_key": "GDT",
     "rcid": "CHE2602",
     "dataset_type": "testmodel",
     "secure_link": "https://repository.impact-initiatives.org/resources/view-resource/?id=75856",
-    "force_revalidation": True
+    "force_revalidation": True,
 }
 
 try:

@@ -1,13 +1,19 @@
+import logging
 import os
 import time
-import requests
 import urllib.parse
 from pathlib import Path
-from typing import Optional
-from logger import get_logger
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
-import logging
 
+import requests
+from tenacity import (
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from logger import get_logger
 
 logger = get_logger("jive.jira_client")
 
@@ -26,27 +32,30 @@ ALLOWED_DOMAINS: frozenset[str] = frozenset(
 )
 if not ALLOWED_DOMAINS:
     logger.warning(
-        "ALLOWED_DOMAINS env var is set but empty — all secure link downloads will be blocked (fail-closed SSRF protection)"
+        "ALLOWED_DOMAINS env var is set but empty — all secure link downloads will be blocked"
+        " (fail-closed SSRF protection)"
     )
+
 
 class JiraAPIError(Exception):
     """Raised when a Jira API call returns a retryable error."""
+
     pass
 
 
 def _check_retryable(response: requests.Response):
     """Raises JiraAPIError if the response has a retryable status code."""
     if response.status_code in RETRYABLE_STATUS_CODES:
-        raise JiraAPIError(
-            f"Jira returned {response.status_code}: {response.text[:200]}"
-        )
+        raise JiraAPIError(f"Jira returned {response.status_code}: {response.text[:200]}")
 
 
 class JiraClient:
     def __init__(self):
         self.email = os.getenv("JIRA_API_EMAIL")
         self.token = os.getenv("JIRA_API_TOKEN")
-        self.base_url = os.getenv("JIRA_BASE_URL", "https://reach-initiative.atlassian.net").rstrip("/")
+        self.base_url = os.getenv("JIRA_BASE_URL", "https://reach-initiative.atlassian.net").rstrip(
+            "/"
+        )
 
         if not self.email or not self.token:
             raise ValueError("JIRA_API_EMAIL and JIRA_API_TOKEN environment variables must be set")
@@ -56,11 +65,14 @@ class JiraClient:
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
-        
+
         self.secure_link_user = os.getenv("SECURE_LINK_USERNAME")
         self.secure_link_pass = os.getenv("SECURE_LINK_PASSWORD")
-        self.secure_link_auth = (self.secure_link_user, self.secure_link_pass) if self.secure_link_user and self.secure_link_pass else None
-
+        self.secure_link_auth = (
+            (self.secure_link_user, self.secure_link_pass)
+            if self.secure_link_user and self.secure_link_pass
+            else None
+        )
 
         self.session = requests.Session()
         self.session.auth = self.auth
@@ -69,7 +81,9 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type(
+            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+        ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def post_comment(self, issue_key: str, adf_content: dict) -> bool:
@@ -99,7 +113,9 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type(
+            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+        ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def upload_attachment(self, issue_key: str, file_path: Path) -> bool:
@@ -139,7 +155,10 @@ class JiraClient:
                 attachments_data = response.json()
                 if attachments_data and isinstance(attachments_data, list):
                     content_url = attachments_data[0].get("content")
-                    logger.info("Attachment content URL", extra={"issue_key": issue_key, "content_url": content_url})
+                    logger.info(
+                        "Attachment content URL",
+                        extra={"issue_key": issue_key, "content_url": content_url},
+                    )
             except Exception:
                 pass
             return True
@@ -153,10 +172,12 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type(
+            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+        ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def get_service_desk_id(self, project_key: str) -> Optional[str]:
+    def get_service_desk_id(self, project_key: str) -> str | None:
         """Fetch the Service Desk ID associated with a project key."""
         url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{project_key}"
         response = self.session.get(url, timeout=(3.05, 30))
@@ -164,31 +185,44 @@ class JiraClient:
         if response.status_code == 200:
             return response.json().get("id")
         else:
-            logger.warning("Service Desk lookup returned non-200 status", extra={"project_key": project_key, "status_code": response.status_code})
+            logger.warning(
+                "Service Desk lookup returned non-200 status",
+                extra={"project_key": project_key, "status_code": response.status_code},
+            )
             return None
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type(
+            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+        ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def upload_public_jsm_attachment(self, issue_key: str, project_key: str, file_path: Path) -> bool:
-        """Uploads an attachment publicly to a Jira Service Management ticket so it is visible directly on the portal."""
+    def upload_public_jsm_attachment(
+        self, issue_key: str, project_key: str, file_path: Path
+    ) -> bool:
+        """Uploads an attachment publicly to a Jira Service Management ticket so it is
+        visible directly on the portal."""
         # 1. Fetch Service Desk ID
         service_desk_id = self.get_service_desk_id(project_key)
         if not service_desk_id:
-            logger.error("Failed to upload JSM attachment: could not resolve service desk ID for project", extra={"project_key": project_key})
+            logger.error(
+                "Failed to upload JSM attachment: could not resolve service desk ID for project",
+                extra={"project_key": project_key},
+            )
             return False
 
         # 2. Upload temporary file
-        upload_url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{service_desk_id}/attachTemporaryFile"
+        upload_url = (
+            f"{self.base_url}/rest/servicedeskapi/servicedesk/{service_desk_id}/attachTemporaryFile"
+        )
         headers = {
             "X-Atlassian-Token": "no-check",
             "Accept": "application/json",
             "Content-Type": None,
         }
-        
+
         try:
             with open(file_path, "rb") as f:
                 files = {
@@ -198,23 +232,41 @@ class JiraClient:
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     )
                 }
-                logger.info("Uploading temporary JSM attachment", extra={"issue_key": issue_key, "service_desk_id": service_desk_id})
-                response = self.session.post(upload_url, headers=headers, files=files, timeout=(3.05, 120))
+                logger.info(
+                    "Uploading temporary JSM attachment",
+                    extra={"issue_key": issue_key, "service_desk_id": service_desk_id},
+                )
+                response = self.session.post(
+                    upload_url, headers=headers, files=files, timeout=(3.05, 120)
+                )
                 _check_retryable(response)
-                
+
                 if response.status_code != 201:
-                    logger.error("Failed to upload temporary JSM attachment", extra={"issue_key": issue_key, "status_code": response.status_code})
+                    logger.error(
+                        "Failed to upload temporary JSM attachment",
+                        extra={"issue_key": issue_key, "status_code": response.status_code},
+                    )
                     return False
-                
+
                 temp_attachments = response.json().get("temporaryAttachments", [])
                 if not temp_attachments:
-                    logger.error("Temporary JSM attachment response contained no attachments", extra={"issue_key": issue_key})
+                    logger.error(
+                        "Temporary JSM attachment response contained no attachments",
+                        extra={"issue_key": issue_key},
+                    )
                     return False
-                
+
                 temp_attachment_id = temp_attachments[0].get("temporaryAttachmentId")
-                logger.info("Temporary JSM attachment uploaded successfully", extra={"issue_key": issue_key, "temp_id": temp_attachment_id})
+                logger.info(
+                    "Temporary JSM attachment uploaded successfully",
+                    extra={"issue_key": issue_key, "temp_id": temp_attachment_id},
+                )
         except Exception as e:
-            logger.error("Failed to upload temporary JSM attachment", exc_info=e, extra={"issue_key": issue_key})
+            logger.error(
+                "Failed to upload temporary JSM attachment",
+                exc_info=e,
+                extra={"issue_key": issue_key},
+            )
             return False
 
         # 3. Attach temporary file to request publicly
@@ -223,35 +275,48 @@ class JiraClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        payload = {
-            "temporaryAttachmentIds": [temp_attachment_id],
-            "public": True
-        }
-        
+        payload = {"temporaryAttachmentIds": [temp_attachment_id], "public": True}
+
         try:
-            logger.info("Confirming public JSM attachment on request", extra={"issue_key": issue_key})
-            response = self.session.post(attach_url, headers=attach_headers, json=payload, timeout=(3.05, 30))
+            logger.info(
+                "Confirming public JSM attachment on request", extra={"issue_key": issue_key}
+            )
+            response = self.session.post(
+                attach_url, headers=attach_headers, json=payload, timeout=(3.05, 30)
+            )
             _check_retryable(response)
-            
+
             if response.status_code == 201:
-                logger.info("Successfully attached file publicly to JSM portal request", extra={"issue_key": issue_key})
+                logger.info(
+                    "Successfully attached file publicly to JSM portal request",
+                    extra={"issue_key": issue_key},
+                )
                 return True
             else:
-                logger.error("Failed to attach file publicly to JSM request", extra={"issue_key": issue_key, "status_code": response.status_code})
+                logger.error(
+                    "Failed to attach file publicly to JSM request",
+                    extra={"issue_key": issue_key, "status_code": response.status_code},
+                )
                 return False
         except Exception as e:
-            logger.error("Failed to attach file publicly to JSM request", exc_info=e, extra={"issue_key": issue_key})
+            logger.error(
+                "Failed to attach file publicly to JSM request",
+                exc_info=e,
+                extra={"issue_key": issue_key},
+            )
             return False
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type(
+            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+        ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def get_attachments(self, issue_key: str) -> list:
         """Fetches the attachment list for a Jira ticket. Returns a list of attachment dicts.
-        
+
         This is the single source of truth for attachment data — call this once
         and pass the result to both idempotency checks and download logic.
         """
@@ -269,82 +334,109 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type(
+            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+        ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def get_issue_id(self, issue_key: str) -> Optional[str]:
+    def get_issue_id(self, issue_key: str) -> str | None:
         """Fetch the internal issue ID (integer string) using the issue key."""
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=id"
-        logger.info("Resolving issue ID from key", extra={"issue_key": issue_key, "url": _sanitize_url(url)})
+        logger.info(
+            "Resolving issue ID from key", extra={"issue_key": issue_key, "url": _sanitize_url(url)}
+        )
         response = self.session.get(url, timeout=(3.05, 30))
         _check_retryable(response)
         if response.status_code == 200:
             issue_id = response.json().get("id")
-            logger.info("Resolved issue ID successfully", extra={"issue_key": issue_key, "issue_id": issue_id})
+            logger.info(
+                "Resolved issue ID successfully",
+                extra={"issue_key": issue_key, "issue_id": issue_id},
+            )
             return issue_id
         else:
-            logger.error("Failed to resolve issue ID from key", extra={"issue_key": issue_key, "status_code": response.status_code})
+            logger.error(
+                "Failed to resolve issue ID from key",
+                extra={"issue_key": issue_key, "status_code": response.status_code},
+            )
             return None
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type(
+            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+        ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def download_proforma_attachment(self, issue_key: str, output_dir: Path, attachments: list | None = None) -> Optional[Path]:
+    def download_proforma_attachment(
+        self, issue_key: str, output_dir: Path, attachments: list | None = None
+    ) -> Path | None:
         """Downloads the most recent Excel attachment from the Jira ticket.
-        
+
         Args:
             issue_key: The Jira issue key.
             output_dir: Directory to save the downloaded file.
-            attachments: Pre-fetched attachment list from get_attachments(). 
+            attachments: Pre-fetched attachment list from get_attachments().
                          If None, fetches fresh (backward compatible).
         """
         if attachments is None:
             attachments = self.get_attachments(issue_key)
 
         xlsx_attachments = [
-            a for a in attachments 
+            a
+            for a in attachments
             if a.get("filename", "").endswith(".xlsx")
             and not a.get("filename", "").startswith("JIVE_Validation_Report_")
         ]
-        
+
         if not xlsx_attachments:
             logger.warning("No Excel attachments found", extra={"issue_key": issue_key})
             return None
 
-        #Sort by creation date descending (newest first) so we always grab the latest version
-        #handle both new uploaded file or updated version
+        # Sort by creation date descending (newest first) so we always grab the latest version
+        # handle both new uploaded file or updated version
         xlsx_attachments.sort(key=lambda a: a.get("created", ""), reverse=True)
         latest_attachment = xlsx_attachments[0]
 
         filename = latest_attachment.get("filename", "")
         content_url = latest_attachment.get("content")
-        
+
         logger.info(
             "Downloading most recent attachment",
-            extra={"issue_key": issue_key, "url": _sanitize_url(content_url), "attachment_created": latest_attachment.get("created")}
+            extra={
+                "issue_key": issue_key,
+                "url": _sanitize_url(content_url),
+                "attachment_created": latest_attachment.get("created"),
+            },
         )
 
         output_path = output_dir / filename
         success = self._download_file_with_retry(content_url, output_path)
         if success:
             return output_path
-        
+
         return None
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type(
+            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+        ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def _download_file_with_retry(self, url: str, output_path: Path, auth: Optional[tuple] = None, session: Optional[requests.Session] = None) -> bool:
+    def _download_file_with_retry(
+        self,
+        url: str,
+        output_path: Path,
+        auth: tuple | None = None,
+        session: requests.Session | None = None,
+    ) -> bool:
         """Helper method to download a file with retries."""
         start = time.monotonic()
         http_client = session if session is not None else self.session
-        
+
         # When using a custom session, it carries its own auth.
         # If an explicit auth tuple is provided, we use it (e.g. for secure links).
         kwargs = {"stream": True, "timeout": (3.05, 300)}
@@ -368,13 +460,19 @@ class JiraClient:
                             exceeded_size = True
                             break
                         f.write(chunk)
-                
+
                 if exceeded_size:
-                    logger.error("Download exceeded maximum allowed size", extra={"url": _sanitize_url(url), "max_mb": os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")})
+                    logger.error(
+                        "Download exceeded maximum allowed size",
+                        extra={
+                            "url": _sanitize_url(url),
+                            "max_mb": os.getenv("JIVE_MAX_ATTACHMENT_MB", "250"),
+                        },
+                    )
                     response.close()
                     output_path.unlink(missing_ok=True)
                     return False
-                    
+
                 return True
             except Exception as e:
                 logger.error("Failed writing downloaded chunk to disk", exc_info=e)
@@ -383,28 +481,39 @@ class JiraClient:
         else:
             logger.error(
                 "Failed to download file content",
-                extra={"url": _sanitize_url(url), "status_code": response.status_code, "duration_ms": duration_ms},
+                extra={
+                    "url": _sanitize_url(url),
+                    "status_code": response.status_code,
+                    "duration_ms": duration_ms,
+                },
             )
             return False
 
-    def download_from_secure_link(self, url: str, output_dir: Path, filename: str = "secure_dataset.xlsx") -> Optional[Path]:
+    def download_from_secure_link(
+        self, url: str, output_dir: Path, filename: str = "secure_dataset.xlsx"
+    ) -> Path | None:
         """Downloads the dataset from a provided secure link using optional Basic Auth."""
         logger.info(
             "Downloading from secure link",
             extra={"url": _sanitize_url(url)},
         )
-        
+
         parsed_url = urllib.parse.urlparse(url)
         if not ALLOWED_DOMAINS:
             logger.error(
-                "SSRF Protection: ALLOWED_DOMAINS is empty — blocking all secure link downloads (fail-closed)",
+                "SSRF Protection: ALLOWED_DOMAINS is empty — blocking all secure link"
+                " downloads (fail-closed)",
                 extra={"url": _sanitize_url(url)},
             )
             return None
         if parsed_url.scheme != "https" or parsed_url.netloc not in ALLOWED_DOMAINS:
             logger.error(
                 "SSRF Protection: URL domain not in allowed list",
-                extra={"url": _sanitize_url(url), "domain": parsed_url.netloc, "allowed": list(ALLOWED_DOMAINS)},
+                extra={
+                    "url": _sanitize_url(url),
+                    "domain": parsed_url.netloc,
+                    "allowed": list(ALLOWED_DOMAINS),
+                },
             )
             return None
 
@@ -413,6 +522,3 @@ class JiraClient:
         if success:
             return output_path
         return None
-
-
-

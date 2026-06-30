@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -12,17 +12,17 @@ def _make_response(success: bool, errors=None, warnings=None, passed=None):
 
     response = MagicMock()
     response.success = success
-    
-    #Mock metadata
+
+    # Mock metadata
     response.metadata.dataset_type = "jmmi"
     response.metadata.timestamp = "2023-01-01T12:00:00Z"
-    
-    #Lists of dicts for the new formatter
+
+    # Lists of dicts for the new formatter
     response.errors = errors if errors else []
     response.warnings = warnings if warnings else []
     response.admin_errors = []
     response.passed = passed if passed else []
-    
+
     return response
 
 
@@ -69,14 +69,22 @@ class TestFormatCommentAdf:
         adf = format_comment_adf("RQA-123", response)
 
         full_text = self._get_all_text(adf)
-        assert "report" in full_text.lower() or "attachment" in full_text.lower() or "excel" in full_text.lower()
+        assert (
+            "report" in full_text.lower()
+            or "attachment" in full_text.lower()
+            or "excel" in full_text.lower()
+        )
 
     def test_passing_response_mentions_ready(self):
         response = _make_response(success=True)
         adf = format_comment_adf("RQA-123", response)
 
         full_text = self._get_all_text(adf)
-        assert "no further action" in full_text.lower() or "ready" in full_text.lower() or "meets" in full_text.lower()
+        assert (
+            "no further action" in full_text.lower()
+            or "ready" in full_text.lower()
+            or "meets" in full_text.lower()
+        )
 
     def test_dataset_type_displayed(self):
         response = _make_response(success=True)
@@ -87,19 +95,19 @@ class TestFormatCommentAdf:
 
     def test_table_generated_for_errors(self):
         response = _make_response(
-            success=False, 
-            errors=[{"rule": "Mandatory"}, {"rule": "Mandatory"}], 
-            warnings=[{"rule": "MissingSheet"}]
+            success=False,
+            errors=[{"rule": "Mandatory"}, {"rule": "Mandatory"}],
+            warnings=[{"rule": "MissingSheet"}],
         )
         adf = format_comment_adf("RQA-123", response)
-        
+
         # Panel (0), Panel (1), Paragraph (2), Table (3), etc.
         table = adf["content"][3]
         assert table["type"] == "table"
-        
+
         # Header + 2 unique rules (Mandatory, MissingSheet)
-        assert len(table["content"]) == 3 
-        
+        assert len(table["content"]) == 3
+
         # First row after header is Mandatory, with count 2
         first_rule_row = table["content"][1]
         cells = first_rule_row["content"]
@@ -108,11 +116,10 @@ class TestFormatCommentAdf:
 
     def test_passed_checks_listed_in_note(self):
         response = _make_response(
-            success=True, 
-            passed=[{"rule": "DuplicateSheetMatches"}, {"rule": "UniqueColumn"}]
+            success=True, passed=[{"rule": "DuplicateSheetMatches"}, {"rule": "UniqueColumn"}]
         )
         adf = format_comment_adf("RQA-123", response)
-        
+
         full_text = self._get_all_text(adf)
         assert "2 core quality checks passed" in full_text or "2 checks passed" in full_text
         assert "DuplicateSheetMatches" in full_text
@@ -125,4 +132,3 @@ class TestFormatCommentAdf:
         assert "version" in adf
         assert "type" in adf
         assert "content" in adf
-

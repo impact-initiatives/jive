@@ -17,9 +17,12 @@ WORKDIR /build
 RUN uv venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy and install the local rqa-validator package
-COPY ./rqa-validator /rqa-validator
-RUN uv pip install --no-cache /rqa-validator
+# Copy and install the local argus package
+
+COPY ./argus /argus
+RUN mkdir -p /argus/logs && \ 
+    mkdir -p /argus/dataset_config && \ 
+    uv pip install --no-cache /argus
 
 # Install JIVE dependencies inside the virtual environment
 RUN uv pip install --no-cache \
@@ -50,10 +53,15 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN useradd --create-home --no-log-init jive
 
 # Copy JIVE microservice code
-COPY --chown=jive:jive ./jira_poc /app
-COPY --chown=jive:jive ./rqa-validator/locales /app/locales
+COPY --chown=jive:jive ./jive /app
+COPY --chown=jive:jive ./argus/locales /app/locales 
+COPY --chown=jive:jive ./argus/logs /app/logs 
+COPY --chown=jive:jive ./argus/dataset_config /app/dataset_config 
+
+
 
 USER jive
+# RUN  mkdir ./app/logs && chown -R jive:jive ./app/logs
 
 ENV PYTHONUNBUFFERED=1
 ENV JIRA_BASE_URL=https://reach-initiative.atlassian.net

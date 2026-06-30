@@ -5,13 +5,22 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.4 /uv /uvx /bin/
 
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# Clone rqa-validator and install it as a proper package and all of its dependencies
-RUN --mount=type=secret,id=github_token,required=true \
-    git clone https://$(cat /run/secrets/github_token)@github.com/impact-initiatives/rqa-validator.git /tmp/rqa-validator && \
-    uv pip install --system --no-cache /tmp/rqa-validator && \
-    rm -rf /tmp/rqa-validator
+# Clone argus and install it as a proper package and all of its dependencies
+# RUN --mount=type=secret,id=github_token,required=true \
+#     git clone https://$(cat /run/secrets/github_token)@github.com/impact-initiatives/argus.git /tmp/argus && \
+#     uv pip install --system --no-cache /tmp/argus && \
+#     rm -rf /tmp/argus
 
-# Install jira_poc dependencies
+RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/impact-initiatives/argus.git /tmp/argus && \
+    cd /tmp/argus && \
+    git fetch origin --tags && \
+    LATEST_TAG=$(git describe $(git rev-list --tags --max-count=1)) && \
+    git checkout $LATEST_TAG && \
+    uv pip install --system --no-cache . && \
+    cd / && \
+    rm -rf /tmp/argus
+
+# Install jive dependencies
 RUN uv pip install --system --no-cache \
     fastapi>=0.111.0 \
     uvicorn>=0.30.1 \
@@ -35,7 +44,7 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 # Copy JIVE microservice code
 COPY --chown=jive:jive . /app
-COPY --chown=jive:jive /tmp/rqa-validator/locales /app/locales/app
+COPY --chown=jive:jive /tmp/argus/locales /app/locales/app
 
 WORKDIR /app
 USER jive

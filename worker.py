@@ -1,23 +1,25 @@
-import os
 import json
-import time
+import os
 import tempfile
+import time
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, timezone
-from azure.storage.queue import QueueClient
+
 from azure.core.exceptions import ResourceNotFoundError
-from models import JiraSubmissionPayload
-from jira_client import JiraClient
-from proforma_parser import ProformaParser
-from impact_repo_client import ImpactRepoClient
-from logger import get_logger
+from azure.storage.queue import QueueClient
+
 from excel_exporter import export_response_to_excel
+from impact_repo_client import ImpactRepoClient
+from jira_client import JiraClient
+from logger import get_logger
+from models import JiraSubmissionPayload
+from proforma_parser import ProformaParser
 from worker_utils import (
     check_idempotency,
     download_dataset,
+    publish_results,
     resolve_context,
     run_validation,
-    publish_results,
 )
 
 logger = get_logger("jive.worker")
@@ -32,18 +34,17 @@ def get_queue_client(queue_name: str = QUEUE_NAME) -> QueueClient:
     conn_str = QUEUE_CONNECTION_STRING
     if not conn_str:
         raise ValueError("AZURE_STORAGE_CONNECTION_STRING is not set")
-    return QueueClient.from_connection_string(
-        conn_str=conn_str,
-        queue_name=queue_name
-    )
+    return QueueClient.from_connection_string(conn_str=conn_str, queue_name=queue_name)
 
 
-def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception, jira: JiraClient | None = None):
+def dead_letter_message(
+    msg, payload: JiraSubmissionPayload, error: Exception, jira: JiraClient | None = None
+):
     """Moves a failed message to the poison queue with full metadata."""
     poison_message = {
         "original_message_id": msg.id,
         "dequeue_count": msg.dequeue_count,
-        "failed_at": datetime.now(timezone.utc).isoformat(),
+        "failed_at": datetime.now(UTC).isoformat(),
         "error_message": str(error),
         "error_type": type(error).__name__,
         "payload": payload.model_dump(),
@@ -67,7 +68,7 @@ def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception, j
         poison_client.create_queue()
         poison_client.send_message(json.dumps(poison_message))
 
-    #Notify on the Jira ticket
+    # Notify on the Jira ticket
     try:
         if jira is None:
             jira = JiraClient()
@@ -80,7 +81,8 @@ def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception, j
                     "content": [
                         {
                             "type": "text",
-                            "text": f"Validation failed after {msg.dequeue_count} attempts. The JIVE team has been notified.",
+                            "text": f"Validation failed after {msg.dequeue_count} attempts. "
+                            "The JIVE team has been notified.",
                             "marks": [{"type": "strong"}],
                         }
                     ],
@@ -98,12 +100,15 @@ def dead_letter_message(msg, payload: JiraSubmissionPayload, error: Exception, j
 
 def process_message(msg, payload: JiraSubmissionPayload):
     """Processes a single Jira validation job."""
-    logger.info("Processing message", extra={"issue_key": payload.issue_key, "dequeue_count": msg.dequeue_count})
+    logger.info(
+        "Processing message",
+        extra={"issue_key": payload.issue_key, "dequeue_count": msg.dequeue_count},
+    )
 
     jira = JiraClient()
     proforma = ProformaParser(jira.session, jira.auth, jira.base_url)
     impact_repo = ImpactRepoClient()
-    
+
     # Fetch attachments once — used for both idempotency and download
     attachments = jira.get_attachments(payload.issue_key)
 
@@ -114,15 +119,26 @@ def process_message(msg, payload: JiraSubmissionPayload):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
-        
+
         # Resolve issue ID once to reuse
         resolved_issue_id = jira.get_issue_id(payload.issue_key)
         proforma_answers = proforma.get_answers(resolved_issue_id) if resolved_issue_id else {}
 
-        dataset_path = download_dataset(jira, proforma, impact_repo, payload, tmp_path, resolved_issue_id, attachments, proforma_answers)
+        dataset_path = download_dataset(
+            jira,
+            proforma,
+            impact_repo,
+            payload,
+            tmp_path,
+            resolved_issue_id,
+            attachments,
+            proforma_answers,
+        )
 
-        dataset_type, repo_url, repo_action = resolve_context(proforma, payload, resolved_issue_id, proforma_answers)
-        
+        dataset_type, repo_url, repo_action = resolve_context(
+            proforma, payload, resolved_issue_id, proforma_answers
+        )
+
         response = run_validation(dataset_path, dataset_type, payload)
 
         duration_ms = int((time.monotonic() - start_time) * 1000)
@@ -134,10 +150,14 @@ def process_message(msg, payload: JiraSubmissionPayload):
         excel_report_path = tmp_path / f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
         export_response_to_excel(response, excel_report_path)
 
-        publish_results(jira, payload, response, excel_report_path, repo_url, repo_action, dataset_type)
+        publish_results(
+            jira, payload, response, excel_report_path, repo_url, repo_action, dataset_type
+        )
 
         total_ms = int((time.monotonic() - start_time) * 1000)
-        logger.info("Job completed", extra={"issue_key": payload.issue_key, "duration_ms": total_ms})
+        logger.info(
+            "Job completed", extra={"issue_key": payload.issue_key, "duration_ms": total_ms}
+        )
 
 
 def main():
@@ -151,7 +171,7 @@ def main():
     except ResourceNotFoundError:
         logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
         queue_client.create_queue()
-        
+
     logger.info("Worker started", extra={"queue": QUEUE_NAME})
 
     while True:
@@ -171,13 +191,19 @@ def main():
                         "Malformed message — dead-lettering immediately",
                         extra={"msg_id": msg.id, "content": str(msg.content)[:200]},
                     )
-                    dead_letter_message(msg, JiraSubmissionPayload(issue_key="UNKNOWN"), ValueError("Malformed JSON payload"))
+                    dead_letter_message(
+                        msg,
+                        JiraSubmissionPayload(issue_key="UNKNOWN"),
+                        ValueError("Malformed JSON payload"),
+                    )
                     queue_client.delete_message(msg)
                     continue
 
                 # Dead-letter check
                 if msg.dequeue_count > MAX_RETRIES:
-                    dead_letter_message(msg, payload, RuntimeError(f"Exceeded {MAX_RETRIES} retries"))
+                    dead_letter_message(
+                        msg, payload, RuntimeError(f"Exceeded {MAX_RETRIES} retries")
+                    )
                     queue_client.delete_message(msg)
                     continue
 

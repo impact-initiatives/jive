@@ -1,21 +1,33 @@
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 
 class JiraSubmissionPayload(BaseModel):
     """
-    Validates the custom JSON payload sent by Jira Workflow Automations 
+    Validates the custom JSON payload sent by Jira Workflow Automations
     via the "Send web request" action.
     """
-    #TO UPDATE is serves to check the payload from Jira and sort the keys. Maybe in the future there will be other keys to check.¨
-    #it doesnt check if the value is correct, it just checks if the key exists
-    #if it doesn't exist the field with be empty and won't throw an error since it does just sort them
-    #TODO: make it throw an error if the field is empty (necessary?)
+
+    # TO UPDATE is serves to check the payload from Jira and sort the keys. Maybe in the future
+    # there will be other keys to check.¨
+    # it doesnt check if the value is correct, it just checks if the key exists
+    # if it doesn't exist the field with be empty and won't throw an error since
+    # it does just sort them
+    # TODO: make it throw an error if the field is empty (necessary?)
 
     issue_key: str = Field(..., description="The Jira Issue Key (e.g., RQA-123)")
     project_key: str = Field(default="", description="The Jira Project Key")
     rcid: str = Field(default="", description="The RCID from the ticket summary")
     dataset_type: str = Field(default="jmmi", description="The type of assessment")
-    secure_link: str | None = Field(default=None, description="Optional URL to download the dataset from instead of Jira attachments")
-    force_revalidation: bool = Field(default=False, description="If true, bypasses the idempotency guard and forces validation to run")
+    secure_link: str | None = Field(
+        default=None,
+        description="Optional URL to download the dataset from instead of Jira attachments",
+    )
+    force_revalidation: bool = Field(
+        default=False,
+        description="If true, bypasses the idempotency guard and forces validation to run",
+    )
 
     model_config = ConfigDict(extra="ignore")
 
@@ -28,3 +40,37 @@ class JiraSubmissionPayload(BaseModel):
         elif isinstance(dt, str):
             data["dataset_type"] = dt.lower()
         return data
+
+
+class ResultItemModel(BaseModel):
+    rule: str
+    message: str
+    severity: str
+    sheet_name: str | None = None
+    column_name: str | None = None
+    details: dict[str, Any] | None = None
+
+
+class SummaryModel(BaseModel):
+    passed: int
+    admin_errors: int
+    errors: int
+    warnings: int
+    info: int
+
+
+class MetadataModel(BaseModel):
+    dataset_type: str
+
+
+class PipelineResponse(BaseModel):
+    """The strictly typed output of the ValidationPipeline."""
+
+    success: bool
+    summary: SummaryModel
+    admin_errors: list[ResultItemModel] = Field(default_factory=list)
+    errors: list[ResultItemModel] = Field(default_factory=list)
+    warnings: list[ResultItemModel] = Field(default_factory=list)
+    info: list[ResultItemModel] = Field(default_factory=list)
+    passed: list[ResultItemModel] = Field(default_factory=list)
+    metadata: MetadataModel

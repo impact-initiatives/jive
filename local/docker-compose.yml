@@ -16,7 +16,7 @@ services:
   jive-ingress:
     build:
       context: ../..
-      dockerfile: jira_poc/local/Dockerfile.local
+      dockerfile: jive/local/Dockerfile.local
     container_name: jive-ingress
     ports:
       - "8000:8000"
@@ -35,7 +35,7 @@ services:
   jive-worker:
     build:
       context: ../..
-      dockerfile: jira_poc/local/Dockerfile.local
+      dockerfile: jive/local/Dockerfile.local
     container_name: jive-worker
     command: [ "python", "worker.py" ]
     env_file:
