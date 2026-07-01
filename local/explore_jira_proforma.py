@@ -76,6 +76,7 @@ def verify_credentials():
 
     return False
 
+
 def list_recent_projects():
     print("--- [Step 1] Fetching active projects on your Jira site ---")
     url = f"{JIRA_BASE_URL}/rest/api/3/project"

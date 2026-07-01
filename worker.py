@@ -124,40 +124,43 @@ def process_message(msg, payload: JiraSubmissionPayload):
         resolved_issue_id = jira.get_issue_id(payload.issue_key)
         proforma_answers = proforma.get_answers(resolved_issue_id) if resolved_issue_id else {}
 
-        dataset_path = download_dataset(
-            jira,
-            proforma,
-            impact_repo,
-            payload,
-            tmp_path,
-            resolved_issue_id,
-            attachments,
-            proforma_answers,
-        )
+        if resolved_issue_id is not None:
+            dataset_path = download_dataset(
+                jira,
+                proforma,
+                impact_repo,
+                payload,
+                tmp_path,
+                resolved_issue_id,
+                attachments,
+                proforma_answers,
+            )
 
-        dataset_type, repo_url, repo_action = resolve_context(
-            proforma, payload, resolved_issue_id, proforma_answers
-        )
+            dataset_type, repo_url, repo_action = resolve_context(
+                proforma, payload, resolved_issue_id, proforma_answers
+            )
+            if dataset_path is not None:
+                response = run_validation(dataset_path, dataset_type, payload)
 
-        response = run_validation(dataset_path, dataset_type, payload)
+                duration_ms = int((time.monotonic() - start_time) * 1000)
+                logger.info(
+                    "Pipeline completed",
+                    extra={"issue_key": payload.issue_key, "duration_ms": duration_ms},
+                )
 
-        duration_ms = int((time.monotonic() - start_time) * 1000)
-        logger.info(
-            "Pipeline completed",
-            extra={"issue_key": payload.issue_key, "duration_ms": duration_ms},
-        )
+                excel_report_path = tmp_path / f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
+                export_response_to_excel(response, excel_report_path)
 
-        excel_report_path = tmp_path / f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
-        export_response_to_excel(response, excel_report_path)
+                publish_results(
+                    jira, payload, response, excel_report_path, repo_url, repo_action, dataset_type
+                )
 
-        publish_results(
-            jira, payload, response, excel_report_path, repo_url, repo_action, dataset_type
-        )
-
-        total_ms = int((time.monotonic() - start_time) * 1000)
-        logger.info(
-            "Job completed", extra={"issue_key": payload.issue_key, "duration_ms": total_ms}
-        )
+                total_ms = int((time.monotonic() - start_time) * 1000)
+                logger.info(
+                    "Job completed", extra={"issue_key": payload.issue_key, "duration_ms": total_ms}
+                )
+        else:
+            raise ValueError("Failed to resolve issue ID from key.")
 
 
 def main():
@@ -200,7 +203,7 @@ def main():
                     continue
 
                 # Dead-letter check
-                if msg.dequeue_count > MAX_RETRIES:
+                if msg.dequeue_count is not None and msg.dequeue_count > MAX_RETRIES:
                     dead_letter_message(
                         msg, payload, RuntimeError(f"Exceeded {MAX_RETRIES} retries")
                     )

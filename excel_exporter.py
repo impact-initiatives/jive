@@ -137,7 +137,7 @@ def export_response_to_excel(
         df_summary.write_excel(
             workbook=workbook,
             worksheet="Validation Summary",
-            header_format=header_format,
+            header_format=header_format.__dict__,
             autofit=True,
         )
 
@@ -188,6 +188,6 @@ def export_response_to_excel(
             df_details.write_excel(
                 workbook=workbook,
                 worksheet="Detailed Findings",
-                header_format=header_format,
+                header_format=header_format.__dict__,
                 autofit=True,
             )

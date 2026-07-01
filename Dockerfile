@@ -5,16 +5,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.4 /uv /uvx /bin/
 
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# Clone argus and install it as a proper package and all of its dependencies
-# RUN --mount=type=secret,id=github_token,required=true \
-#     git clone https://$(cat /run/secrets/github_token)@github.com/impact-initiatives/argus.git /tmp/argus && \
-#     uv pip install --system --no-cache /tmp/argus && \
-#     rm -rf /tmp/argus
-
 RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/impact-initiatives/argus.git /tmp/argus && \
     cd /tmp/argus && \
     git fetch origin --tags && \
-    LATEST_TAG=$(git describe $(git rev-list --tags --max-count=1)) && \
+    LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1)) && \
     git checkout $LATEST_TAG && \
     uv pip install --system --no-cache . && \
     cd / && \
@@ -33,6 +27,7 @@ RUN uv pip install --system --no-cache \
 
 COPY . /app
 
+
 #Step 2: Runtime Stage
 FROM python:3.12-slim-trixie
 
@@ -42,11 +37,13 @@ RUN useradd --create-home --no-log-init jive
 #Copy Python packages and app code from the builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
+
+ 
 # Copy JIVE microservice code
 COPY --chown=jive:jive . /app
-COPY --chown=jive:jive /tmp/argus/locales /app/locales/app
 
 WORKDIR /app
+RUN mkdir -p /app/logs /app/dataset_config
 USER jive
 
 #Default: ingress. Override via Container App command for worker.

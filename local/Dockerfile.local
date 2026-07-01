@@ -20,9 +20,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy and install the local argus package
 
 COPY ./argus /argus
-RUN mkdir -p /argus/logs && \ 
-    mkdir -p /argus/dataset_config && \ 
-    uv pip install --no-cache /argus
+RUN    uv pip install --no-cache /argus
 
 # Install JIVE dependencies inside the virtual environment
 RUN uv pip install --no-cache \
@@ -42,6 +40,7 @@ RUN uv pip install --no-cache \
 FROM python:3.12-slim-trixie AS runner
 
 WORKDIR /app
+RUN mkdir -p /app/logs /app/dataset_config
 
 # Copy the pre-compiled virtual environment from the builder
 COPY --from=builder /opt/venv /opt/venv
@@ -54,11 +53,6 @@ RUN useradd --create-home --no-log-init jive
 
 # Copy JIVE microservice code
 COPY --chown=jive:jive ./jive /app
-COPY --chown=jive:jive ./argus/locales /app/locales 
-COPY --chown=jive:jive ./argus/logs /app/logs 
-COPY --chown=jive:jive ./argus/dataset_config /app/dataset_config 
-
-
 
 USER jive
 # RUN  mkdir ./app/logs && chown -R jive:jive ./app/logs

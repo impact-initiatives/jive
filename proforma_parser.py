@@ -52,6 +52,7 @@ class ProformaParser:
         response.raise_for_status()
 
         self.cloud_id = response.json()["cloudId"]
+        assert self.cloud_id is not None
         logger.info("Atlassian Cloud ID cached successfully", extra={"cloud_id": self.cloud_id})
         return self.cloud_id
 
