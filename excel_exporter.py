@@ -107,11 +107,20 @@ def export_response_to_excel(
                 rule_detail_dfs[rule].append(df)
                 total_detail_rows += len(df)
             except Exception as e:
-                logger.warning(
-                    "Failed to expand details for rule '%s' into DataFrame — skipping. Error: %s",
-                    rule,
-                    e,
-                )
+                try:
+                    # some dicts cant be converted into dataframe so just store it as a string
+                    df = pl.DataFrame({"details": repr(details)})
+                    if rule not in rule_detail_dfs:
+                        rule_detail_dfs[rule] = []
+
+                    rule_detail_dfs[rule].append(df)
+                    total_detail_rows += len(df)
+
+                except Exception as ex:
+                    logger.warning(
+                        f"Failed to expand details for rule '{rule}' into DataFrame — skipping."
+                        f" Error: {e}, {ex}",
+                    )
 
     if truncated:
         summary_rows.insert(
@@ -137,7 +146,7 @@ def export_response_to_excel(
         df_summary.write_excel(
             workbook=workbook,
             worksheet="Validation Summary",
-            header_format=header_format.__dict__,
+            header_format=header_format,
             autofit=True,
         )
 
@@ -188,6 +197,6 @@ def export_response_to_excel(
             df_details.write_excel(
                 workbook=workbook,
                 worksheet="Detailed Findings",
-                header_format=header_format.__dict__,
+                header_format=header_format,
                 autofit=True,
             )
