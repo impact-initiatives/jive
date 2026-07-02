@@ -20,7 +20,7 @@ os.environ["REPO_USERNAME"] = "mock-wp-username@example.com"
 os.environ["REPO_PASSWORD"] = "mock-wp-password"
 
 from impact_repo_client import ImpactRepoClient  # noqa: E402
-from jira_client import JiraClient  # noqa: E402
+from jira.jira_client import JiraClient  # noqa: E402
 from proforma_parser import ProformaParser  # noqa: E402
 from worker_utils import resolve_dataset  # noqa: E402
 
@@ -28,7 +28,7 @@ from worker_utils import resolve_dataset  # noqa: E402
 @responses.activate
 def test_get_cloud_id():
     """Test retrieving and caching Atlassian Cloud ID."""
-    responses.add(
+    _ = responses.add(
         responses.GET,
         "https://mock/_edge/tenant_info",
         json={"cloudId": "mock-cloud-id-12345"},
@@ -50,13 +50,13 @@ def test_get_cloud_id():
 @responses.activate
 def test_get_proforma_answers():
     """Test parsing of complex ProForma answers JSON."""
-    responses.add(
+    _ = responses.add(
         responses.GET,
         "https://api.atlassian.com/jira/forms/cloud/mock-cloud-id-12345/issue/issue-id-999/form",
         json=[{"id": "form-uuid-abc-123", "submitted": True}],
         status=200,
     )
-    responses.add(
+    _ = responses.add(
         responses.GET,
         "https://api.atlassian.com/jira/forms/cloud/mock-cloud-id-12345/issue/issue-id-999/form/form-uuid-abc-123",
         json={
@@ -103,10 +103,10 @@ def test_get_proforma_answers():
 @responses.activate
 def test_get_repo_session():
     """Test authenticated WordPress session creation for IMPACT Repository."""
-    responses.add(
+    _ = responses.add(
         responses.GET, "https://repository.impact-initiatives.org/wp-login.php", status=200
     )
-    responses.add(
+    _ = responses.add(
         responses.POST,
         "https://repository.impact-initiatives.org/wp-login.php",
         status=200,
@@ -137,7 +137,7 @@ def test_scrape_excel_url():
     </html>
     """  # noqa: E501
 
-    responses.add(
+    _ = responses.add(
         responses.GET,
         "https://repository.impact-initiatives.org/Ukraine_JMMI_R40_page",
         body=mock_html,

@@ -5,6 +5,7 @@ import urllib.parse
 from pathlib import Path
 
 import requests
+from requests.sessions import Session
 from tenacity import (
     before_sleep_log,
     retry,
@@ -13,6 +14,13 @@ from tenacity import (
     wait_exponential,
 )
 
+from jira.models import (
+    IssueAttachment,
+    IssueAttachmentResponse,
+    IssueResponse,
+    ServiceDeskResponse,
+    TemporaryAttachmentsResponse,
+)
 from logger import get_logger
 
 logger = get_logger("jive.jira_client")
@@ -33,7 +41,7 @@ ALLOWED_DOMAINS: frozenset[str] = frozenset(
 if not ALLOWED_DOMAINS:
     logger.warning(
         "ALLOWED_DOMAINS env var is set but empty — all secure link downloads will be blocked"
-        " (fail-closed SSRF protection)"
+        + " (fail-closed SSRF protection)"
     )
 
 
@@ -51,30 +59,30 @@ def _check_retryable(response: requests.Response):
 
 class JiraClient:
     def __init__(self):
-        self.email = os.getenv("JIRA_API_EMAIL")
-        self.token = os.getenv("JIRA_API_TOKEN")
-        self.base_url = os.getenv("JIRA_BASE_URL", "https://reach-initiative.atlassian.net").rstrip(
-            "/"
-        )
+        self.email: str | None = os.getenv("JIRA_API_EMAIL")
+        self.token: str | None = os.getenv("JIRA_API_TOKEN")
+        self.base_url: str = os.getenv(
+            "JIRA_BASE_URL", "https://reach-initiative.atlassian.net"
+        ).rstrip("/")
 
         if not self.email or not self.token:
             raise ValueError("JIRA_API_EMAIL and JIRA_API_TOKEN environment variables must be set")
 
-        self.auth = (self.email, self.token)
-        self.headers = {
+        self.auth: tuple[str, str] = (self.email, self.token)
+        self.headers: dict[str, str] = {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
 
-        self.secure_link_user = os.getenv("SECURE_LINK_USERNAME")
-        self.secure_link_pass = os.getenv("SECURE_LINK_PASSWORD")
-        self.secure_link_auth = (
+        self.secure_link_user: str | None = os.getenv("SECURE_LINK_USERNAME")
+        self.secure_link_pass: str | None = os.getenv("SECURE_LINK_PASSWORD")
+        self.secure_link_auth: tuple[str, str] | None = (
             (self.secure_link_user, self.secure_link_pass)
             if self.secure_link_user and self.secure_link_pass
             else None
         )
 
-        self.session = requests.Session()
+        self.session: Session = requests.Session()
         self.session.auth = self.auth
         self.session.headers.update(self.headers)
 
@@ -86,7 +94,13 @@ class JiraClient:
         ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def post_comment(self, issue_key: str, adf_content: dict) -> bool:
+    def post_comment(
+        self,
+        issue_key: str,
+        adf_content: dict[
+            str, int | str | list[dict[str, str | list[dict[str, str | list[dict[str, str]]]]]]
+        ],
+    ) -> bool:
         """Posts an Atlassian Document Format (ADF) comment to the issue."""
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}/comment"
         payload = {"body": adf_content}
@@ -122,7 +136,7 @@ class JiraClient:
         """Uploads a file to the Jira issue as an attachment."""
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}/attachments"
 
-        headers = {
+        headers: dict[str, str | None] = {
             "X-Atlassian-Token": "no-check",
             "Accept": "application/json",
             "Content-Type": None,
@@ -152,9 +166,9 @@ class JiraClient:
                 },
             )
             try:
-                attachments_data = response.json()
-                if attachments_data and isinstance(attachments_data, list):
-                    content_url = attachments_data[0].get("content")
+                response_data = IssueAttachmentResponse.model_validate(response.json())
+                if response_data.attachments:
+                    content_url = response_data.attachments[0].content
                     logger.info(
                         "Attachment content URL",
                         extra={"issue_key": issue_key, "content_url": content_url},
@@ -183,7 +197,8 @@ class JiraClient:
         response = self.session.get(url, timeout=(3.05, 30))
         _check_retryable(response)
         if response.status_code == 200:
-            return response.json().get("id")
+            response_data = ServiceDeskResponse.model_validate(response.json())
+            return response_data.id
         else:
             logger.warning(
                 "Service Desk lookup returned non-200 status",
@@ -248,15 +263,15 @@ class JiraClient:
                     )
                     return False
 
-                temp_attachments = response.json().get("temporaryAttachments", [])
-                if not temp_attachments:
+                response_data = TemporaryAttachmentsResponse.model_validate(response.json())
+                if not response_data.temporaryAttachments:
                     logger.error(
                         "Temporary JSM attachment response contained no attachments",
                         extra={"issue_key": issue_key},
                     )
                     return False
 
-                temp_attachment_id = temp_attachments[0].get("temporaryAttachmentId")
+                temp_attachment_id = response_data.temporaryAttachments[0].temporaryAttachmentId
                 logger.info(
                     "Temporary JSM attachment uploaded successfully",
                     extra={"issue_key": issue_key, "temp_id": temp_attachment_id},
@@ -314,7 +329,7 @@ class JiraClient:
         ),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def get_attachments(self, issue_key: str) -> list:
+    def get_attachments(self, issue_key: str) -> list[IssueAttachment] | None:
         """Fetches the attachment list for a Jira ticket. Returns a list of attachment dicts.
 
         This is the single source of truth for attachment data — call this once
@@ -328,8 +343,10 @@ class JiraClient:
                 "Failed to fetch attachments",
                 extra={"issue_key": issue_key, "status_code": response.status_code},
             )
-            return []
-        return response.json().get("fields", {}).get("attachment", [])
+            return None
+
+        response_data = IssueResponse.model_validate(response.json())
+        return response_data.fields.attachment
 
     @retry(
         stop=stop_after_attempt(3),
@@ -348,7 +365,8 @@ class JiraClient:
         response = self.session.get(url, timeout=(3.05, 30))
         _check_retryable(response)
         if response.status_code == 200:
-            issue_id = response.json().get("id")
+            response_data = IssueResponse.model_validate(response.json())
+            issue_id = response_data.id
             logger.info(
                 "Resolved issue ID successfully",
                 extra={"issue_key": issue_key, "issue_id": issue_id},
@@ -370,7 +388,7 @@ class JiraClient:
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def download_proforma_attachment(
-        self, issue_key: str, output_dir: Path, attachments: list | None = None
+        self, issue_key: str, output_dir: Path, attachments: list[IssueAttachment] | None = None
     ) -> Path | None:
         """Downloads the most recent Excel attachment from the Jira ticket.
 
@@ -383,31 +401,35 @@ class JiraClient:
         if attachments is None:
             attachments = self.get_attachments(issue_key)
 
-        xlsx_attachments = [
-            a
-            for a in attachments
-            if a.get("filename", "").endswith(".xlsx")
-            and not a.get("filename", "").startswith("JIVE_Validation_Report_")
-        ]
+        if attachments is not None:
+            xlsx_attachments = [
+                a
+                for a in attachments
+                if a.filename.endswith(".xlsx")
+                and not a.filename.startswith("JIVE_Validation_Report_")
+            ]
 
-        if not xlsx_attachments:
-            logger.warning("No Excel attachments found", extra={"issue_key": issue_key})
+            if not xlsx_attachments:
+                logger.warning("No Excel attachments found", extra={"issue_key": issue_key})
+                return None
+        else:
+            logger.warning("No attachments found", extra={"issue_key": issue_key})
             return None
 
         # Sort by creation date descending (newest first) so we always grab the latest version
         # handle both new uploaded file or updated version
-        xlsx_attachments.sort(key=lambda a: a.get("created", ""), reverse=True)
+        xlsx_attachments.sort(key=lambda a: a.created, reverse=True)
         latest_attachment = xlsx_attachments[0]
 
-        filename = latest_attachment.get("filename", "")
-        content_url = latest_attachment.get("content")
+        filename = latest_attachment.filename
+        content_url = latest_attachment.content
 
         logger.info(
             "Downloading most recent attachment",
             extra={
                 "issue_key": issue_key,
                 "url": _sanitize_url(content_url),
-                "attachment_created": latest_attachment.get("created"),
+                "attachment_created": latest_attachment.created,
             },
         )
 
@@ -430,7 +452,7 @@ class JiraClient:
         self,
         url: str,
         output_path: Path,
-        auth: tuple | None = None,
+        auth: tuple[str, str] | None = None,
         session: requests.Session | None = None,
     ) -> bool:
         """Helper method to download a file with retries."""
@@ -439,7 +461,10 @@ class JiraClient:
 
         # When using a custom session, it carries its own auth.
         # If an explicit auth tuple is provided, we use it (e.g. for secure links).
-        kwargs = {"stream": True, "timeout": (3.05, 300)}
+        kwargs: dict[str, bool | tuple[float, int] | tuple[str, str]] = {
+            "stream": True,
+            "timeout": (3.05, 300),
+        }
         if auth is not None:
             kwargs["auth"] = auth
 
@@ -459,7 +484,7 @@ class JiraClient:
                         if downloaded_bytes > max_bytes:
                             exceeded_size = True
                             break
-                        f.write(chunk)
+                        _ = f.write(chunk)
 
                 if exceeded_size:
                     logger.error(
@@ -502,7 +527,7 @@ class JiraClient:
         if not ALLOWED_DOMAINS:
             logger.error(
                 "SSRF Protection: ALLOWED_DOMAINS is empty — blocking all secure link"
-                " downloads (fail-closed)",
+                + " downloads (fail-closed)",
                 extra={"url": _sanitize_url(url)},
             )
             return None

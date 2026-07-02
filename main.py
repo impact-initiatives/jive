@@ -116,12 +116,12 @@ def handle_jira_webhook(
         queue_client = get_queue_client()
         message_body = payload.model_dump_json()
         try:
-            queue_client.send_message(message_body)
+            _ = queue_client.send_message(message_body)
         except ResourceNotFoundError:
             # Auto-create queue if it genuinely doesn't exist (common in local Azurite testing)
             logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
             queue_client.create_queue()
-            queue_client.send_message(message_body)
+            _ = queue_client.send_message(message_body)
     except Exception as e:
         logger.error(
             "Failed to enqueue message",

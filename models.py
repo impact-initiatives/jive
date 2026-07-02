@@ -29,7 +29,7 @@ class JiraSubmissionPayload(BaseModel):
         description="If true, bypasses the idempotency guard and forces validation to run",
     )
 
-    model_config = ConfigDict(extra="ignore")
+    model_config: ConfigDict = ConfigDict(extra="ignore")
 
     @model_validator(mode="before")
     @classmethod
@@ -54,6 +54,7 @@ class ResultItemModel(BaseModel):
 class SummaryModel(BaseModel):
     passed: int
     admin_errors: int
+    admin_info: int
     errors: int
     warnings: int
     info: int
@@ -69,6 +70,7 @@ class PipelineResponse(BaseModel):
     success: bool
     summary: SummaryModel
     admin_errors: list[ResultItemModel] = Field(default_factory=list)
+    admin_info: list[ResultItemModel] = Field(default_factory=list)
     errors: list[ResultItemModel] = Field(default_factory=list)
     warnings: list[ResultItemModel] = Field(default_factory=list)
     info: list[ResultItemModel] = Field(default_factory=list)

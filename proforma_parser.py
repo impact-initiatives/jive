@@ -2,6 +2,7 @@ import logging
 import os
 
 import requests
+from requests.sessions import Session
 from tenacity import (
     before_sleep_log,
     retry,
@@ -10,23 +11,23 @@ from tenacity import (
     wait_exponential,
 )
 
-from jira_client import JiraAPIError, _check_retryable
+from jira.jira_client import JiraAPIError, _check_retryable
 from logger import get_logger
 
 logger = get_logger("jive.proforma_parser")
 
 
 class ProformaParser:
-    def __init__(self, session: requests.Session, auth: tuple, base_url: str):
-        self.session = session
-        self.auth = auth
-        self.base_url = base_url
+    def __init__(self, session: requests.Session, auth: tuple[str, str], base_url: str):
+        self.session: Session = session
+        self.auth: tuple[str, str] = auth
+        self.base_url: str = base_url
         self.cloud_id: str | None = None
 
-        self.dataset_type_label = os.getenv("PROFORMA_DATASET_TYPE_LABEL", "Dataset type")
-        self.repo_label = os.getenv("PROFORMA_REPO_LABEL", "IMPACT Repository")
+        self.dataset_type_label: str = os.getenv("PROFORMA_DATASET_TYPE_LABEL", "Dataset type")
+        self.repo_label: str = os.getenv("PROFORMA_REPO_LABEL", "IMPACT Repository")
 
-        self.headers = {
+        self.headers: dict[str, str] = {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }

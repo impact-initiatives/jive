@@ -3,10 +3,16 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from models import ResultItemModel
 from report_formatter import format_comment_adf
 
 
-def _make_response(success: bool, errors=None, warnings=None, passed=None):
+def _make_response(
+    success: bool,
+    errors: list[dict[str, str]] | None = None,
+    warnings: list[dict[str, str]] | None = None,
+    passed: list[dict[str, str]] | None = None,
+):
     """Helper to build a minimal PipelineResponse-like object for testing."""
     from unittest.mock import MagicMock
 
@@ -17,11 +23,20 @@ def _make_response(success: bool, errors=None, warnings=None, passed=None):
     response.metadata.dataset_type = "jmmi"
     response.metadata.timestamp = "2023-01-01T12:00:00Z"
 
+    def _convert_items(items: list[dict[str, str]]):
+        validated_items: list[ResultItemModel] = []
+        for item in items:
+            item["message"] = ""
+            item["severity"] = ""
+            validated_items.append(ResultItemModel.model_validate(item))
+
+        return validated_items
+
     # Lists of dicts for the new formatter
-    response.errors = errors if errors else []
-    response.warnings = warnings if warnings else []
+    response.errors = _convert_items(errors) if errors is not None else []
+    response.warnings = _convert_items(warnings) if warnings is not None else []
     response.admin_errors = []
-    response.passed = passed if passed else []
+    response.passed = _convert_items(passed) if passed is not None else []
 
     return response
 

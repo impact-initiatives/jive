@@ -6,11 +6,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from azure.core.exceptions import ResourceNotFoundError
-from azure.storage.queue import QueueClient
+from azure.core.paging import ItemPaged
+from azure.storage.queue import QueueClient, QueueMessage
 
 from excel_exporter import export_response_to_excel
 from impact_repo_client import ImpactRepoClient
-from jira_client import JiraClient
+from jira.jira_client import JiraClient
+from jira.models import IssueAttachment
 from logger import get_logger
 from models import JiraSubmissionPayload
 from proforma_parser import ProformaParser
@@ -38,7 +40,10 @@ def get_queue_client(queue_name: str = QUEUE_NAME) -> QueueClient:
 
 
 def dead_letter_message(
-    msg, payload: JiraSubmissionPayload, error: Exception, jira: JiraClient | None = None
+    msg: QueueMessage,
+    payload: JiraSubmissionPayload,
+    error: Exception,
+    jira: JiraClient | None = None,
 ):
     """Moves a failed message to the poison queue with full metadata."""
     poison_message = {
@@ -62,17 +67,19 @@ def dead_letter_message(
 
     poison_client = get_queue_client(POISON_QUEUE_NAME)
     try:
-        poison_client.send_message(json.dumps(poison_message))
+        _ = poison_client.send_message(json.dumps(poison_message))
     except ResourceNotFoundError:
         logger.info("Poison queue not found, creating it...", extra={"queue": POISON_QUEUE_NAME})
         poison_client.create_queue()
-        poison_client.send_message(json.dumps(poison_message))
+        _ = poison_client.send_message(json.dumps(poison_message))
 
     # Notify on the Jira ticket
     try:
         if jira is None:
             jira = JiraClient()
-        error_adf = {
+        error_adf: dict[
+            str, int | str | list[dict[str, str | list[dict[str, str | list[dict[str, str]]]]]]
+        ] = {
             "version": 1,
             "type": "doc",
             "content": [
@@ -81,15 +88,15 @@ def dead_letter_message(
                     "content": [
                         {
                             "type": "text",
-                            "text": f"Validation failed after {msg.dequeue_count} attempts. "
-                            "The JIVE team has been notified.",
+                            "text": f"Validation failed after {msg.dequeue_count} attempts."
+                            + " The JIVE team has been notified.",
                             "marks": [{"type": "strong"}],
                         }
                     ],
                 }
             ],
         }
-        jira.post_comment(payload.issue_key, error_adf)
+        _ = jira.post_comment(payload.issue_key, error_adf)
     except Exception as notify_err:
         logger.error(
             "Failed to post dead-letter notification to Jira",
@@ -98,7 +105,7 @@ def dead_letter_message(
         )
 
 
-def process_message(msg, payload: JiraSubmissionPayload):
+def process_message(msg: QueueMessage, payload: JiraSubmissionPayload):
     """Processes a single Jira validation job."""
     logger.info(
         "Processing message",
@@ -110,10 +117,12 @@ def process_message(msg, payload: JiraSubmissionPayload):
     impact_repo = ImpactRepoClient()
 
     # Fetch attachments once — used for both idempotency and download
-    attachments = jira.get_attachments(payload.issue_key)
+    attachments: list[IssueAttachment] | None = jira.get_attachments(payload.issue_key)
 
     if check_idempotency(payload, attachments):
         return
+
+    assert attachments is not None
 
     start_time = time.monotonic()
 
@@ -170,7 +179,7 @@ def main():
 
     queue_client = get_queue_client()
     try:
-        queue_client.get_queue_properties()
+        _ = queue_client.get_queue_properties()
     except ResourceNotFoundError:
         logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
         queue_client.create_queue()
@@ -179,7 +188,9 @@ def main():
 
     while True:
         try:
-            messages = queue_client.receive_messages(max_messages=1, visibility_timeout=300)
+            messages: ItemPaged[QueueMessage] = queue_client.receive_messages(
+                max_messages=1, visibility_timeout=300
+            )
 
             has_message = False
             for msg in messages:

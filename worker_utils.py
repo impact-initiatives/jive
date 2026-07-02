@@ -5,7 +5,8 @@ from pathlib import Path
 from argus.orchestrator.validation_pipeline import ValidationPipeline
 
 from impact_repo_client import ImpactRepoClient
-from jira_client import JiraClient
+from jira.jira_client import JiraClient
+from jira.models import IssueAttachment
 from logger import get_logger
 from models import JiraSubmissionPayload, PipelineResponse
 from proforma_parser import ProformaParser
@@ -36,30 +37,33 @@ def _parse_timestamp(ts_str: str) -> datetime:
         return datetime.min
 
 
-def check_idempotency(payload: JiraSubmissionPayload, attachments: list) -> bool:
+def check_idempotency(
+    payload: JiraSubmissionPayload, attachments: list[IssueAttachment] | None
+) -> bool:
     """Returns True if the validation should be skipped due to an up-to-date report."""
     # Idempotency guard: skip if a JIVE report already exists and is newer than the newest dataset
+    if attachments is None:
+        return False
+
     expected_report_name = f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
 
-    report_attachment = next(
-        (a for a in attachments if a.get("filename") == expected_report_name), None
-    )
+    report_attachment = next((a for a in attachments if a.filename == expected_report_name), None)
 
     # Find all non-report Excel dataset attachments
     dataset_attachments = [
         a
         for a in attachments
-        if a.get("filename", "").endswith(".xlsx") and a.get("filename") != expected_report_name
+        if a.filename.endswith(".xlsx") and a.filename != expected_report_name
     ]
     # Sort dataset attachments with newest first
-    dataset_attachments.sort(key=lambda a: _parse_timestamp(a.get("created", "")), reverse=True)
+    dataset_attachments.sort(key=lambda a: _parse_timestamp(a.created), reverse=True)
     latest_dataset = dataset_attachments[0] if dataset_attachments else None
 
     skip_validation = False
     if report_attachment:
         if latest_dataset:
-            report_ts = _parse_timestamp(report_attachment.get("created", ""))
-            dataset_ts = _parse_timestamp(latest_dataset.get("created", ""))
+            report_ts = _parse_timestamp(report_attachment.created)
+            dataset_ts = _parse_timestamp(latest_dataset.created)
             skip_validation = report_ts > dataset_ts
         else:
             # If there's no dataset attachment, the dataset is externally
@@ -92,7 +96,7 @@ def resolve_dataset(
     issue_key: str,
     output_dir: Path,
     issue_id: str | None = None,
-    attachments: list | None = None,
+    attachments: list[IssueAttachment] | None = None,
     secure_link: str | None = None,
     proforma_answers: dict | None = None,
 ) -> Path | None:
@@ -218,13 +222,13 @@ def download_dataset(
                         {
                             "type": "text",
                             "text": "Failed to download dataset. No valid Excel attachment or"
-                            " repository link found.",
+                            + " repository link found.",
                         }
                     ],
                 }
             ],
         }
-        jira.post_comment(payload.issue_key, error_adf)
+        _ = jira.post_comment(payload.issue_key, error_adf)
         logger.warning("No Excel dataset resolved", extra={"issue_key": payload.issue_key})
         raise DatasetResolutionError(f"No dataset resolved for {payload.issue_key}")
 
@@ -305,7 +309,7 @@ def run_validation(
         },
     )
     pipeline = ValidationPipeline()
-    response_dict = pipeline.run_all(dataset_path, pipeline_dataset_type)
+    response_dict = pipeline.run_all(filepath=dataset_path, dataset_type=pipeline_dataset_type)
 
     # argus's ValidationPipeline._compile_results outputs keys
     # like 'error', 'warning', 'admin_error'
@@ -315,7 +319,6 @@ def run_validation(
         "error": "errors",
         "warning": "warnings",
         "admin_error": "admin_errors",
-        "admin_info": "info",
     }
 
     patched_dict = {}
@@ -341,7 +344,7 @@ def run_validation(
     except Exception as e:
         logger.warning(
             "Failed strict Pydantic parsing of validation response."
-            " Attempting schema-tolerant model_construct fallback.",
+            + " Attempting schema-tolerant model_construct fallback.",
             exc_info=e,
             extra={"issue_key": payload.issue_key},
         )
@@ -352,11 +355,19 @@ def run_validation(
                 success=patched_dict.get("success", False),
                 summary=patched_dict.get(
                     "summary",
-                    {"passed": False, "admin_errors": 1, "errors": 0, "warnings": 0, "info": 0},
+                    {
+                        "passed": False,
+                        "admin_errors": 1,
+                        "admin_info": 1,
+                        "errors": 0,
+                        "warnings": 0,
+                        "info": 0,
+                    },
                 ),
                 metadata=patched_dict.get("metadata", {"dataset_type": dataset_type}),
                 errors=patched_dict.get("errors", []),
                 admin_errors=patched_dict.get("admin_errors", []),
+                admin_info=patched_dict.get("admin_info", []),
                 warnings=patched_dict.get("warnings", []),
                 info=patched_dict.get("info", []),
                 passed=patched_dict.get("passed", []),
@@ -364,7 +375,7 @@ def run_validation(
         except Exception as fallback_err:
             logger.error(
                 "Critical: Schema-tolerant model construction failed."
-                " Generating generic error report.",
+                + " Generating generic error report.",
                 exc_info=fallback_err,
                 extra={"issue_key": payload.issue_key},
             )
@@ -377,6 +388,7 @@ def run_validation(
                 errors=[],
                 warnings=[],
                 info=[],
+                admin_info=[],
                 admin_errors=[
                     {
                         "severity": "ADMIN",
@@ -426,7 +438,7 @@ def publish_results(
         if not jsm_success:
             logger.info(
                 "JSM public upload failed or skipped (missing project_key)."
-                " Falling back to standard Jira attachment.",
+                + " Falling back to standard Jira attachment.",
                 extra={"issue_key": payload.issue_key},
             )
             upload_ok = jira.upload_attachment(payload.issue_key, excel_report_path)
@@ -454,8 +466,8 @@ def publish_results(
                     {
                         "type": "text",
                         "text": f"⚠️ The validation report ({file_size_mb:.1f}MB) exceeds the Jira"
-                        f" attachment limit ({MAX_JIRA_ATTACHMENT_MB}MB). Please contact the JIVE"
-                        " team to retrieve the full report.",
+                        + f" attachment limit ({MAX_JIRA_ATTACHMENT_MB}MB). Please contact the JIVE"
+                        + " team to retrieve the full report.",
                         "marks": [{"type": "strong"}],
                     }
                 ],
@@ -463,4 +475,4 @@ def publish_results(
         )
 
     logger.info("Posting summary comment", extra={"issue_key": payload.issue_key})
-    jira.post_comment(payload.issue_key, adf_summary)
+    _ = jira.post_comment(payload.issue_key, adf_summary)

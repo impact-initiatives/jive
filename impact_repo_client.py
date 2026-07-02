@@ -6,6 +6,7 @@ import urllib.parse
 from pathlib import Path
 
 import requests
+from requests.sessions import Session
 from tenacity import (
     before_sleep_log,
     retry,
@@ -14,7 +15,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from jira_client import ALLOWED_DOMAINS
+from jira.jira_client import ALLOWED_DOMAINS
 from logger import get_logger
 
 logger = get_logger("jive.impact_repo_client")
@@ -31,10 +32,10 @@ REPO_SESSION_TTL_SECONDS = int(os.getenv("REPO_SESSION_TTL_SECONDS", "43200"))  
 
 class ImpactRepoClient:
     def __init__(self):
-        self.username = os.getenv("REPO_USERNAME")
-        self.password = os.getenv("REPO_PASSWORD")
-        self.session = None
-        self.session_created_at = None
+        self.username: str | None = os.getenv("REPO_USERNAME")
+        self.password: str | None = os.getenv("REPO_PASSWORD")
+        self.session: None | Session = None
+        self.session_created_at: None | float = None
 
     @retry(
         stop=stop_after_attempt(3),
@@ -66,7 +67,7 @@ class ImpactRepoClient:
             extra={"username": self.username.split("@")[0]},
         )
 
-        session = requests.Session()
+        session: Session = requests.Session()
         session.headers.update(
             {
                 "User-Agent": (
@@ -78,7 +79,7 @@ class ImpactRepoClient:
         )
 
         # Prime testcookie
-        session.get(f"{base_url}/wp-login.php", timeout=(3.05, 15))
+        _ = session.get(f"{base_url}/wp-login.php", timeout=(3.05, 15))
 
         # Submit login form
         response = session.post(
@@ -100,7 +101,7 @@ class ImpactRepoClient:
         if not logged_in:
             raise OSError(
                 "WordPress login failed — no auth cookie received. "
-                "Check REPO_USERNAME and REPO_PASSWORD in .env"
+                + "Check REPO_USERNAME and REPO_PASSWORD in .env"
             )
 
         self.session = session
@@ -197,5 +198,5 @@ class ImpactRepoClient:
                     response.close()
                     output_path.unlink(missing_ok=True)
                     return False
-                f.write(chunk)
+                _ = f.write(chunk)
         return True

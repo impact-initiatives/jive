@@ -1,12 +1,13 @@
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
-from models import PipelineResponse
+from models import PipelineResponse, ResultItemModel
 
 try:
-    JIVE_VERSION = version("jive-jira-integration")
+    jive_version = version("jive-jira-integration")
 except PackageNotFoundError:
-    JIVE_VERSION = "0.1.0"
+    jive_version = "0.1.0"
+JIVE_VERSION = jive_version
 
 
 def format_comment_adf(
@@ -16,7 +17,7 @@ def format_comment_adf(
     repo_url: str | None = None,
     repo_action: str | None = None,
     original_dataset_type: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """
     Formats the PipelineResponse into a premium Atlassian Document Format (ADF) comment
     specially optimized for Jira Service Management (JSM) portals.
@@ -63,7 +64,7 @@ def format_comment_adf(
                         {
                             "type": "text",
                             "text": str(repo_action)
-                            if repo_action
+                            if repo_action is not None
                             else "Archive/Publish (Standard)",
                         },
                     ],
@@ -76,7 +77,7 @@ def format_comment_adf(
     repo_node_content = [
         {"type": "text", "text": "IMPACT Repository Resource: ", "marks": [{"type": "strong"}]}
     ]
-    if repo_url:
+    if repo_url is not None:
         repo_node_content.append(
             {
                 "type": "text",
@@ -93,11 +94,7 @@ def format_comment_adf(
 
     # Dataset Format Bullet
     dataset_display = original_dataset_type.upper() if original_dataset_type else "Unknown"
-    fallback_type = (
-        getattr(response.metadata, "dataset_type", "Unknown")
-        if hasattr(response, "metadata") and response.metadata
-        else "Unknown"
-    )
+    fallback_type = response.metadata.dataset_type
     context_list.append(
         {
             "type": "listItem",
@@ -139,22 +136,21 @@ def format_comment_adf(
     )
 
     # 3. Validation Summary Table (for actionable issues)
-    actionable_issues = []
+    actionable_issues: list[tuple[str, str, str, int]] = []
 
-    def extract_issues(items, severity, icon):
+    def extract_issues(items: list[ResultItemModel], severity: str, icon: str):
         if not items:
             return
-        rule_counts = {}
+        rule_counts: dict[str, int] = {}
         for item in items:
-            rule = item.get("rule") if isinstance(item, dict) else getattr(item, "rule", "Unknown")
-            rule_counts[rule] = rule_counts.get(rule, 0) + 1
+            rule_counts[item.rule] = rule_counts.get(item.rule, 0) + 1
 
         for rule, count in rule_counts.items():
             actionable_issues.append((rule, severity, icon, count))
 
-    extract_issues(getattr(response, "errors", []), "Error", "❌")
-    extract_issues(getattr(response, "admin_errors", []), "Error", "❌")
-    extract_issues(getattr(response, "warnings", []), "Warning", "⚠️")
+    extract_issues(response.errors, "Error", "❌")
+    extract_issues(response.admin_errors, "Error", "❌")
+    extract_issues(response.warnings, "Warning", "⚠️")
 
     if actionable_issues:
         table_rows = [
@@ -220,7 +216,7 @@ def format_comment_adf(
                             "content": [
                                 {
                                     "type": "paragraph",
-                                    "content": [{"type": "text", "text": str(rule)}],
+                                    "content": [{"type": "text", "text": rule}],
                                 }
                             ],
                         },
@@ -270,18 +266,18 @@ def format_comment_adf(
     # 4. Clear Actionable Portal Next-Steps
 
     # Collect all rules that had at least one error/warning
-    actionable_rule_names = {rule for rule, severity, icon, count in actionable_issues}
+    actionable_rule_names = {rule for rule, _, _, _ in actionable_issues}
 
-    passed_items = getattr(response, "passed", None) or []
-    passed_rules = set()
+    passed_items = response.passed
+    passed_rules: set[str] = set()
     for item in passed_items:
-        rule = item.get("rule") if isinstance(item, dict) else getattr(item, "rule", "Unknown")
+        rule = item.rule
         # Only consider a rule "passed" if it never triggered an error/warning
         if rule not in actionable_rule_names:
             passed_rules.add(rule)
 
     num_passed = len(passed_rules)
-    passed_list_str = ", ".join(sorted([str(r) for r in passed_rules if r is not None]))
+    passed_list_str = ", ".join(sorted([str(r) for r in passed_rules]))
     passed_msg = (
         f"{num_passed} core quality checks passed successfully ✅ ({passed_list_str})."
         if num_passed > 0
@@ -343,8 +339,8 @@ def format_comment_adf(
                                     {
                                         "type": "text",
                                         "text": "Open the report sheet to review row-by-row cell"
-                                        " errors (highlighted in red) to identify validation "
-                                        "failures.",
+                                        + " errors (highlighted in red) to identify validation "
+                                        + "failures.",
                                     }
                                 ],
                             }
@@ -359,7 +355,7 @@ def format_comment_adf(
                                     {
                                         "type": "text",
                                         "text": "Correct the highlighted inconsistencies in your"
-                                        " source dataset, then ",
+                                        + " source dataset, then ",
                                     },
                                     {
                                         "type": "text",
@@ -399,8 +395,8 @@ def format_comment_adf(
                                     {
                                         "type": "text",
                                         "text": "No further action is required. The global data"
-                                        " engineering pipelines will automatically sync this"
-                                        " verified resource and proceed with routing shortly.",
+                                        + " engineering pipelines will automatically sync this"
+                                        + " verified resource and proceed with routing shortly.",
                                     }
                                 ],
                             }
