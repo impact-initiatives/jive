@@ -289,16 +289,6 @@ def run_validation(
     # Ensure we only pass supported types to the pipeline, otherwise fall back to generic "other"
 
     pipeline_dataset_type = dataset_type
-    # if dataset_type not in SUPPORTED_SCHEMA_TYPES:
-    #     logger.info(
-    #         "Unrecognized dataset type - falling back to generic 'other' dynamic validation",
-    #         extra={
-    #             "issue_key": payload.issue_key,
-    #             "original_type": dataset_type,
-    #             "fallback_type": "other",
-    #         },
-    #     )
-    #     pipeline_dataset_type = "other"
 
     logger.info(
         "Running validation pipeline",
@@ -311,36 +301,9 @@ def run_validation(
     pipeline = ValidationPipeline()
     response_dict = pipeline.run_all(filepath=dataset_path, dataset_type=pipeline_dataset_type)
 
-    # argus's ValidationPipeline._compile_results outputs keys
-    # like 'error', 'warning', 'admin_error'
-    # but PipelineResponse expects 'errors', 'warnings', 'admin_errors'.
-    # We patch the response_dict before parsing it.
-    key_mapping = {
-        "error": "errors",
-        "warning": "warnings",
-        "admin_error": "admin_errors",
-    }
-
-    patched_dict = {}
-    for k, v in response_dict.items():
-        if k in key_mapping:
-            patched_dict[key_mapping[k]] = v
-        else:
-            patched_dict[k] = v
-
-    # Also patch the summary dictionary keys
-    if "summary" in patched_dict and isinstance(patched_dict["summary"], dict):
-        patched_summary = {}
-        for k, v in patched_dict["summary"].items():
-            if k in key_mapping:
-                patched_summary[key_mapping[k]] = v
-            else:
-                patched_summary[k] = v
-        patched_dict["summary"] = patched_summary
-
     try:
         # 1. Attempt strict parsing (standard Pydantic validation)
-        return PipelineResponse(**patched_dict)
+        return PipelineResponse.model_validate(response_dict)
     except Exception as e:
         logger.warning(
             "Failed strict Pydantic parsing of validation response."
@@ -351,27 +314,7 @@ def run_validation(
         try:
             # 2. Fallback 1: Construct the model directly, bypassing Pydantic input validation.
             # This handles extra fields, missing optional keys, or slight type discrepancies.
-            return PipelineResponse.model_construct(
-                success=patched_dict.get("success", False),
-                summary=patched_dict.get(
-                    "summary",
-                    {
-                        "passed": False,
-                        "admin_errors": 1,
-                        "admin_info": 1,
-                        "errors": 0,
-                        "warnings": 0,
-                        "info": 0,
-                    },
-                ),
-                metadata=patched_dict.get("metadata", {"dataset_type": dataset_type}),
-                errors=patched_dict.get("errors", []),
-                admin_errors=patched_dict.get("admin_errors", []),
-                admin_info=patched_dict.get("admin_info", []),
-                warnings=patched_dict.get("warnings", []),
-                info=patched_dict.get("info", []),
-                passed=patched_dict.get("passed", []),
-            )
+            return PipelineResponse.model_construct(**response_dict)
         except Exception as fallback_err:
             logger.error(
                 "Critical: Schema-tolerant model construction failed."

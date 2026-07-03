@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 
 class JiraSubmissionPayload(BaseModel):
@@ -69,10 +69,16 @@ class PipelineResponse(BaseModel):
 
     success: bool
     summary: SummaryModel
-    admin_errors: list[ResultItemModel] = Field(default_factory=list)
+    admin_errors: list[ResultItemModel] = Field(
+        default_factory=list, validation_alias=AliasChoices("admin_error")
+    )
     admin_info: list[ResultItemModel] = Field(default_factory=list)
-    errors: list[ResultItemModel] = Field(default_factory=list)
-    warnings: list[ResultItemModel] = Field(default_factory=list)
+    errors: list[ResultItemModel] = Field(
+        default_factory=list, validation_alias=AliasChoices("error")
+    )
+    warnings: list[ResultItemModel] = Field(
+        default_factory=list, validation_alias=AliasChoices("warning")
+    )
     info: list[ResultItemModel] = Field(default_factory=list)
     passed: list[ResultItemModel] = Field(default_factory=list)
     metadata: MetadataModel
