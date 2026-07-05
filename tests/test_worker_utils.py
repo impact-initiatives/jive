@@ -252,7 +252,7 @@ def test_run_validation_minor_schema_mismatch(
     assert result.success is True
     # Verify Pydantic fallback bypassed validation and constructed lists correctly
     assert len(result.errors) == 1
-    assert result.errors[0]["rule"] == "E2"
+    assert result.errors[0].rule == "E2"
     assert result.warnings == []
 
 

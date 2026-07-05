@@ -53,10 +53,10 @@ class ResultItemModel(BaseModel):
 
 class SummaryModel(BaseModel):
     passed: int
-    admin_errors: int
+    admin_errors: int = Field(validation_alias=AliasChoices("admin_error"))
     admin_info: int
-    errors: int
-    warnings: int
+    errors: int = Field(validation_alias=AliasChoices("error"))
+    warnings: int = Field(validation_alias=AliasChoices("warning"))
     info: int
 
 

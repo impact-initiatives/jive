@@ -188,6 +188,7 @@ def main():
 
     while True:
         try:
+            logger.info("Checking for new messages...")
             messages: ItemPaged[QueueMessage] = queue_client.receive_messages(
                 max_messages=1, visibility_timeout=300
             )

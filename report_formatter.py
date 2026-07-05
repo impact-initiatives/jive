@@ -1,3 +1,4 @@
+import os
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
@@ -365,6 +366,96 @@ def format_comment_adf(
                                     {
                                         "type": "text",
                                         "text": " to trigger automated re-validation.",
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                ],
+            }
+        )
+        adf_document["content"].append(
+            {
+                "type": "paragraph",
+                "content": [
+                    {"type": "text", "text": "Validation Resources:", "marks": [{"type": "strong"}]}
+                ],
+            }
+        )
+        adf_document["content"].append(
+            {
+                "type": "bulletList",
+                "content": [
+                    {
+                        "type": "listItem",
+                        "content": [
+                            {
+                                "type": "paragraph",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "Data cleaning minimum standards checklist.",
+                                        "marks": [
+                                            {
+                                                "type": "link",
+                                                "attrs": {
+                                                    "href": f"{
+                                                        os.getenv('DATA_CLEANING_CHECKLIST', 'N/A')
+                                                    }",
+                                                    "title": "Data cleaning minimum standards checklist",
+                                                },
+                                            }
+                                        ],
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "type": "listItem",
+                        "content": [
+                            {
+                                "type": "paragraph",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "Data analysis minimum standards checklist.",
+                                        "marks": [
+                                            {
+                                                "type": "link",
+                                                "attrs": {
+                                                    "href": f"{
+                                                        os.getenv('DATA_ANALYSIS_CHECKLIST', 'N/A')
+                                                    }",
+                                                    "title": "Data analysis minimum standards checklist",
+                                                },
+                                            }
+                                        ],
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "type": "listItem",
+                        "content": [
+                            {
+                                "type": "paragraph",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "Argus/Jive validation rules.",
+                                        "marks": [
+                                            {
+                                                "type": "link",
+                                                "attrs": {
+                                                    "href": f"{
+                                                        os.getenv('ARGUS_VALIDATION_RULES', 'N/A')
+                                                    }",
+                                                    "title": "Argus/Jive validation rules",
+                                                },
+                                            }
+                                        ],
                                     },
                                 ],
                             }
