@@ -38,22 +38,25 @@ def _parse_timestamp(ts_str: str) -> datetime:
 
 
 def check_idempotency(
-    payload: JiraSubmissionPayload, attachments: list[IssueAttachment] | None
+    payload: JiraSubmissionPayload,
+    attachments: list[IssueAttachment] | None,
 ) -> bool:
     """Returns True if the validation should be skipped due to an up-to-date report."""
     # Idempotency guard: skip if a JIVE report already exists and is newer than the newest dataset
     if attachments is None:
         return False
 
-    expected_report_name = f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
+    expected_report_name = f"JIVE_Validation_Report_{payload.issue_key}"
 
-    report_attachment = next((a for a in attachments if a.filename == expected_report_name), None)
+    report_attachments = [a for a in attachments if expected_report_name in a.filename]
+    report_attachments.sort(key=lambda a: _parse_timestamp(a.created), reverse=True)
+    report_attachment = report_attachments[0] if report_attachments else None
 
     # Find all non-report Excel dataset attachments
     dataset_attachments = [
         a
         for a in attachments
-        if a.filename.endswith(".xlsx") and a.filename != expected_report_name
+        if a.filename.endswith(".xlsx") and expected_report_name not in a.filename
     ]
     # Sort dataset attachments with newest first
     dataset_attachments.sort(key=lambda a: _parse_timestamp(a.created), reverse=True)
@@ -65,6 +68,15 @@ def check_idempotency(
             report_ts = _parse_timestamp(report_attachment.created)
             dataset_ts = _parse_timestamp(latest_dataset.created)
             skip_validation = report_ts > dataset_ts
+            logger.info(
+                "Dataset and report timestamp comparision check.",
+                extra={
+                    "issue_key": payload.issue_key,
+                    "report_ts": report_ts,
+                    "dataset_ts": dataset_ts,
+                    "skip_validation": skip_validation,
+                },
+            )
         else:
             # If there's no dataset attachment, the dataset is externally
             #  hosted (ProForma link, secure_link).
@@ -83,7 +95,12 @@ def check_idempotency(
     if not force_validation and skip_validation:
         logger.warning(
             "Idempotency: JIVE report is up to date — skipping re-validation",
-            extra={"issue_key": payload.issue_key, "report": expected_report_name},
+            extra={
+                "issue_key": payload.issue_key,
+                "report": report_attachment
+                if report_attachment is not None
+                else expected_report_name + ".xlsx",
+            },
         )
         return True
     return False
