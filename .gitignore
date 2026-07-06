@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 .env
 .pytest_cache/
+.ruff_cache
 .coverage
 htmlcov/
 *.xlsx
@@ -12,6 +13,9 @@ htmlcov/
 .dockerignore
 .github/
 output/
-uv.lock
 logs/
 scripts/
+dataset_config/
+*.vscode
+*.code-workspace
+data/

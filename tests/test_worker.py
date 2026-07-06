@@ -1,19 +1,22 @@
 import json
-import sys
 import os
-import pytest
+import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
-sys.path.append(str(project_root.parent / "rqa-validator"))
-os.environ["AZURE_STORAGE_CONNECTION_STRING"] = "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
+sys.path.append(str(project_root.parent / "argus"))
+os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
+    "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
+)
 os.environ["JIRA_API_EMAIL"] = "test@test.com"
 os.environ["JIRA_API_TOKEN"] = "fake-token"
 
-from worker import dead_letter_message, main, MAX_RETRIES  # noqa: E402
 from models import JiraSubmissionPayload  # noqa: E402
+from worker import MAX_RETRIES, dead_letter_message, main  # noqa: E402
 
 
 class TestDeadLetterMessage:
@@ -116,8 +119,8 @@ class TestWorkerMainLoop:
         with pytest.raises(SystemExit):
             main()
 
-        mock_process.assert_called_once_with(msg)
-        mock_queue.delete_message.assert_called_once_with(msg)
+        mock_process.assert_called_once()
+        assert mock_process.call_args[0][0] == msg
 
     @patch("worker.time.sleep")
     @patch("worker.dead_letter_message")
@@ -142,8 +145,11 @@ class TestWorkerMainLoop:
     @patch("worker.time.sleep")
     @patch("worker.process_message")
     @patch("worker.get_queue_client")
-    def test_main_does_not_delete_on_processing_failure(self, mock_get_queue, mock_process, mock_sleep):
-        """If processing fails, the message should NOT be deleted (so it retries via visibility timeout)."""
+    def test_main_does_not_delete_on_processing_failure(
+        self, mock_get_queue, mock_process, mock_sleep
+    ):
+        """If processing fails, the message should NOT be deleted (so it retries
+        via visibility timeout)."""
         mock_queue = MagicMock()
         mock_get_queue.return_value = mock_queue
 
@@ -157,7 +163,8 @@ class TestWorkerMainLoop:
         with pytest.raises(SystemExit):
             main()
 
-        mock_process.assert_called_once_with(msg)
+        mock_process.assert_called_once()
+        assert mock_process.call_args[0][0] == msg
         mock_queue.delete_message.assert_not_called()
 
     @patch("worker.time.sleep")

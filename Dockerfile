@@ -5,13 +5,16 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.4 /uv /uvx /bin/
 
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# Clone rqa-validator and install it as a proper package and all of its dependencies
-RUN --mount=type=secret,id=github_token,required=true \
-    git clone https://$(cat /run/secrets/github_token)@github.com/impact-initiatives/rqa-validator.git /tmp/rqa-validator && \
-    uv pip install --system --no-cache /tmp/rqa-validator && \
-    rm -rf /tmp/rqa-validator
+RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/impact-initiatives/argus.git /tmp/argus && \
+    cd /tmp/argus && \
+    git fetch origin --tags && \
+    LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1)) && \
+    git checkout $LATEST_TAG && \
+    uv pip install --system --no-cache . && \
+    cd / && \
+    rm -rf /tmp/argus
 
-# Install jira_poc dependencies
+# Install jive dependencies
 RUN uv pip install --system --no-cache \
     fastapi>=0.111.0 \
     uvicorn>=0.30.1 \
@@ -24,21 +27,30 @@ RUN uv pip install --system --no-cache \
 
 COPY . /app
 
+
 #Step 2: Runtime Stage
 FROM python:3.12-slim-trixie
+
+#Run as a non-root user
+RUN useradd --create-home --no-log-init jive
 
 #Copy Python packages and app code from the builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
-COPY --from=builder /app /app
+
+ 
+# Copy JIVE microservice code
+COPY --chown=jive:jive . /app
 
 WORKDIR /app
-
-#Run as a non-root user
-RUN useradd --create-home --no-log-init jive
+RUN mkdir -p /app/logs /app/dataset_config
 USER jive
 
 #Default: ingress. Override via Container App command for worker.
 #Ingress:  uvicorn main:app --host 0.0.0.0 --port 8000
 #Worker:   python worker.py
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

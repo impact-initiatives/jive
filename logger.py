@@ -1,7 +1,8 @@
-import logging
 import json
+import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from logging.handlers import TimedRotatingFileHandler
 
 
 class JSONFormatter(logging.Formatter):
@@ -9,7 +10,7 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -17,10 +18,27 @@ class JSONFormatter(logging.Formatter):
 
         # Include any custom extra fields dynamically
         standard_attrs = {
-            "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
-            "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
-            "created", "msecs", "relativeCreated", "thread", "threadName",
-            "processName", "process", "message"
+            "name",
+            "msg",
+            "args",
+            "levelname",
+            "levelno",
+            "pathname",
+            "filename",
+            "module",
+            "exc_info",
+            "exc_text",
+            "stack_info",
+            "lineno",
+            "funcName",
+            "created",
+            "msecs",
+            "relativeCreated",
+            "thread",
+            "threadName",
+            "processName",
+            "process",
+            "message",
         }
         for key, value in record.__dict__.items():
             if key not in standard_attrs:
@@ -28,17 +46,19 @@ class JSONFormatter(logging.Formatter):
 
         if record.exc_info:
             log_entry["exception"] = self.formatException(record.exc_info)
-            log_entry["exception_type"] = type(record.exc_info[1]).__name__ if record.exc_info[1] else "Exception"
+            log_entry["exception_type"] = (
+                type(record.exc_info[1]).__name__ if record.exc_info[1] else "Exception"
+            )
 
-        return json.dumps(log_entry)
+        return json.dumps(log_entry, default=str)
 
 
 def get_logger(name: str) -> logging.Logger:
     """Returns a JSON-formatted logger.
-    
+
     Args:
         name: Logger name (typically module name).
-    
+
     Returns:
         Configured logger instance.
     """
@@ -47,7 +67,18 @@ def get_logger(name: str) -> logging.Logger:
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(JSONFormatter())
+
+        file_handler = TimedRotatingFileHandler(
+            "logs/jive.log",
+            when="midnight",  # Rotate at midnight
+            interval=1,  # Every 1 day
+            backupCount=30,  # Keep 30 days of old logs
+            encoding="utf-8",
+        )
+        file_handler.setFormatter(JSONFormatter())
+
         logger.addHandler(handler)
+        logger.addHandler(file_handler)
         logger.setLevel(logging.INFO)
 
     return logger

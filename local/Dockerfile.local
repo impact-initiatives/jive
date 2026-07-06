@@ -17,9 +17,10 @@ WORKDIR /build
 RUN uv venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy and install the local rqa-validator package
-COPY ./rqa-validator /rqa-validator
-RUN uv pip install --no-cache /rqa-validator
+# Copy and install the local argus package
+
+COPY ./argus /argus
+RUN    uv pip install --no-cache /argus
 
 # Install JIVE dependencies inside the virtual environment
 RUN uv pip install --no-cache \
@@ -39,6 +40,7 @@ RUN uv pip install --no-cache \
 FROM python:3.12-slim-trixie AS runner
 
 WORKDIR /app
+RUN mkdir -p /app/logs /app/dataset_config
 
 # Copy the pre-compiled virtual environment from the builder
 COPY --from=builder /opt/venv /opt/venv
@@ -46,8 +48,14 @@ COPY --from=builder /opt/venv /opt/venv
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Run as a non-root user
+RUN useradd --create-home --no-log-init jive
+
 # Copy JIVE microservice code
-COPY ./jira_poc /app
+COPY --chown=jive:jive ./jive /app
+
+USER jive
+# RUN  mkdir ./app/logs && chown -R jive:jive ./app/logs
 
 ENV PYTHONUNBUFFERED=1
 ENV JIRA_BASE_URL=https://reach-initiative.atlassian.net
