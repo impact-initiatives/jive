@@ -19,7 +19,9 @@ class JiraSubmissionPayload(BaseModel):
     issue_key: str = Field(..., description="The Jira Issue Key (e.g., RQA-123)")
     project_key: str = Field(default="", description="The Jira Project Key")
     rcid: str = Field(default="", description="The RCID from the ticket summary")
-    dataset_type: str = Field(default="jmmi", description="The type of assessment")
+    dataset_type: str = Field(default="", description="The type of assessment")
+    type_of_output: str = Field(default="")
+    type_of_programme: str = Field(default="")
     secure_link: str | None = Field(
         default=None,
         description="Optional URL to download the dataset from instead of Jira attachments",

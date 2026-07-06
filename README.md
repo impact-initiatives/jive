@@ -1,6 +1,6 @@
 # JIVE — Jira IMPACT Validation Engine
 
-**JIVE** (Jira IMPACT Validation Engine) is an asynchronous, event-driven microservice that automates Research Quality Assurance (RQA) workflows. It bridges the Jira Service Management (JSM) portal with the `ARGUS` engine to automatically download submitted datasets, execute validation pipelines, generate Excel reports, and post structured Atlassian Document Format (ADF) comments back to Jira tickets.
+**JIVE** (Jira IMPACT Validation Engine) is an asynchronous, event-driven microservice that automates Research Quality Assurance (RQA) workflows. It bridges the Jira Service Management (JSM) portal with the [Argus](https://github.com/impact-initiatives/argus) engine to automatically download submitted datasets, execute validation pipelines, generate Excel reports, and post structured Atlassian Document Format (ADF) comments back to Jira tickets.
 
 ## Overview
 
@@ -106,6 +106,8 @@ Alternatively, you can run them via `uv`:
 uv run uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 uv run python worker.py
 ```
+
+To connect Jira automation components to a locally hosted envrionment an additional service is required to allow Jira to connect to a localhost address. Services like [ngrok](ngrok.com/) can be used for this. 
 
 ### Running Tests
 The project features a comprehensive `pytest` suite testing webhooks, workers, ProForma parsing, and Excel generation.
