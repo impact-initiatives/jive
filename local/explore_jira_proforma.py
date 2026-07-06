@@ -35,9 +35,7 @@ def verify_credentials():
 
     urls_to_try = [JIRA_BASE_URL, "https://reach-initiative.atlassian.net"]
 
-    emails_to_try = [
-        JIRA_EMAIL
-    ]
+    emails_to_try = [JIRA_EMAIL]
 
     tokens_to_try = [JIRA_TOKEN]
     if JIRA_TOKEN and "=" in JIRA_TOKEN:

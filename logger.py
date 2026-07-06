@@ -2,6 +2,7 @@ import json
 import logging
 import sys
 from datetime import UTC, datetime
+from logging.handlers import TimedRotatingFileHandler
 
 
 class JSONFormatter(logging.Formatter):
@@ -66,7 +67,18 @@ def get_logger(name: str) -> logging.Logger:
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(JSONFormatter())
+
+        file_handler = TimedRotatingFileHandler(
+            "logs/jive.log",
+            when="midnight",  # Rotate at midnight
+            interval=1,  # Every 1 day
+            backupCount=30,  # Keep 30 days of old logs
+            encoding="utf-8",
+        )
+        file_handler.setFormatter(JSONFormatter())
+
         logger.addHandler(handler)
+        logger.addHandler(file_handler)
         logger.setLevel(logging.INFO)
 
     return logger

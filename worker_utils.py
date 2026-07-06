@@ -264,8 +264,6 @@ def resolve_context(
     repo_url = None
     repo_action = None
 
-    print ('bla', dataset_type)
-
     if not dataset_type.strip():
         dataset_type = f"{payload.type_of_programme.lower()}_{'dataset' if 'dataset' in payload.type_of_output.lower() else 'analysis'}"
 
