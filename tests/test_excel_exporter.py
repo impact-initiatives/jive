@@ -1,7 +1,7 @@
 import polars as pl
 
 from excel_exporter import export_response_to_excel
-from models import PipelineResponse
+from models import MetadataModel, PipelineResponse, ResultItemModel, SummaryModel
 
 
 def test_export_empty_response(tmp_path):
@@ -30,27 +30,35 @@ def test_export_empty_response(tmp_path):
 def test_export_populated_response(tmp_path):
     response = PipelineResponse.model_construct(
         success=False,
-        summary={"passed": False, "admin_errors": 0, "errors": 1, "warnings": 1, "info": 0},
-        metadata={"dataset_type": "msna"},
+        summary=SummaryModel(
+            passed=False,
+            admin_errors=0,
+            errors=1,
+            warnings=1,
+            info=0,
+            admin_info=0,
+        ),
+        metadata=MetadataModel(dataset_type="msna"),
         warnings=[
-            {
-                "severity": "warning",
-                "rule": "W1",
-                "message": "Warning msg",
-                "sheet_name": "S1",
-                "column_name": "C1",
-            }
+            ResultItemModel(
+                severity="warning",
+                rule="W1",
+                message="Warning msg",
+                sheet_name="S1",
+                column_name="C1",
+            )
         ],
         errors=[
-            {
-                "severity": "error",
-                "rule": "E1",
-                "message": "Error msg",
-                "details": {"Row": [1, 2], "Value": ["a", "b"]},
-            }
+            ResultItemModel(
+                severity="error",
+                rule="E1",
+                message="Error msg",
+                details={"Row": [1, 2], "Value": ["a", "b"]},
+            )
         ],
-        info=[{"severity": "info", "rule": "I1", "message": "Info msg"}],
-        admin_errors=[{"severity": "admin", "rule": "A1", "message": "Admin msg"}],
+        info=[ResultItemModel(severity="info", rule="I1", message="Info msg")],
+        admin_errors=[ResultItemModel(severity="admin", rule="A1", message="Admin msg")],
+        passed=[],
     )
     output_path = tmp_path / "populated_report.xlsx"
 
@@ -71,18 +79,25 @@ def test_export_invalid_details(tmp_path):
     # Tests that details missing list arrays don't crash the exporter
     response = PipelineResponse.model_construct(
         success=False,
-        summary={"passed": False, "admin_errors": 0, "errors": 1, "warnings": 0, "info": 0},
-        metadata={"dataset_type": "msna"},
+        summary=SummaryModel(
+            passed=False,
+            admin_errors=0,
+            errors=1,
+            warnings=0,
+            info=0,
+            admin_info=0,
+        ),
+        metadata=MetadataModel(dataset_type="msna"),
         errors=[
-            {
-                "severity": "error",
-                "rule": "E1",
-                "message": "Error msg",
-                "details": {
+            ResultItemModel(
+                severity="error",
+                rule="E1",
+                message="Error msg",
+                details={
                     "Row": 1,
-                    "Value": "a",
-                },  # Not a list, should be caught by exception handling
-            }
+                    "Value": "a",  # Not a list, should be caught by exception handling
+                },
+            )
         ],
         warnings=[],
         info=[],

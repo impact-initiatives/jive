@@ -55,10 +55,10 @@ class ResultItemModel(BaseModel):
 
 class SummaryModel(BaseModel):
     passed: int
-    admin_errors: int = Field(validation_alias=AliasChoices("admin_error"))
+    admin_errors: int = Field(validation_alias=AliasChoices("admin_errors", "admin_error"))
     admin_info: int
-    errors: int = Field(validation_alias=AliasChoices("error"))
-    warnings: int = Field(validation_alias=AliasChoices("warning"))
+    errors: int = Field(validation_alias=AliasChoices("errors", "error"))
+    warnings: int = Field(validation_alias=AliasChoices("warnings", "warning"))
     info: int
 
 
@@ -72,14 +72,14 @@ class PipelineResponse(BaseModel):
     success: bool
     summary: SummaryModel
     admin_errors: list[ResultItemModel] = Field(
-        default_factory=list, validation_alias=AliasChoices("admin_error")
+        default_factory=list, validation_alias=AliasChoices("admin_errors", "admin_error")
     )
     admin_info: list[ResultItemModel] = Field(default_factory=list)
     errors: list[ResultItemModel] = Field(
-        default_factory=list, validation_alias=AliasChoices("error")
+        default_factory=list, validation_alias=AliasChoices("errors", "error")
     )
     warnings: list[ResultItemModel] = Field(
-        default_factory=list, validation_alias=AliasChoices("warning")
+        default_factory=list, validation_alias=AliasChoices("warnings", "warning")
     )
     info: list[ResultItemModel] = Field(default_factory=list)
     passed: list[ResultItemModel] = Field(default_factory=list)
