@@ -22,17 +22,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY ./argus /argus
 RUN    uv pip install --no-cache /argus
 
-# Install JIVE dependencies inside the virtual environment
-RUN uv pip install --no-cache \
-    "fastapi>=0.111.0" \
-    "uvicorn>=0.30.1" \
-    "requests>=2.32.3" \
-    "pydantic>=2.8.2" \
-    "azure-storage-queue>=12.10.0" \
-    "tenacity>=8.2.0" \
-    "polars>=1.0.0" \
-    "xlsxwriter>=3.2.0" \
-    "rich>=15.0.0"
+COPY ./jive/pyproject.toml .
+COPY ./jive/uv.lock .
+RUN uv pip install .
 
 # ──────────────────────────────────────────────────────────────
 # Stage 2: Runtime Stage (Runner)
@@ -55,7 +47,6 @@ RUN useradd --create-home --no-log-init jive
 COPY --chown=jive:jive ./jive /app
 
 USER jive
-# RUN  mkdir ./app/logs && chown -R jive:jive ./app/logs
 
 ENV PYTHONUNBUFFERED=1
 ENV JIRA_BASE_URL=CHANGE_THIS
