@@ -1,0 +1,46 @@
+[project]
+name = "jive-jira-integration"
+version = "0.1.0"
+description = "Azure Container App Ingress and Worker for JIVE"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.1",
+    "requests>=2.32.3",
+    "pydantic>=2.8.2",
+    "azure-storage-queue>=12.10.0",
+    "tenacity>=8.2.0",
+    "polars>=1.0.0",
+    "xlsxwriter>=3.2.0",
+    "argus",
+]
+
+[tool.uv.sources]
+argus = { path = "../argus", editable = true }
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+    "rich>=15.0.0",
+]
+
+[tool.ruff]
+exclude = [
+"*.ipynb"
+]
+line-length = 100
+[tool.ruff.lint]
+select = ["UP", "E", "F", "I", "B", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+
+[dependency-groups]
+dev = [
+    "responses>=0.26.1",
+]
