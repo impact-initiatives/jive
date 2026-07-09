@@ -6,8 +6,8 @@ services:
   jive-ingress:
     build:
       context: ../
-      dockerfile: jive/Dockerfile
-    container_name: jive-ingress-dev
+      dockerfile: jive/api/Dockerfile
+    container_name: jive-api
     ports:
       - "8000:8000"
 
@@ -18,8 +18,8 @@ services:
   jive-worker:
     build:
       context: ../
-      dockerfile: jive/Dockerfile
-    container_name: jive-worker-dev
+      dockerfile: jive/worker/Dockerfile
+    container_name: jive-worker
     command: [ "python", "worker.py" ]
 
 

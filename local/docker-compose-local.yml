@@ -16,16 +16,16 @@ services:
   jive-ingress:
     build:
       context: ../..
-      dockerfile: jive/api/Dockerfile
+      dockerfile: jive/local/Dockerfile.local
     container_name: jive-ingress
     ports:
       - "8000:8000"
     env_file:
       - ../.env
     environment:
-      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;
-      - JIVE_QUEUE_NAME=jive-validation-queue
-      - JIVE_API_KEY=local-dev-key
+      - AZURE-STORAGE-CONNECTION-STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;
+      - JIVE-QUEUE-NAME=jive-validation-queue
+      - JIVE-API-KEY=local-dev-key
     depends_on:
       - azurite
 
@@ -35,13 +35,13 @@ services:
   jive-worker:
     build:
       context: ../..
-      dockerfile: jive/worker/Dockerfile.local
+      dockerfile: jive/local/Dockerfile.local
     container_name: jive-worker
     command: [ "python", "worker.py" ]
     env_file:
       - ../.env
     environment:
-      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;
-      - JIVE_QUEUE_NAME=jive-validation-queue
+      - AZURE-STORAGE-CONNECTION-STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;
+      - JIVE-QUEUE-NAME=jive-validation-queue
     depends_on:
       - azurite

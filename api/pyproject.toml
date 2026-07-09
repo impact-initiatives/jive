@@ -1,0 +1,39 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Azure Container App Ingress for JIVE"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "azure-storage-queue>=12.17.0",
+    "fastapi>=0.139.0",
+    "pydantic>=2.13.4",
+    "uvicorn>=0.51.0",
+]
+
+
+
+[tool.ruff]
+exclude = [
+"*.ipynb"
+]
+line-length = 100
+[tool.ruff.lint]
+select = ["UP", "E", "F", "I", "B", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.5.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.20",
+]
+
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12"]
+build-backend = "uv_build"
+
