@@ -1,0 +1,25 @@
+services:
+
+  # ──────────────────────────────────────────────────────────────
+  # 2. JIVE Ingress: Webhook Handler
+  # ──────────────────────────────────────────────────────────────
+  jive-ingress:
+    build:
+      context: ../
+      dockerfile: jive/Dockerfile
+    container_name: jive-ingress-dev
+    ports:
+      - "8000:8000"
+
+
+  # ──────────────────────────────────────────────────────────────
+  # 3. JIVE Worker: Queue Consumer
+  # ──────────────────────────────────────────────────────────────
+  jive-worker:
+    build:
+      context: ../
+      dockerfile: jive/Dockerfile
+    container_name: jive-worker-dev
+    command: [ "python", "worker.py" ]
+
+

@@ -13,11 +13,17 @@ RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/im
     git fetch origin --tags && \
     LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1)) && \
     git checkout $LATEST_TAG && \
-    cd .. && \
-    uv pip install --system --no-cache /argus
+    cd ..  && \
+    uv pip install --no-cache /argus
 
-COPY ./pyproject.toml .
-COPY ./uv.lock .
+
+COPY ./jive/pyproject.toml .
+COPY ./jive/uv.lock .
+
+# remove local reference to argus in toml file
+RUN grep -v '\[tool.uv.sources\]' pyproject.toml | \
+grep -v 'argus.*=.*{' > pyproject.toml
+
 RUN uv pip install .
 
 FROM python:3.12-slim-trixie AS runner
@@ -35,7 +41,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN useradd --create-home --no-log-init jive
 
 # Copy JIVE microservice code
-COPY --chown=jive:jive ./ /app
+COPY --chown=jive:jive ./jive /app
+RUN chown -R jive:jive /app/logs /app/dataset_config
 
 USER jive
 
@@ -43,7 +50,7 @@ USER jive
 #Ingress:  uvicorn main:app --host 0.0.0.0 --port 8000
 #Worker:   python worker.py
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+# HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+#     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
