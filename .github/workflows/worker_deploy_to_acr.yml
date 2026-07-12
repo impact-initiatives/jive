@@ -4,7 +4,7 @@ run-name: Build & push prod image
 on:
   push:
     paths:
-      - '/worker'
+      - 'worker/**'
     branches:
       - main
   workflow_dispatch:
