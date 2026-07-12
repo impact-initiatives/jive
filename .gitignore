@@ -10,7 +10,6 @@ htmlcov/
 *.xlsx
 *.csv
 .DS_Store
-.dockerignore
 output/
 logs/
 scripts/
