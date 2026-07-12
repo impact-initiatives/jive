@@ -4,9 +4,9 @@
 #Step1: Builder Stage
 FROM python:3.12-slim-trixie AS builder 
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.4 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /bin/
 
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+ENV UV_NO_DEV=1
 
 COPY . /app
 WORKDIR /app

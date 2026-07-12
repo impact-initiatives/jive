@@ -1,9 +1,11 @@
 #Step1: Builder Stage
 FROM python:3.12-slim-trixie AS builder 
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.4 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /bin/
 
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+ENV UV_NO_DEV=1
+
 WORKDIR /build
 RUN uv venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
@@ -16,14 +18,13 @@ RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/im
     cd ..  && \
     uv pip install --no-cache /argus
 
-COPY . .
+COPY ./ ./
 
 # remove local reference to argus in toml file
 RUN grep -v '\[tool.uv.sources\]' pyproject.toml | \
 grep -v 'argus.*=.*{' > pyproject.toml
 
-RUN uv lock
-RUN uv sync --locked
+RUN uv pip install .
 
 FROM python:3.12-slim-trixie AS runner
 
@@ -35,7 +36,6 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONPATH="/app/src:${PYTHONPATH}"
 
 # Run as a non-root user
 RUN useradd --create-home --no-log-init jive
@@ -43,7 +43,6 @@ RUN useradd --create-home --no-log-init jive
 # Copy JIVE worker microservice code
 COPY --chown=jive:jive . /app
 RUN chown -R jive:jive /app/logs /app/dataset_config
-
 USER jive
 
-CMD ["python", "src/worker/main.py" ]
+CMD ["python", "-m", "worker.main"]

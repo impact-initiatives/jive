@@ -15,10 +15,13 @@ from tenacity import (
     wait_exponential,
 )
 
-from .jira.jira_client import ALLOWED_DOMAINS
 from .logger import get_logger
 
 logger = get_logger("jive.impact_repo_client")
+
+ALLOWED_DOMAINS: frozenset[str] = frozenset(
+            filter(None, os.getenv("ALLOWED_DOMAINS", "NOT PROVIDED").split(","))
+        )
 
 
 def _sanitize_url(url: str) -> str:
