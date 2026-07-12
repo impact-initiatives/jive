@@ -1,0 +1,41 @@
+[project]
+name = "worker"
+version = "0.1.0"
+description = "Azure Container App Worker for JIVE"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "azure-storage-queue>=12.17.0",
+    "polars>=1.42.1",
+    "pydantic>=2.13.4",
+    "tenacity>=9.1.4",
+    "xlsxwriter>=3.2.9",
+    "argus",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "responses>=0.26.2",
+    "ruff>=0.15.20",
+]
+
+[tool.uv.sources]
+argus = { path = "../../argus", editable = true }
+
+[tool.ruff]
+exclude = [
+"*.ipynb"
+]
+line-length = 100
+[tool.ruff.lint]
+select = ["UP", "E", "F", "I", "B", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12"]
+build-backend = "uv_build"
+

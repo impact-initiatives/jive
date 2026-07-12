@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-.env
+*.env
 .pytest_cache/
 .ruff_cache
 .coverage
@@ -10,8 +10,6 @@ htmlcov/
 *.xlsx
 *.csv
 .DS_Store
-.dockerignore
-.github/
 output/
 logs/
 scripts/
