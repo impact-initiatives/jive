@@ -3,6 +3,8 @@ run-name: Build & push prod image
 
 on:
   push:
+    paths:
+      - '/worker'
     branches:
       - main
   workflow_dispatch:
