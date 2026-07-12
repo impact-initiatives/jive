@@ -21,9 +21,6 @@ RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/im
 COPY ./ ./
 
 # remove local reference to argus in toml file
-# RUN grep -v '\[tool.uv.sources\]' pyproject.toml | \
-# grep -v 'argus.*=.*{' > pyproject.toml
-
 RUN grep -v '\[tool.uv.sources\]' pyproject.toml | \
     grep -v 'argus.*=.*{' > pyproject.toml.tmp && \
     mv pyproject.toml.tmp pyproject.toml
