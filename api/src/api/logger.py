@@ -69,7 +69,7 @@ def get_logger(name: str) -> logging.Logger:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(JSONFormatter())
 
-        Path("./logs").mkdir( exist_ok=True)
+        Path("./logs").mkdir(exist_ok=True)
 
         file_handler = TimedRotatingFileHandler(
             "./logs/jive-api.log",

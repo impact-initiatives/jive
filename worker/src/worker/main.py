@@ -1,5 +1,4 @@
 import json
-import os
 import tempfile
 import time
 from datetime import UTC, datetime
@@ -9,6 +8,7 @@ from azure.core.exceptions import ResourceNotFoundError
 from azure.core.paging import ItemPaged
 from azure.storage.queue import QueueClient, QueueMessage
 
+from .config import get_settings
 from .excel_exporter import export_response_to_excel
 from .impact_repo_client import ImpactRepoClient
 from .jira.jira_client import JiraClient
@@ -25,17 +25,12 @@ from .worker_utils import (
 )
 
 logger = get_logger("jive.worker")
-
-QUEUE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-QUEUE_NAME = os.getenv("JIVE_QUEUE_NAME", "jive-validation-queue")
-POISON_QUEUE_NAME = f"{QUEUE_NAME}-poison"
-MAX_RETRIES = int(os.getenv("JIVE_MAX_RETRIES", "3"))
+settings = get_settings()
+POISON_QUEUE_NAME = f"{settings.queue_name}-poison"
 
 
-def get_queue_client(queue_name: str = QUEUE_NAME) -> QueueClient:
-    conn_str = QUEUE_CONNECTION_STRING
-    if not conn_str:
-        raise ValueError("AZURE_STORAGE_CONNECTION_STRING is not set")
+def get_queue_client(queue_name: str = settings.queue_name) -> QueueClient:
+    conn_str = settings.queue_connection_string
     return QueueClient.from_connection_string(conn_str=conn_str, queue_name=queue_name)
 
 
@@ -171,19 +166,16 @@ def process_message(msg: QueueMessage, payload: JiraSubmissionPayload):
 
 
 def main():
-    if not QUEUE_CONNECTION_STRING:
-        logger.error("AZURE_STORAGE_CONNECTION_STRING not set. Exiting.")
-        return
     logger.info("Getting queue client...")
     queue_client = get_queue_client()
     try:
         logger.info("Getting queue properties...")
         _ = queue_client.get_queue_properties()
     except ResourceNotFoundError:
-        logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
+        logger.info("Queue not found, creating it...", extra={"queue": settings.queue_name})
         queue_client.create_queue()
 
-    logger.info("Worker started", extra={"queue": QUEUE_NAME})
+    logger.info("Worker started", extra={"queue": settings.queue_name})
 
     while True:
         try:
@@ -214,9 +206,9 @@ def main():
                     continue
 
                 # Dead-letter check
-                if msg.dequeue_count is not None and msg.dequeue_count > MAX_RETRIES:
+                if msg.dequeue_count is not None and msg.dequeue_count > settings.max_retries:
                     dead_letter_message(
-                        msg, payload, RuntimeError(f"Exceeded {MAX_RETRIES} retries")
+                        msg, payload, RuntimeError(f"Exceeded {settings.max_retries} retries")
                     )
                     queue_client.delete_message(msg)
                     continue

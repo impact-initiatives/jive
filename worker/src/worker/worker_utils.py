@@ -1,9 +1,9 @@
-import os
 from datetime import datetime
 from pathlib import Path
 
 from argus.orchestrator.validation_pipeline import ValidationPipeline
 
+from .config import get_settings
 from .impact_repo_client import ImpactRepoClient
 from .jira.jira_client import JiraClient
 from .jira.models import IssueAttachment
@@ -13,8 +13,9 @@ from .proforma_parser import ProformaParser
 from .report_formatter import format_comment_adf
 
 logger = get_logger("jive.worker_utils")
-MAX_JIRA_ATTACHMENT_MB = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250"))
 # SUPPORTED_SCHEMA_TYPES = {"jmmi", "msna", "other"}
+
+settings = get_settings()
 
 
 class DatasetResolutionError(Exception):
@@ -91,8 +92,7 @@ def check_idempotency(
         )
         return False
 
-    force_validation = os.getenv("JIVE_FORCE_VALIDATION", "False").lower() in ("true", "1")
-    if not force_validation and skip_validation:
+    if not settings.force_validation and skip_validation:
         logger.warning(
             "Idempotency: JIVE report is up to date — skipping re-validation",
             extra={
@@ -378,13 +378,13 @@ def publish_results(
     """Handles uploading the report file to Jira and posting the summary ADF comment."""
 
     file_size_mb = excel_report_path.stat().st_size / (1024 * 1024)
-    if file_size_mb > MAX_JIRA_ATTACHMENT_MB:
+    if file_size_mb > settings.max_attachment_size:
         logger.warning(
             "Excel report too large for Jira attachment — skipping upload",
             extra={
                 "issue_key": payload.issue_key,
                 "size_mb": round(file_size_mb, 2),
-                "limit_mb": MAX_JIRA_ATTACHMENT_MB,
+                "limit_mb": settings.max_attachment_size,
             },
         )
     else:
@@ -421,7 +421,7 @@ def publish_results(
         original_dataset_type=dataset_type,
     )
 
-    if file_size_mb > MAX_JIRA_ATTACHMENT_MB:
+    if file_size_mb > settings.max_attachment_size:
         adf_summary["content"].append(
             {
                 "type": "paragraph",
@@ -429,7 +429,7 @@ def publish_results(
                     {
                         "type": "text",
                         "text": f"⚠️ The validation report ({file_size_mb:.1f}MB) exceeds the Jira"
-                        + f" attachment limit ({MAX_JIRA_ATTACHMENT_MB}MB). Please contact the JIVE"
+                        + f" attachment limit ({settings.max_attachment_size}MB). Please contact the JIVE"
                         + " team to retrieve the full report.",
                         "marks": [{"type": "strong"}],
                     }

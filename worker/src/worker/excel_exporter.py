@@ -1,19 +1,18 @@
-import os
 from pathlib import Path
 from typing import Any
 
 import polars as pl
 import xlsxwriter
 
+from .config import get_settings
 from .logger import get_logger
 from .models import PipelineResponse, ResultItemModel
 
 logger = get_logger("jive.excel_exporter")
+settings = get_settings()
 
 
-def export_response_to_excel(
-    response: PipelineResponse, output_path: Path, max_excel_errors: int = 50000
-):
+def export_response_to_excel(response: PipelineResponse, output_path: Path):
     """
     Exports the validation results into a multi-sheet Excel file.
     Sheet 1: 'Validation Summary' (High-level errors and warnings)
@@ -23,7 +22,6 @@ def export_response_to_excel(
     summary_rows: list[dict[str, Any]] = []
     rule_detail_dfs: dict[str, list[pl.DataFrame]] = {}
     total_detail_rows = 0
-    MAX_ROWS = int(os.getenv("MAX_EXCEL_ERRORS", max_excel_errors))
     truncated = False
 
     # Consolidate results
@@ -63,7 +61,7 @@ def export_response_to_excel(
         )
 
         if item.details is not None and any(isinstance(v, list) for v in item.details.values()):
-            if total_detail_rows >= MAX_ROWS:
+            if total_detail_rows >= settings.max_excel_errors:
                 truncated = True
                 continue
 
@@ -77,8 +75,8 @@ def export_response_to_excel(
 
                 df = pl.DataFrame(safe_details)
                 # Check if this df puts us over the limit
-                if total_detail_rows + len(df) > MAX_ROWS:
-                    df = df.head(MAX_ROWS - total_detail_rows)
+                if total_detail_rows + len(df) > settings.max_excel_errors:
+                    df = df.head(settings.max_excel_errors - total_detail_rows)
                     truncated = True
                 df = df.with_columns(pl.all().cast(pl.String))
 
@@ -112,7 +110,7 @@ def export_response_to_excel(
                 "Sheet Name": "",
                 "Column Name": "",
                 "Message": "The dataset generated too many errors. Detailed findings have been"
-                + f" truncated to the first {MAX_ROWS} rows to prevent memory exhaustion.",
+                + f" truncated to the first {settings.max_excel_errors} rows to prevent memory exhaustion.",
             },
         )
 

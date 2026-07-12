@@ -1,9 +1,10 @@
-import os
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
+from .config import get_settings
 from .models import PipelineResponse, ResultItemModel
 
+settings = get_settings()
 try:
     jive_version = version("jive-jira-integration")
 except PackageNotFoundError:
@@ -399,9 +400,7 @@ def format_comment_adf(
                                             {
                                                 "type": "link",
                                                 "attrs": {
-                                                    "href": f"{
-                                                        os.getenv('DATA_CLEANING_CHECKLIST', 'N/A')
-                                                    }",
+                                                    "href": f"{settings.data_cleanaing_checklist}",
                                                     "title": "Data cleaning minimum standards checklist",
                                                 },
                                             }
@@ -424,9 +423,7 @@ def format_comment_adf(
                                             {
                                                 "type": "link",
                                                 "attrs": {
-                                                    "href": f"{
-                                                        os.getenv('DATA_ANALYSIS_CHECKLIST', 'N/A')
-                                                    }",
+                                                    "href": f"{settings.data_analysis_checklist}",
                                                     "title": "Data analysis minimum standards checklist",
                                                 },
                                             }
@@ -449,9 +446,7 @@ def format_comment_adf(
                                             {
                                                 "type": "link",
                                                 "attrs": {
-                                                    "href": f"{
-                                                        os.getenv('ARGUS_VALIDATION_RULES', 'N/A')
-                                                    }",
+                                                    "href": f"{settings.argus_validation_rules}",
                                                     "title": "Argus/Jive validation rules",
                                                 },
                                             }

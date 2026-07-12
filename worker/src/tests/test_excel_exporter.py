@@ -1,5 +1,9 @@
 import polars as pl
 
+from .helpers import set_default_env_vars
+
+set_default_env_vars()
+
 from ..worker.excel_exporter import export_response_to_excel
 from ..worker.models import MetadataModel, PipelineResponse, ResultItemModel, SummaryModel
 

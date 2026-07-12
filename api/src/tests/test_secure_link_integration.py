@@ -6,19 +6,29 @@ from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-
 os.environ["SECURE_LINK_USERNAME"] = "XXXXXXX"
 os.environ["SECURE_LINK_PASSWORD"] = "YYYYYYY"
 os.environ["JIVE_API_KEY"] = "test-secret-ZZZZZZZZZZZZZZ"
+os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
+    "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
+)
+# @pytest.fixture
+# def settings_with_defaults():
+#     return Settings(
+#         SECURE_LINK_USERNAME = "XXXXXXX",
+#         SECURE_LINK_PASSWORD = "YYYYYYY",
+#         JIVE_API_KEY = "test-secret-ZZZZZZZZZZZZZZ",
+#         AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
+
+
+#     )
+
+
 from api.main import app
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.append(str(project_root.parent / "argus"))
-os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
-    "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
-)
-
 
 
 # @pytest.fixture(autouse=True)

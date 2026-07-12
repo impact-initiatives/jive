@@ -6,6 +6,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from .helpers import set_default_env_vars
+
+set_default_env_vars()
+
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.append(str(project_root.parent / "argus"))
@@ -14,8 +18,11 @@ os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
 )
 os.environ["JIRA_API_EMAIL"] = "test@test.com"
 os.environ["JIRA_API_TOKEN"] = "fake-token"
+os.environ["JIVE_MAX_RETRIES"] = "3"
 
-from ..worker.main import MAX_RETRIES, dead_letter_message, main  # noqa: E402
+MAX_RETRIES = 3
+
+from ..worker.main import dead_letter_message, main  # noqa: E402
 from ..worker.models import JiraSubmissionPayload  # noqa: E402
 
 
@@ -94,12 +101,13 @@ class TestDeadLetterMessage:
 class TestWorkerMainLoop:
     """Tests for the worker's main() polling loop."""
 
-    @patch("src.worker.main.get_queue_client")
-    def test_main_exits_without_connection_string(self, mock_get_queue):
-        """Worker should log and exit if the connection string is missing."""
-        with patch("src.worker.main.QUEUE_CONNECTION_STRING", None):
-            main()
-            mock_get_queue.assert_not_called()
+    # now handled by pydantic
+    # @patch("src.worker.main.get_queue_client")
+    # def test_main_exits_without_connection_string(self, mock_get_queue):
+    #     """Worker should log and exit if the connection string is missing."""
+    #     with patch("src.worker.main.QUEUE_CONNECTION_STRING", None):
+    #         main()
+    #         mock_get_queue.assert_not_called()
 
     @patch("src.worker.main.time.sleep")
     @patch("src.worker.main.process_message")

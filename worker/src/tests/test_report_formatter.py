@@ -3,6 +3,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from .helpers import set_default_env_vars
+
+set_default_env_vars()
+
 from ..worker.models import ResultItemModel
 from ..worker.report_formatter import format_comment_adf
 

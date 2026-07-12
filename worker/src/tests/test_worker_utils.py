@@ -1,7 +1,14 @@
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+from worker.config import get_settings, reload_settings
+
+from .helpers import set_default_env_vars
+
+set_default_env_vars()
 
 from ..worker.models import JiraSubmissionPayload, MetadataModel, PipelineResponse, SummaryModel
 from ..worker.worker_utils import (
@@ -217,17 +224,25 @@ def test_publish_results_large_file(
     )
     report_file = tmp_path / "report.xlsx"
 
-    with patch("src.worker.worker_utils.MAX_JIRA_ATTACHMENT_MB", 0):  # Force large file logic
-        _ = report_file.write_text("dummy content")
-        publish_results(mock_jira_client, payload, response, report_file, None, None, "jmmi")
+    reload_settings()
+    set_default_env_vars()
+    os.environ["JIVE_MAX_ATTACHMENT_MB"] = "0"
+    mock_jira_client.settings = get_settings()
 
-        mock_jira_client.upload_public_jsm_attachment.assert_not_called()
-        mock_jira_client.upload_attachment.assert_not_called()
+    from src.worker import worker_utils
 
-        # Check if the warning text is in the posted comment
-        args, kwargs = mock_jira_client.post_comment.call_args
-        comment_content = str(args[1])
-        assert "exceeds the Jira attachment limit" in comment_content
+    worker_utils.settings = get_settings()
+
+    _ = report_file.write_text("dummy content")
+    publish_results(mock_jira_client, payload, response, report_file, None, None, "jmmi_dataset")
+
+    mock_jira_client.upload_public_jsm_attachment.assert_not_called()
+    mock_jira_client.upload_attachment.assert_not_called()
+
+    # Check if the warning text is in the posted comment
+    args, kwargs = mock_jira_client.post_comment.call_args
+    comment_content = str(args[1])
+    assert "exceeds the Jira attachment limit" in comment_content
 
 
 @patch("src.worker.worker_utils.ValidationPipeline")

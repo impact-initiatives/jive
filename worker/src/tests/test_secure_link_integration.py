@@ -1,24 +1,17 @@
 import json
-import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from ..worker.main import process_message
 from ..worker.models import JiraSubmissionPayload
+from .helpers import set_default_env_vars
+
+set_default_env_vars()
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.append(str(project_root.parent / "argus"))
-os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
-    "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
-)
-os.environ["JIVE_API_KEY"] = "test-secret-ZZZZZZZZZZZZZZ"
-os.environ["SECURE_LINK_USERNAME"] = "XXXXXXX"
-os.environ["SECURE_LINK_PASSWORD"] = "YYYYYYY"
-os.environ["JIRA_API_EMAIL"] = "YYYYYYY@sdfa.com"
-os.environ["JIRA_API_TOKEN"] = "YYYYYYY"
-os.environ["JIRA_BASE_URL"] = "https://bla.atlassian.net"
 
 
 @patch("src.worker.main.JiraClient")

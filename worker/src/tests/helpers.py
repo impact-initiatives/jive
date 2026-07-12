@@ -1,6 +1,21 @@
+import os
 import uuid
 
 from ..worker.jira.models import AuthorInfo, AvatarUrls, IssueAttachment
+
+
+def set_default_env_vars():
+    os.environ.setdefault("JIRA_API_EMAIL", "test@example.com")
+    os.environ.setdefault("JIRA_API_TOKEN", "test-token")
+    os.environ.setdefault("JIRA_BASE_URL", "https://test.atlassian.net")
+    os.environ.setdefault("SECURE_LINK_USERNAME", "secure-user")
+    os.environ.setdefault("SECURE_LINK_PASSWORD", "secure-pass")
+    os.environ.setdefault("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
+    os.environ.setdefault("JIVE_API_KEY", "secure-pass")
+    os.environ.setdefault("DATA_CLEANING_CHECKLIST", "secure-pass")
+    os.environ.setdefault("DATA_ANALYSIS_CHECKLIST", "secure-pass")
+    os.environ.setdefault("ARGUS_VALIDATION_RULES", "secure-pass")
+    os.environ.setdefault("AZURE_STORAGE_CONNECTION_STRING", "secure-pass")
 
 
 def make_issue_response(

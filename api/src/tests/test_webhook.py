@@ -9,7 +9,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Ensure test API key is set before importing main (which reads at module level)
 os.environ.setdefault("JIVE_API_KEY", "test-secret-ZZZZZZZZZZZZZZ")
-
+os.environ["SECURE_LINK_USERNAME"] = "XXXXXXX"
+os.environ["SECURE_LINK_PASSWORD"] = "YYYYYYY"
+os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
+    "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
+)
 from httpx2 import ASGITransport, AsyncClient
 
 from api.main import app

@@ -3,6 +3,18 @@ import pytest
 from ..worker.models import JiraSubmissionPayload
 
 
+@pytest.fixture(autouse=True)
+def mock_env_vars(monkeypatch):
+    """Ensure env vars are set for JiraClient initialization."""
+    monkeypatch.setenv("JIRA_API_EMAIL", "test@example.com")
+    monkeypatch.setenv("JIRA_API_TOKEN", "test-token")
+    monkeypatch.setenv("JIRA_BASE_URL", "https://test.atlassian.net")
+    monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
+    monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
+    monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
+    monkeypatch.setenv("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
+
+
 class TestJiraSubmissionPayload:
     """Tests for the JiraSubmissionPayload Pydantic model."""
 

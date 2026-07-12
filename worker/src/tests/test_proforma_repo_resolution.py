@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 import requests
 import responses
 
@@ -18,6 +19,17 @@ os.environ["JIRA_API_EMAIL"] = "mock-jira-email@example.com"
 os.environ["JIRA_API_TOKEN"] = "mock-jira-token"
 os.environ["REPO_USERNAME"] = "mock-wp-username@example.com"
 os.environ["REPO_PASSWORD"] = "mock-wp-password"
+
+
+@pytest.fixture(autouse=True)
+def mock_env_vars(monkeypatch):
+    """Ensure env vars are set for JiraClient initialization."""
+    monkeypatch.setenv("JIRA_BASE_URL", "https://test.atlassian.net")
+    monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
+    monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
+    monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
+    monkeypatch.setenv("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
+
 
 from ..worker.impact_repo_client import ImpactRepoClient  # noqa: E402
 from ..worker.jira.jira_client import JiraClient  # noqa: E402

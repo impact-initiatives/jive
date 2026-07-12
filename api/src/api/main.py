@@ -1,4 +1,3 @@
-import os
 import secrets
 import time
 from functools import lru_cache
@@ -8,9 +7,11 @@ from azure.storage.queue import QueueClient
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from .config import settings
 from .logger import get_logger
 from .models import JiraSubmissionPayload
-from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = get_logger("jive.ingress")
 
@@ -67,20 +68,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-QUEUE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-QUEUE_NAME = os.getenv("JIVE_QUEUE_NAME", "jive-validation-queue")
-API_KEY = os.getenv("JIVE_API_KEY")
-if not API_KEY:
-    raise RuntimeError("JIVE_API_KEY environment variable must be set")
-
-
 @lru_cache(maxsize=1)
 def get_queue_client() -> QueueClient:
-    if not QUEUE_CONNECTION_STRING:
-        raise RuntimeError("AZURE_STORAGE_CONNECTION_STRING is not set")
     return QueueClient.from_connection_string(
-        conn_str=QUEUE_CONNECTION_STRING,
-        queue_name=QUEUE_NAME,
+        conn_str=settings.queue_connection_string,
+        queue_name=settings.queue_name,
     )
 
 
@@ -103,7 +95,7 @@ def handle_jira_webhook(
     start = time.monotonic()
 
     # Authenticate Request
-    if not x_functions_key or not secrets.compare_digest(str(x_functions_key), str(API_KEY)):
+    if not x_functions_key or not secrets.compare_digest(str(x_functions_key), settings.api_key):
         logger.warning(
             "Unauthorized request",
             extra={"issue_key": payload.issue_key, "status_code": 401},
@@ -118,7 +110,7 @@ def handle_jira_webhook(
             _ = queue_client.send_message(message_body)
         except ResourceNotFoundError:
             # Auto-create queue if it genuinely doesn't exist (common in local Azurite testing)
-            logger.info("Queue not found, creating it...", extra={"queue": QUEUE_NAME})
+            logger.info("Queue not found, creating it...", extra={"queue": settings.queue_name})
             queue_client.create_queue()
             _ = queue_client.send_message(message_body)
     except Exception as e:

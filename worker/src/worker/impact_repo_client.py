@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 import time
 import urllib.parse
@@ -15,13 +14,11 @@ from tenacity import (
     wait_exponential,
 )
 
+from .config import get_settings
 from .logger import get_logger
 
 logger = get_logger("jive.impact_repo_client")
-
-ALLOWED_DOMAINS: frozenset[str] = frozenset(
-            filter(None, os.getenv("ALLOWED_DOMAINS", "NOT PROVIDED").split(","))
-        )
+settings = get_settings()
 
 
 def _sanitize_url(url: str) -> str:
@@ -30,13 +27,8 @@ def _sanitize_url(url: str) -> str:
     return urllib.parse.urlunparse(parsed._replace(query="", fragment=""))
 
 
-REPO_SESSION_TTL_SECONDS = int(os.getenv("REPO_SESSION_TTL_SECONDS", "43200"))  # 12 hours
-
-
 class ImpactRepoClient:
     def __init__(self):
-        self.username: str | None = os.getenv("REPO_USERNAME")
-        self.password: str | None = os.getenv("REPO_PASSWORD")
         self.session: None | Session = None
         self.session_created_at: None | float = None
 
@@ -56,18 +48,18 @@ class ImpactRepoClient:
         """
         if self.session is not None:
             elapsed = time.monotonic() - (self.session_created_at or 0)
-            if elapsed < REPO_SESSION_TTL_SECONDS:
+            if elapsed < settings.repository_session_ttl:
                 return self.session
             logger.info("Repository session expired after %ds — re-authenticating", int(elapsed))
             self.session = None
 
-        if not self.username or not self.password:
+        if not settings.repository_username or not settings.repository_password:
             raise OSError("REPO_USERNAME and REPO_PASSWORD environment variables must be set")
 
         base_url = "https://repository.impact-initiatives.org"
         logger.info(
             "Creating authenticated session for IMPACT Repository",
-            extra={"username": self.username.split("@")[0]},
+            extra={"username": settings.repository_username.split("@")[0]},
         )
 
         session: Session = requests.Session()
@@ -88,8 +80,8 @@ class ImpactRepoClient:
         response = session.post(
             f"{base_url}/wp-login.php",
             data={
-                "log": self.username,
-                "pwd": self.password,
+                "log": settings.repository_username,
+                "pwd": settings.repository_password,
                 "wp-submit": "Log In",
                 "redirect_to": f"{base_url}/resources/",
                 "testcookie": "1",
@@ -165,13 +157,8 @@ class ImpactRepoClient:
         """Download an Excel file using the authenticated WordPress session."""
         session = self.get_authenticated_session()
         parsed_url = urllib.parse.urlparse(url)
-        if not ALLOWED_DOMAINS:
-            logger.error(
-                "SSRF Protection: ALLOWED_DOMAINS is empty — blocking download (fail-closed)",
-                extra={"url": _sanitize_url(url)},
-            )
-            return False
-        if parsed_url.scheme != "https" or parsed_url.netloc not in ALLOWED_DOMAINS:
+
+        if parsed_url.scheme != "https" or parsed_url.netloc not in settings.allowed_domains:
             logger.error(
                 "SSRF Protection: URL domain not in allowed list",
                 extra={"url": _sanitize_url(url), "domain": parsed_url.netloc},
@@ -182,7 +169,7 @@ class ImpactRepoClient:
             "Downloading Excel file from IMPACT Repository",
             extra={"url": _sanitize_url(url), "output": str(output_path)},
         )
-        max_bytes = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")) * 1024 * 1024
+        max_bytes = settings.max_attachment_size * 1024 * 1024
         response = session.get(url, stream=True, timeout=(3.05, 300))
         response.raise_for_status()
 
@@ -195,7 +182,7 @@ class ImpactRepoClient:
                         "Download exceeded maximum allowed size",
                         extra={
                             "url": _sanitize_url(url),
-                            "max_mb": os.getenv("JIVE_MAX_ATTACHMENT_MB", "250"),
+                            "max_mb": settings.max_attachment_size,
                         },
                     )
                     response.close()

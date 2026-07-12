@@ -8,7 +8,11 @@ import responses
 from requests.exceptions import ConnectionError
 from tenacity import RetryError
 
-from .helpers import make_attachment, make_issue_response
+from src.worker.config import get_settings, reload_settings
+
+from .helpers import make_attachment, make_issue_response, set_default_env_vars
+
+set_default_env_vars()
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -39,10 +43,11 @@ def client():
     return JiraClient()
 
 
-def test_missing_env_vars_raises_value_error(monkeypatch):
-    monkeypatch.delenv("JIRA_API_EMAIL", raising=False)
-    with pytest.raises(ValueError, match="JIRA_API_EMAIL and JIRA_API_TOKEN"):
-        JiraClient()
+# now handled by pydantic settings
+# def test_missing_env_vars_raises_value_error(monkeypatch):
+#     monkeypatch.delenv("JIRA_API_EMAIL", raising=False)
+#     with pytest.raises(ValueError, match="JIRA_API_EMAIL and JIRA_API_TOKEN"):
+#         JiraClient()
 
 
 def test_client_initialization_headers_and_auth(client: JiraClient):
@@ -150,10 +155,14 @@ def test_download_from_secure_link_ssrf_blocked_domain(client: JiraClient, tmp_p
     assert result is None
 
 
+# now handled by pydantic settings
 def test_download_from_secure_link_ssrf_empty_allowlist(client: JiraClient, tmp_path, monkeypatch):
-    from ..worker.jira import jira_client
+    reload_settings()
+    set_default_env_vars()
+    os.environ.setdefault("ALLOWED_DOMAINS", "")
+    get_settings()
 
-    monkeypatch.setattr(jira_client, "ALLOWED_DOMAINS", frozenset())
+    # monkeypatch.setattr(jira_client, "ALLOWED_DOMAINS", frozenset())
     url = "https://repository.impact-initiatives.org/dataset.xlsx"
     result = client.download_from_secure_link(url, tmp_path, "secure.xlsx")
     assert result is None
@@ -282,7 +291,14 @@ def test_no_retry_on_400(client: JiraClient):
 
 def test_jira_client_download_memory_limit(client: JiraClient, tmp_path, monkeypatch):
     """Test that download aborts if the file exceeds the maximum allowed size."""
-    monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "0")
+    reload_settings()
+    set_default_env_vars()
+    os.environ["JIVE_MAX_ATTACHMENT_MB"] = "0"
+    get_settings()
+    from src.worker.jira import jira_client
+
+    jira_client.settings = get_settings()
+    client = JiraClient()
 
     mock_response = MagicMock()
     mock_response.status_code = 200

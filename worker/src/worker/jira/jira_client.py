@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 import urllib.parse
 from pathlib import Path
@@ -14,6 +13,8 @@ from tenacity import (
     wait_exponential,
 )
 
+from worker.config import get_settings
+
 from ..logger import get_logger
 from .models import (
     IssueAttachment,
@@ -24,7 +25,7 @@ from .models import (
 )
 
 logger = get_logger("jive.jira_client")
-
+settings = get_settings()
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
@@ -48,12 +49,9 @@ def _check_retryable(response: requests.Response):
 
 class JiraClient:
     def __init__(self):
-        self.email: str | None = os.getenv("JIRA_API_EMAIL")
-        self.token: str | None = os.getenv("JIRA_API_TOKEN")
-        self.base_url: str = os.getenv("JIRA_BASE_URL", "NOT PROVIDED").rstrip("/")
-
-        if not self.email or not self.token:
-            raise ValueError("JIRA_API_EMAIL and JIRA_API_TOKEN environment variables must be set")
+        self.email: str = settings.jira_api_email
+        self.token: str = settings.jira_api_token
+        self.base_url: str = settings.jira_base_url.rstrip("/")
 
         self.auth: tuple[str, str] = (self.email, self.token)
         self.headers: dict[str, str] = {
@@ -61,8 +59,8 @@ class JiraClient:
             "Content-Type": "application/json",
         }
 
-        self.secure_link_user: str | None = os.getenv("SECURE_LINK_USERNAME")
-        self.secure_link_pass: str | None = os.getenv("SECURE_LINK_PASSWORD")
+        self.secure_link_user: str = settings.secure_link_username
+        self.secure_link_pass: str = settings.secure_link_password
         self.secure_link_auth: tuple[str, str] | None = (
             (self.secure_link_user, self.secure_link_pass)
             if self.secure_link_user and self.secure_link_pass
@@ -461,7 +459,7 @@ class JiraClient:
         _check_retryable(response)
 
         if response.status_code == 200:
-            max_bytes = int(os.getenv("JIVE_MAX_ATTACHMENT_MB", "250")) * 1024 * 1024
+            max_bytes = settings.max_attachment_size * 1024 * 1024
             downloaded_bytes = 0
             try:
                 exceeded_size = False
@@ -478,7 +476,7 @@ class JiraClient:
                         "Download exceeded maximum allowed size",
                         extra={
                             "url": _sanitize_url(url),
-                            "max_mb": os.getenv("JIVE_MAX_ATTACHMENT_MB", "250"),
+                            "max_mb": settings.max_attachment_size,
                         },
                     )
                     response.close()
@@ -512,24 +510,13 @@ class JiraClient:
 
         parsed_url = urllib.parse.urlparse(url)
 
-        ALLOWED_DOMAINS: frozenset[str] = frozenset(
-            filter(None, os.getenv("ALLOWED_DOMAINS", "NOT PROVIDED").split(","))
-        )
-
-        if not ALLOWED_DOMAINS:
-            logger.error(
-                "SSRF Protection: ALLOWED_DOMAINS is empty — blocking all secure link"
-                + " downloads (fail-closed)",
-                extra={"url": _sanitize_url(url)},
-            )
-            return None
-        if parsed_url.scheme != "https" or parsed_url.netloc not in ALLOWED_DOMAINS:
+        if parsed_url.scheme != "https" or parsed_url.netloc not in settings.allowed_domains:
             logger.error(
                 "SSRF Protection: URL domain not in allowed list",
                 extra={
                     "url": _sanitize_url(url),
                     "domain": parsed_url.netloc,
-                    "allowed": list(ALLOWED_DOMAINS),
+                    "allowed": list(settings.allowed_domains),
                 },
             )
             return None
