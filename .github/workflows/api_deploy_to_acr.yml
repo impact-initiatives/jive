@@ -17,15 +17,18 @@ env:
   ACR_NAME: acrimpact
   CONTAINER_APP_NAME: jive-ingress
   IMAGE_NAME: jive-api
-  IMAGE_TAG: ${{date 'YYYYMMDD-HHmmss'}}
+  # IMAGE_TAG: ${{date 'YYYYMMDD-HHmmss'}}
 
 jobs:
+  
   build-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
     steps:
+      - name: Set current date as env variable
+        run: echo "IMAGE_TAG=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v6
 
