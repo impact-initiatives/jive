@@ -21,11 +21,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ../.env
-    environment:
-      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;
-      - JIVE_QUEUE_NAME=jive-validation-queue
-      - JIVE_API_KEY=local-dev-key
+      - ../api/.env
     depends_on:
       - azurite
 
@@ -39,9 +35,6 @@ services:
     container_name: jive-worker
     command: ["python", "-m", "worker.main"] 
     env_file:
-      - ../.env
-    environment:
-      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;
-      - JIVE_QUEUE_NAME=jive-validation-queue
+      - ../worker/.env
     depends_on:
       - azurite

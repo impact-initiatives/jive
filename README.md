@@ -47,78 +47,47 @@ flowchart TD
 ---
 
 ## Project Structure
+Within this project there are two applications: api and worker. Each has its own configuration and deployment files. 
 
 ```text
-jive/
-├── main.py                  FastAPI ingress (webhook endpoint)
-├── worker.py                Queue consumer (orchestrates validation lifecycle)
-├── worker_utils.py          ProForma parsing, secure link resolution, and pipeline execution
-├── jira_client.py           Jira / JSM REST API client (with Tenacity retries & rate-limit handling)
-├── models.py                Pydantic models for inbound Jira webhook payloads
-├── report_formatter.py      Transforms PipelineResponse into Atlassian Document Format (ADF)
-├── excel_exporter.py        Generates multi-sheet Excel validation reports using Polars
-├── logger.py                JSON-structured logging for Azure Log Analytics
-├── Dockerfile               Multi-stage optimized build image
-├── pyproject.toml           Project dependencies (managed via uv)
-├── local/                   Local exploration and Docker Compose setup
-├── tests/                   Standard Pytest automated test suite
-└── infra/                   Bicep IaC templates for Azure deployment
+
+├── api                     FastAPI ingress (webhook endpoint)
+├── infra                   Bicep IaC templates for Azure deployment
+├── local                   Local exploration and local Docker Compose setup
+└── worker                  Queue consumer (orchestrates validation lifecycle)
+
 ```
 
 ---
 
 ## Local Development & Configuration
-
-### Prerequisites
-* Python 3.12+
-* [uv](https://docs.astral.sh/uv/) package manager
-* [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) (Local Azure Storage Emulator)
-
-### Environment Variables
-Create a `.env` file in the project root:
-
-| Variable | Required | Description |
-|---|---|---|
-| `AZURE_STORAGE_CONNECTION_STRING` | Yes | Azure Storage / Azurite connection string |
-| `JIVE_API_KEY` | Yes | Webhook authorization token  |
-| `JIRA_API_EMAIL` | Yes | Service Account API Email |
-| `JIRA_API_TOKEN` | Yes | Service Account API Basic Token |
-| `JIVE_QUEUE_NAME` | No | Target Queue name  |
-| `JIRA_BASE_URL` | No | Jira Cloud URL  |
-| `JIVE_MAX_ATTACHMENT_MB` | No | Prevents out-of-memory errors on massive downloads (default: `250`) |
-
-## [JIVE-ARGUS Demo](https://app.notion.com/p/JIVE-Demo-372e735be74b80cdb994ff0a9d0fbab4)
+To set up a local environment for either of the components see their respective readme files:
+- [API readme](api/readme.md)
+- [Worker readme](worker/readme.md)
 
 ### Running the Services Locally
 
-We recommend using the provided `docker-compose.yml` to perfectly mirror the Azure architecture (FastAPI Gateway + Azurite + Worker):
+We recommend using the provided `local/docker-compose.yml` to mirror the Azure architecture (FastAPI Gateway + Azurite + Worker). Before running this make sure that `api` and `worker` both have an `.env` file set up. To deploy locally to Docker:
 
 ```bash
-# Build and run the entire stack locally
 docker compose -f local/docker-compose.yml up --build
 ```
 * **JIVE Ingress Gateway**: Accessible at `http://localhost:8000/api/webhook`
 * **Azurite Emulator**: Emulates Azure Storage Queues at `http://localhost:10001`
 * **Background Worker**: Polls Azurite for jobs, executes validation, and interacts with Jira.
 
-Alternatively, you can run them via `uv`:
-```bash
-uv run uvicorn main:app --host 127.0.0.1 --port 8000 --reload
-uv run python worker.py
-```
+Alternatively, you can run them locally via `uv`. See:
+- [API readme](api/readme.md)
+- [Worker readme](worker/readme.md)
 
 To connect Jira automation components to a locally hosted envrionment an additional service is required to allow Jira to connect to a localhost address. Services like [ngrok](ngrok.com/) can be used for this. 
 
-### Running Tests
-The project features a comprehensive `pytest` suite testing webhooks, workers, ProForma parsing, and Excel generation.
-```bash
-uv run pytest tests/ -v
-uv run ruff check .
-```
+See this for additional details: [JIVE-ARGUS Demo](https://app.notion.com/p/JIVE-Demo-372e735be74b80cdb994ff0a9d0fbab4)
 
 ---
 
 ## Azure Cloud Deployment
+**Note: This is currently out of date**
 
 The entire infrastructure is defined as Code (IaC) using Azure Bicep located in the `infra/` directory.
 
