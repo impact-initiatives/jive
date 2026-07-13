@@ -2,16 +2,22 @@ name: Build and deploy jive api to acr
 run-name: Build & push prod image
 
 on:
-  push:
-    paths:
-      - '/api'
+  release:
+    types: [published]
     branches:
       - main
+  # push:
+  #   paths:
+  #     - 'api/**'
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 env:
   ACR_NAME: acrimpact
+  CONTAINER_APP_NAME: jive-ingress
   IMAGE_NAME: jive-api
+  IMAGE_TAG: {{date 'YYYYMMDD-HHmmss'}}
 
 jobs:
   build-push:
@@ -40,8 +46,8 @@ jobs:
           images: ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
-            type=raw,value=prod-{{date 'YYYYMMDD-HHmmss'}}
-            type=sha,prefix=prod-
+            type=raw,value=${{ env.IMAGE_TAG }}
+            # type=sha,prefix=
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -53,3 +59,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Deploy to containerapp
+        run: |
+          az containerapp update -n ${{ env.CONTAINER_APP_NAME }} -g ${{ secrets.ACR_RESOURCE_GROUP }} --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
