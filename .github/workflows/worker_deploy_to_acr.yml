@@ -2,16 +2,21 @@ name: Build and deploy jive worker to acr
 run-name: Build & push prod image
 
 on:
-  push:
-    paths:
-      - 'worker/**'
-    branches:
-      - main
+  release:
+      types: [published]
+      branches:
+        - main
+  # push:
+  #   paths:
+  #     - 'worker/**'
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 env:
   ACR_NAME: acrimpact
   IMAGE_NAME: jive-worker
+  CONTAINER_APP_NAME: jive-worker
 
 jobs:
   build-push:
@@ -20,6 +25,8 @@ jobs:
       contents: read
 
     steps:
+      - name: Set current date as env variable
+        run: echo "IMAGE_TAG=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -40,8 +47,8 @@ jobs:
           images: ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
-            type=raw,value=prod-{{date 'YYYYMMDD-HHmmss'}}
-            type=sha,prefix=prod-
+            type=raw,value=${{ env.IMAGE_TAG }}
+            # type=sha,prefix=prod-
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -53,3 +60,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # - name: Azure Login
+      #   uses: azure/login@v3
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # - name: Deploy to containerapp
+      #   run: |
+      #     az containerapp update -n ${{ env.CONTAINER_APP_NAME }} -g ${{ secrets.ACR_RESOURCE_GROUP }} --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}

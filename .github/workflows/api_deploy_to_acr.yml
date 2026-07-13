@@ -17,7 +17,6 @@ env:
   ACR_NAME: acrimpact
   CONTAINER_APP_NAME: jive-ingress
   IMAGE_NAME: jive-api
-  # IMAGE_TAG: ${{date 'YYYYMMDD-HHmmss'}}
 
 jobs:
   
@@ -62,6 +61,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Deploy to containerapp
-        run: |
-          az containerapp update -n ${{ env.CONTAINER_APP_NAME }} -g ${{ secrets.ACR_RESOURCE_GROUP }} --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      # - name: Azure Login
+      #   uses: azure/login@v3
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # - name: Deploy to containerapp
+      #   run: |
+      #     az containerapp update -n ${{ env.CONTAINER_APP_NAME }} -g ${{ secrets.ACR_RESOURCE_GROUP }} --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
