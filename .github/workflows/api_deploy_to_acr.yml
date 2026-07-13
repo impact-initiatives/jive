@@ -17,7 +17,7 @@ env:
   ACR_NAME: acrimpact
   CONTAINER_APP_NAME: jive-ingress
   IMAGE_NAME: jive-api
-  IMAGE_TAG: {{date 'YYYYMMDD-HHmmss'}}
+  IMAGE_TAG: ${{date 'YYYYMMDD-HHmmss'}}
 
 jobs:
   build-push:
