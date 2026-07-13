@@ -64,6 +64,7 @@ Within this project there are two applications: api and worker. Each has its own
 To set up a local environment for either of the components see their respective readme files:
 - [API readme](api/README.md)
 - [Worker readme](worker/README.md)
+- [local readme](local/README.md)
 
 ### Running the Services Locally
 
