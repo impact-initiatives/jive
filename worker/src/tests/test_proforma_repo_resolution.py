@@ -7,9 +7,13 @@ import pytest
 import requests
 import responses
 
+from src.worker.config import get_settings, reload_settings
+
 from .helpers import set_default_env_vars
 
+reload_settings()
 set_default_env_vars()
+
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
@@ -23,6 +27,7 @@ os.environ["JIRA_API_EMAIL"] = "mock-jira-email@example.com"
 os.environ["JIRA_API_TOKEN"] = "mock-jira-token"
 os.environ["REPO_USERNAME"] = "mock-wp-username@example.com"
 os.environ["REPO_PASSWORD"] = "mock-wp-password"
+get_settings()
 
 
 @pytest.fixture(autouse=True)
