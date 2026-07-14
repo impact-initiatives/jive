@@ -7,8 +7,8 @@ from .helpers import set_default_env_vars
 
 set_default_env_vars()
 
-from ..worker.models import ResultItemModel
-from ..worker.report_formatter import format_comment_adf
+from ..worker.models import ResultItemModel  # noqa: E402
+from ..worker.report_formatter import format_comment_adf  # noqa: E402
 
 
 def _make_response(

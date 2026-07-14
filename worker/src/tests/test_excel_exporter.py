@@ -4,8 +4,13 @@ from .helpers import set_default_env_vars
 
 set_default_env_vars()
 
-from ..worker.excel_exporter import export_response_to_excel
-from ..worker.models import MetadataModel, PipelineResponse, ResultItemModel, SummaryModel
+from ..worker.excel_exporter import export_response_to_excel  # noqa: E402
+from ..worker.models import (  # noqa: E402
+    MetadataModel,
+    PipelineResponse,
+    ResultItemModel,
+    SummaryModel,
+)
 
 
 def test_export_empty_response(tmp_path):

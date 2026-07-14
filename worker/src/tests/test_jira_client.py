@@ -17,7 +17,7 @@ set_default_env_vars()
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from ..worker.jira.jira_client import JiraClient
+from ..worker.jira.jira_client import JiraClient  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

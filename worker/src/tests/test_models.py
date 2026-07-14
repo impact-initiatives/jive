@@ -38,7 +38,7 @@ class TestJiraSubmissionPayload:
         assert payload.dataset_type == ""
 
     def test_missing_issue_key_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             JiraSubmissionPayload()
 
     def test_dataset_type_dropdown_dict(self):

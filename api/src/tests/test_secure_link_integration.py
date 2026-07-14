@@ -12,16 +12,6 @@ os.environ["JIVE_API_KEY"] = "test-secret-ZZZZZZZZZZZZZZ"
 os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
     "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
 )
-# @pytest.fixture
-# def settings_with_defaults():
-#     return Settings(
-#         SECURE_LINK_USERNAME = "XXXXXXX",
-#         SECURE_LINK_PASSWORD = "YYYYYYY",
-#         JIVE_API_KEY = "test-secret-ZZZZZZZZZZZZZZ",
-#         AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
-
-
-#     )
 
 
 from api.main import app

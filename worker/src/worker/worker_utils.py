@@ -265,7 +265,10 @@ def resolve_context(
     repo_action = None
 
     if not dataset_type.strip():
-        dataset_type = f"{payload.type_of_programme.lower()}_{'dataset' if 'dataset' in payload.type_of_output.lower() else 'analysis'}"
+        dataset_type = (
+            f"{payload.type_of_programme.lower()}_"
+            f"{'dataset' if 'dataset' in payload.type_of_output.lower() else 'analysis'}"
+        )
 
     if proforma_answers:
         # Dynamically detect dataset type and other context fields
@@ -429,8 +432,8 @@ def publish_results(
                     {
                         "type": "text",
                         "text": f"⚠️ The validation report ({file_size_mb:.1f}MB) exceeds the Jira"
-                        + f" attachment limit ({settings.max_attachment_size}MB). Please contact the JIVE"
-                        + " team to retrieve the full report.",
+                        + f" attachment limit ({settings.max_attachment_size}MB). Please contact "
+                        + " the support team to retrieve the full report.",
                         "marks": [{"type": "strong"}],
                     }
                 ],

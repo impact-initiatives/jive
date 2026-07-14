@@ -92,7 +92,10 @@ class ImpactRepoClient:
         response.raise_for_status()
 
         # WordPress returns HTTP 200 even on failed login — verify cookies
-        logged_in = any(str(name).startswith("wordpress_logged_in") for name in session.cookies)
+        # Note: originally this was:
+        # (name).startswith("wordpress_logged_in") for name in session.cookies
+        # adjusted to make the test work but not tested on actual site
+        logged_in = any(str(item.name).startswith("wordpress_logged_in") for item in session.cookies)
         if not logged_in:
             raise OSError(
                 "WordPress login failed — no auth cookie received. "

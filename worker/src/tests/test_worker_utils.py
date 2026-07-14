@@ -10,15 +10,20 @@ from .helpers import set_default_env_vars
 
 set_default_env_vars()
 
-from ..worker.models import JiraSubmissionPayload, MetadataModel, PipelineResponse, SummaryModel
-from ..worker.worker_utils import (
+from ..worker.models import (  # noqa: E402
+    JiraSubmissionPayload,
+    MetadataModel,
+    PipelineResponse,
+    SummaryModel,
+)
+from ..worker.worker_utils import (  # noqa: E402
     check_idempotency,
     download_dataset,
     publish_results,
     resolve_context,
     run_validation,
 )
-from .helpers import make_attachment
+from .helpers import make_attachment  # noqa: E402
 
 
 @pytest.fixture
@@ -42,6 +47,13 @@ def mock_impact_repo():
 @pytest.fixture
 def payload():
     return JiraSubmissionPayload(issue_key="TEST-123", dataset_type="jmmi_dataset")
+
+
+@pytest.fixture
+def payload_split_dataset():
+    return JiraSubmissionPayload(
+        issue_key="TEST-123", type_of_programme="jmmi", type_of_output="Quant Dataset"
+    )
 
 
 def test_check_idempotency_no_report(payload: JiraSubmissionPayload):
@@ -132,6 +144,15 @@ def test_download_dataset_failure(
 
 def test_resolve_context_default(mock_proforma: MagicMock, payload: JiraSubmissionPayload):
     dt, repo, action = resolve_context(mock_proforma, payload, "1000", {})
+    assert dt == "jmmi_dataset"
+    assert repo is None
+    assert action is None
+
+
+def test_resolve_context_default_split_dataset(
+    mock_proforma: MagicMock, payload_split_dataset: JiraSubmissionPayload
+):
+    dt, repo, action = resolve_context(mock_proforma, payload_split_dataset, "1000", {})
     assert dt == "jmmi_dataset"
     assert repo is None
     assert action is None

@@ -401,7 +401,8 @@ def format_comment_adf(
                                                 "type": "link",
                                                 "attrs": {
                                                     "href": f"{settings.data_cleanaing_checklist}",
-                                                    "title": "Data cleaning minimum standards checklist",
+                                                    "title": "Data cleaning minimum standards"
+                                                    + " checklist",
                                                 },
                                             }
                                         ],
@@ -424,7 +425,8 @@ def format_comment_adf(
                                                 "type": "link",
                                                 "attrs": {
                                                     "href": f"{settings.data_analysis_checklist}",
-                                                    "title": "Data analysis minimum standards checklist",
+                                                    "title": "Data analysis minimum"
+                                                    + " standards checklist",
                                                 },
                                             }
                                         ],

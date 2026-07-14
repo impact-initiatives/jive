@@ -110,7 +110,8 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
                 "Sheet Name": "",
                 "Column Name": "",
                 "Message": "The dataset generated too many errors. Detailed findings have been"
-                + f" truncated to the first {settings.max_excel_errors} rows to prevent memory exhaustion.",
+                + f" truncated to the first {settings.max_excel_errors} rows to prevent"
+                + " memory exhaustion.",
             },
         )
 
