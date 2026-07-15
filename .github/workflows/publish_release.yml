@@ -31,13 +31,13 @@ permissions:
 jobs:
   publish_argus:
     if: ${{ inputs.deploy_argus }} 
-    uses: impact-initiatives/argus.github/workflows/publish_release.yml@main
+    uses: impact-initiatives/argus/.github/workflows/publish_release.yml@main
     with:
       release_tag: ${{ inputs.argus_release_tag }} 
 
   publish_argus_schemas:
     if: ${{ inputs.deploy_argus_schemas }} 
-    uses: impact-initiatives/argus_schemas.github/workflows/publish_release.yml@main
+    uses: impact-initiatives/argus_schemas/.github/workflows/publish_release.yml@main
     with:
       release_tag: ${{ inputs.argus_schemas_release_tag }} 
 
