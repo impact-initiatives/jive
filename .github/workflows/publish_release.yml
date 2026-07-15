@@ -73,6 +73,7 @@ jobs:
   build_and_push_jive_images:
     needs: create_jive_release
     if: ${{ success() }}
+    runs-on: ubuntu-latest
     steps:
       - name: Trigger acr deployments
         uses: peter-evans/repository-dispatch@v4
