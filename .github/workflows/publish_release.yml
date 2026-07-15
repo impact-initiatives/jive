@@ -65,7 +65,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.jive_release_tag }}
-          name: Release ${{ inputs.jive_release_tag }}
+          name: ${{ inputs.jive_release_tag }}
           generate_release_notes: true
 
       - name: Trigger acr deployments
