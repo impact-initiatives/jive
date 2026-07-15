@@ -10,19 +10,19 @@ on:
     types: [manual-trigger]
     inputs:
       release_tag:
-        description: 'Release tag in format "vYYYY.MM.DD.XX"'
+        description: '"Jive" and "Argus" release tag in format "vYYYY.MM.DD.XX" .'
         required: true
         type: string
       deploy_argus:
-        description: 'Make an Arugs release.'
+        description: 'Publish an "Arugs" release.'
         required: true
         type: boolean
       deploy_argus_schemas:
-        description: 'Make an Arugs schemas release.'
+        description: 'Publish an "Arugs Schemas" release.'
         required: true
         type: boolean
       argus_schemas_release_tag:
-        description: 'Release tag in format "vYYYY.MM.DD.XX".'
+        description: '"Argus Schemas" release tag in format "vYYYY.MM.DD.XX".'
         required: true
         type: string
 
