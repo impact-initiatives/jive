@@ -1,0 +1,61 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    types: [manual-trigger]
+    inputs:
+      jive_release_tag:
+        description: 'Release tag in format "vYYYY.MM.DD.XX"'
+        required: true
+        type: string
+      deploy_argus:
+        description: 'Make an Arugs release'
+        required: true
+        type: boolean
+      argus_release_tag:
+        description: 'Release tag in format "vYYYY.MM.DD.XX".'
+        required: true
+        type: string
+      deploy_argus_schemas:
+        description: 'Make an Arugs schemas release'
+        required: true
+        type: boolean
+      argus_schemas_release_tag:
+        description: 'Release tag in format "vYYYY.MM.DD.XX".'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish_argus:
+    if: ${{ inputs.deploy_argus }} 
+    uses: impact-initiatives/argus.github/workflows/publish_release.yml@main
+    with:
+      release_tag: ${{ inputs.argus_release_tag }} 
+
+  publish_argus_schemas:
+    if: ${{ inputs.deploy_argus_schemas }} 
+    uses: impact-initiatives/argus_schemas.github/workflows/publish_release.yml@main
+    with:
+      release_tag: ${{ inputs.argus_schemas_release_tag }} 
+
+  publish_jive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6  
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.jive_release_tag }}
+          name: Release ${{ inputs.jive_release_tag }}
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/source-*.zip
+    # this step should then trigger the api and worker deploy workflows
