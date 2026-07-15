@@ -44,7 +44,7 @@ jobs:
 
   create_argus_release:
     needs: create_argus_schemas_release
-    if: ${{ inputs.release_argus && (success() || needs.create_argus_schemas_release.result == 'skipped') }}    
+    if: ${{ inputs.release_argus && (needs.create_argus_schemas_release.result == 'success' || needs.create_argus_schemas_release.result == 'skipped') }}    
     runs-on: ubuntu-latest
     steps:
         - name: Trigger argus workflow
@@ -57,7 +57,7 @@ jobs:
 
   create_jive_release:
     needs: create_argus_release
-    if: ${{ success() || needs.create_argus_release.result == 'skipped' }}
+    if: ${{  needs.create_argus_release.result == 'success' || needs.create_argus_release.result == 'skipped' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
