@@ -11,7 +11,8 @@ on:
   #     - 'api/**'
   #   branches:
   #     - main
-  workflow_dispatch:
+  repository_dispatch:
+    types: [post-release-processing]
 
 env:
   ACR_NAME: acrimpact
