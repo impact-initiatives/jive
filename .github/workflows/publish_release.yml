@@ -43,7 +43,7 @@ jobs:
             client-payload: '{"release_tag": "${{ inputs.argus_schemas_release_tag }}"}'
 
   publish_argus:
-    if: ${{ inputs.deploy_argus }} 
+    if: ${{ inputs.deploy_argus && (success() || needs.publish_argus_schemas.result == 'skipped') }}
     needs: publish_argus_schemas
     runs-on: ubuntu-latest
     steps:
@@ -57,6 +57,7 @@ jobs:
 
   publish_jive:
     needs: publish_argus
+    if: ${{ success() || needs.publish_argus.result == 'skipped' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
