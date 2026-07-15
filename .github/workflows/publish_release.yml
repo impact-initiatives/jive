@@ -1,23 +1,24 @@
 name: Publish Release
 
+# Jive and argus are deployed together so can share the same release tag.
+# argus schemas can be released independently so can possibly have
+# its own different release tag (likely only if it released twice
+# in one day)
+
 on:
   workflow_dispatch:
     types: [manual-trigger]
     inputs:
-      jive_release_tag:
+      release_tag:
         description: 'Release tag in format "vYYYY.MM.DD.XX"'
         required: true
         type: string
       deploy_argus:
-        description: 'Make an Arugs release'
+        description: 'Make an Arugs release.'
         required: true
         type: boolean
-      argus_release_tag:
-        description: 'Release tag in format "vYYYY.MM.DD.XX".'
-        required: true
-        type: string
       deploy_argus_schemas:
-        description: 'Make an Arugs schemas release'
+        description: 'Make an Arugs schemas release.'
         required: true
         type: boolean
       argus_schemas_release_tag:
@@ -52,7 +53,7 @@ jobs:
             token: ${{ secrets.REPO_DISPATCH_TOKEN }}  
             repository: impact-initiatives/argus
             event-type: manual-release
-            client-payload: '{"release_tag": "${{ inputs.argus_release_tag }}"}'
+            client-payload: '{"release_tag": "${{ inputs.release_tag }}"}'
 
   publish_jive:
     needs: publish_argus
@@ -64,8 +65,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ inputs.jive_release_tag }}
-          name: ${{ inputs.jive_release_tag }}
+          tag_name: ${{ inputs.release_tag }}
+          name: ${{ inputs.release_tag }}
           generate_release_notes: true
 
       - name: Trigger acr deployments
