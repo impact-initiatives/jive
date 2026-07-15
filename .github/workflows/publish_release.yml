@@ -13,11 +13,11 @@ on:
         description: '"Jive" and "Argus" release tag in format "vYYYY.MM.DD.XX" .'
         required: true
         type: string
-      deploy_argus:
+      release_argus:
         description: 'Publish an "Arugs" release.'
         required: true
         type: boolean
-      deploy_argus_schemas:
+      release_argus_schemas:
         description: 'Publish an "Arugs Schemas" release.'
         required: true
         type: boolean
@@ -30,8 +30,8 @@ permissions:
   contents: write
 
 jobs:
-  publish_argus_schemas:
-      if: ${{ inputs.deploy_argus_schemas }} 
+  create_argus_schemas_release:
+      if: ${{ inputs.release_argus_schemas }} 
       runs-on: ubuntu-latest
       steps:
         - name: Trigger argus_schemas workflow
@@ -42,9 +42,9 @@ jobs:
             event-type: manual-release
             client-payload: '{"release_tag": "${{ inputs.argus_schemas_release_tag }}"}'
 
-  publish_argus:
-    if: ${{ inputs.deploy_argus && (success() || needs.publish_argus_schemas.result == 'skipped') }}
-    needs: publish_argus_schemas
+  create_argus_release:
+    if: ${{ inputs.release_argus && (success() || needs.create_argus_schemas_release.result == 'skipped') }}
+    needs: create_argus_schemas_release
     runs-on: ubuntu-latest
     steps:
         - name: Trigger argus workflow
@@ -55,9 +55,9 @@ jobs:
             event-type: manual-release
             client-payload: '{"release_tag": "${{ inputs.release_tag }}"}'
 
-  publish_jive:
-    needs: publish_argus
-    if: ${{ success() || needs.publish_argus.result == 'skipped' }}
+  create_jive_release:
+    needs: create_argus_release
+    if: ${{ success() || needs.create_argus_release.result == 'skipped' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -70,6 +70,10 @@ jobs:
           name: ${{ inputs.release_tag }}
           generate_release_notes: true
 
+  build_and_push_jive_images:
+    needs: create_jive_release
+    if: ${{ success() }}
+    steps:
       - name: Trigger acr deployments
         uses: peter-evans/repository-dispatch@v4
         with:
