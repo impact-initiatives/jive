@@ -36,16 +36,14 @@ jobs:
         release_tag: ${{ inputs.argus_schemas_release_tag }} 
 
   publish_argus:
-    if: ${{ inputs.deploy_argus_schemas }} 
+    if: ${{ inputs.deploy_argus }} 
     needs: publish_argus_schemas
     
-    if: ${{ inputs.deploy_argus }} 
     uses: impact-initiatives/argus/.github/workflows/publish_release.yml@main
     with:
       release_tag: ${{ inputs.argus_release_tag }}   
 
   publish_jive:
-    if: ${{ inputs.deploy_argus }} 
     needs: publish_argus
 
     runs-on: ubuntu-latest
