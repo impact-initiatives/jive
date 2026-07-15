@@ -43,8 +43,8 @@ jobs:
             client-payload: '{"release_tag": "${{ inputs.argus_schemas_release_tag }}"}'
 
   create_argus_release:
-    if: ${{ inputs.release_argus && (success() || needs.create_argus_schemas_release.result == 'skipped') }}
     needs: create_argus_schemas_release
+    if: ${{ inputs.release_argus && (success() || needs.create_argus_schemas_release.result == 'skipped') }}    
     runs-on: ubuntu-latest
     steps:
         - name: Trigger argus workflow
@@ -72,7 +72,7 @@ jobs:
 
   build_and_push_jive_images:
     needs: create_jive_release
-    if: ${{ success() }}
+    if: ${{ needs.create_jive_release.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Trigger acr deployments
