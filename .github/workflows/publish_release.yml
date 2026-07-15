@@ -44,7 +44,7 @@ jobs:
   publish_argus:
     if: ${{ inputs.deploy_argus }} 
     needs: publish_argus_schemas
-
+    runs-on: ubuntu-latest
     steps:
         - name: Trigger argus workflow
           uses: peter-evans/repository-dispatch@v4
@@ -56,9 +56,7 @@ jobs:
 
   publish_jive:
     needs: publish_argus
-
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6  
