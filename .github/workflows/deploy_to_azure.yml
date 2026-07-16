@@ -25,6 +25,12 @@ on:
       #   description: 'Name of the Azure container app the image is for.'
       #   required: true
         # type: string
+    secrets:
+      ACR_USERNAME:
+        required: true
+      ACR_PASSWORD:
+        required: true
+
 
 
 jobs:
