@@ -39,6 +39,7 @@ permissions:
   contents: write
 
 jobs:
+  
   create_argus_schemas_release:
       if: ${{ inputs.release_argus_schemas }} 
       runs-on: ubuntu-latest
@@ -52,8 +53,7 @@ jobs:
             client-payload: '{"release_tag": "${{ inputs.argus_schemas_release_tag }}"}'
 
   create_argus_release:
-    needs: create_argus_schemas_release
-    if: ${{ always() && inputs.release_argus && (needs.create_argus_schemas_release.result == 'success' || needs.create_argus_schemas_release.result == 'skipped') }}    
+    if: ${{ inputs.release_argus }} 
     runs-on: ubuntu-latest
     steps:
         - name: Trigger argus workflow
@@ -107,9 +107,3 @@ jobs:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
     
-    # runs-on: ubuntu-latest
-    # steps:
-    #   - name: Trigger acr deployments
-    #     uses: peter-evans/repository-dispatch@v4
-    #     with:
-    #       event-type: post-release-processing

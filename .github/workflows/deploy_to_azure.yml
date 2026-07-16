@@ -1,5 +1,4 @@
-name: Build and deploy jive  to acr
-run-name: Build & push image
+name: Build and push jive to Azure
 
 on:
   workflow_call:
