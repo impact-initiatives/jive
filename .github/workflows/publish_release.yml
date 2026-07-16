@@ -28,7 +28,12 @@ on:
       release_type:
         description: 'Type of release.'
         required: true
-        type: environment
+        # type: environment need admin to create these
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
 
 permissions:
   contents: write
