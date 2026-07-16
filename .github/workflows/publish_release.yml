@@ -30,13 +30,6 @@ on:
         required: true
         type: environment
 
-env:
-  ACR_NAME: acrimpact
-  WORKER_IMAGE_NAME: jive-worker
-  # WORKER_CONTAINER_APP_NAME: jive-worker
-  API_IMAGE_NAME: jive-api
-  # API_CONTAINER_APP_NAME: jive-ingress
-
 permissions:
   contents: write
 
@@ -87,10 +80,10 @@ jobs:
     uses: inpact-initiatives/jive/.github/workflows/deploy_to_azure.yml
     with:
       release_tag: ${{ inputs.release_tag }}
-      acr_name: ${{ env.ACR_NAME }}
-      image_name: ${{ env.WORKER_IMAGE_NAME }}
+      acr_name: acrimpact
+      image_name: jive-worker
       release_type: ${{ inputs.release_type }}
-      # container_app_name: ${{ env.WORKER_CONTAINER_APP_NAME }}
+      # container_app_name: jive-worker
 
   build_and_push_jive_api_images:
     needs: create_jive_release
@@ -98,10 +91,10 @@ jobs:
     uses: inpact-initiatives/jive/.github/workflows/deploy_to_azure.yml
     with:
       release_tag: ${{ inputs.release_tag }}
-      acr_name: ${{ env.ACR_NAME }}
-      image_name: ${{ env.API_IMAGE_NAME }}
+      acr_name: acrimpact
+      image_name: jive-api
       release_type: ${{ inputs.release_type }}
-      # container_app_name: ${{ env.API_CONTAINER_APP_NAME }}
+      # container_app_name: jive-ingress
     
     # runs-on: ubuntu-latest
     # steps:
