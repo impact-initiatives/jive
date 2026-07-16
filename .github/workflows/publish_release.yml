@@ -82,7 +82,7 @@ jobs:
   build_and_push_jive_worker_images:
     needs: create_jive_release
     if: ${{ always() && needs.create_jive_release.result == 'success' }}
-    uses: inpact-initiatives/jive/.github/workflows/deploy_to_azure.yml@main
+    uses: impact-initiatives/jive/.github/workflows/deploy_to_azure.yml@main
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
@@ -93,7 +93,7 @@ jobs:
   build_and_push_jive_api_images:
     needs: create_jive_release
     if: ${{ always() && needs.create_jive_release.result == 'success' }}
-    uses: inpact-initiatives/jive/.github/workflows/deploy_to_azure.yml@main
+    uses: impact-initiatives/jive/.github/workflows/deploy_to_azure.yml@main
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
