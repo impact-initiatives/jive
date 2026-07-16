@@ -28,12 +28,7 @@ on:
       release_type:
         description: 'Type of release.'
         required: true
-        type: choice
-        options:
-          - dev
-          - test
-          - prod
-        default: dev
+        type: environment
 
 env:
   ACR_NAME: acrimpact
