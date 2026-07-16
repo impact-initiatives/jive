@@ -25,15 +25,15 @@ on:
         description: '"Argus Schemas" release tag in format "vYYYY.MM.DD.XX".'
         required: true
         type: string
-      # release_type:
-      #   description: 'Type of release.'
-      #   required: true
-      #   # type: environment need admin to create these
-      #   type: choice
-      #   options:
-      #     - dev
-      #     - test
-      #     - prod
+      release_type:
+        description: 'Type of release.'
+        required: true
+        # type: environment need admin to create these
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
 
 permissions:
   contents: write
@@ -87,7 +87,7 @@ jobs:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
       image_name: jive-worker
-      release_type: dev #${{ inputs.release_type }}
+      release_type: ${{ inputs.release_type }}
       # container_app_name: jive-worker
 
   build_and_push_jive_api_images:
@@ -98,7 +98,7 @@ jobs:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
       image_name: jive-api
-      release_type: dev #${{ inputs.release_type }}
+      release_type: ${{ inputs.release_type }}
       # container_app_name: jive-ingress
     
     # runs-on: ubuntu-latest

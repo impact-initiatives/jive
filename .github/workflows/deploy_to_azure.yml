@@ -19,16 +19,12 @@ on:
       release_type:
         description: 'Type of release.'
         required: true
-        type: choice
-        options:
-          - dev
-          - test
-          - prod
-        # type: environment not supported for workflow_call
+        type: string
+        # type: environment/choices not supported for workflow_call
       # container_app_name:
       #   description: 'Name of the Azure container app the image is for.'
       #   required: true
-      #   type: string
+        # type: string
 
 
 jobs:
