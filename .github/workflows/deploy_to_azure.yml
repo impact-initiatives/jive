@@ -1,0 +1,80 @@
+name: Build and deploy jive  to acr
+run-name: Build & push image
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: 'Release tag in format "vYYYY.MM.DD.XX".'
+        required: true
+        type: string
+      acr_name:
+        description: 'Azure container registry name.'
+        required: true
+        type: string
+      image_name:
+        description: 'Name of the Docker image to build.'
+        required: true
+        type: string
+      # container_app_name:
+      #   description: 'Name of the Azure container app the image is for.'
+      #   required: true
+      #   type: string
+      release_type:
+        description: 'Type of release.'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+        default: dev
+
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ inputs.acr_name }}.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ inputs.release_type }}-${{ inputs.release_tag }}
+            type=sha
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./worker
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # - name: Azure Login
+      #   uses: azure/login@v3
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # - name: Deploy to containerapp
+      #   run: |
+      #     az containerapp update -n ${{ inputs.container_app_name }} -g ${{ secrets.ACR_RESOURCE_GROUP }} --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_type }}-${{ inputs.release_tag }}
