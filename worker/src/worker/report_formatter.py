@@ -411,10 +411,10 @@ def format_comment_adf(
                                         ],
                                     }
                                 ],
-                            },                    
+                            },
                         ],
                     }
-        )
+                )
     else:
         adf_document["content"].append(
             {

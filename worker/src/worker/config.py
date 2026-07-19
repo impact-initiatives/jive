@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, Json
 from pydantic_settings import BaseSettings
 
 
@@ -34,7 +34,9 @@ class Settings(BaseSettings):
     proforma_dataset_type_label: str = Field(
         alias="PROFORMA_DATASET_TYPE_LABEL", default="Dataset type"
     )
-    jive_documentation: Json[list[dict[str, str]]] = Field(default_factory=list, alias="JIVE_DOCUMENTATION")
+    jive_documentation: Json[list[dict[str, str]]] = Field(
+        default_factory=list, alias="JIVE_DOCUMENTATION"
+    )
 
     jira_api_email: str = Field(alias="JIRA_API_EMAIL")
     jira_api_token: str = Field(alias="JIRA_API_TOKEN")
