@@ -10,7 +10,7 @@ on:
     types: [manual-trigger]
     inputs:
       release_tag:
-        description: '"Jive" and "Argus" release tag in format "vYYYY.MM.DD.XX" .'
+        description: '"Jive" and "Argus" release tag in format "YYYYMMDDXX" .'
         required: true
         type: string
       release_argus:
@@ -22,7 +22,7 @@ on:
         required: true
         type: boolean
       argus_schemas_release_tag:
-        description: '"Argus Schemas" release tag in format "vYYYY.MM.DD.XX".'
+        description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
         required: true
         type: string
       release_type:
