@@ -383,83 +383,37 @@ def format_comment_adf(
                 ],
             }
         )
-        adf_document["content"].append(
-            {
-                "type": "bulletList",
-                "content": [
+        for doc in settings.jive_documentation:
+            for name, url in doc.items():
+                adf_document["content"].append(
                     {
-                        "type": "listItem",
+                        "type": "bulletList",
                         "content": [
                             {
-                                "type": "paragraph",
+                                "type": "listItem",
                                 "content": [
                                     {
-                                        "type": "text",
-                                        "text": "Data cleaning minimum standards checklist.",
-                                        "marks": [
+                                        "type": "paragraph",
+                                        "content": [
                                             {
-                                                "type": "link",
-                                                "attrs": {
-                                                    "href": f"{settings.data_cleanaing_checklist}",
-                                                    "title": "Data cleaning minimum standards"
-                                                    + " checklist",
-                                                },
-                                            }
+                                                "type": "text",
+                                                "text": f"{name}",
+                                                "marks": [
+                                                    {
+                                                        "type": "link",
+                                                        "attrs": {
+                                                            "href": f"{url}",
+                                                            "title": f"{name}",
+                                                        },
+                                                    }
+                                                ],
+                                            },
                                         ],
-                                    },
+                                    }
                                 ],
-                            }
+                            },                    
                         ],
-                    },
-                    {
-                        "type": "listItem",
-                        "content": [
-                            {
-                                "type": "paragraph",
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": "Data analysis minimum standards checklist.",
-                                        "marks": [
-                                            {
-                                                "type": "link",
-                                                "attrs": {
-                                                    "href": f"{settings.data_analysis_checklist}",
-                                                    "title": "Data analysis minimum"
-                                                    + " standards checklist",
-                                                },
-                                            }
-                                        ],
-                                    },
-                                ],
-                            }
-                        ],
-                    },
-                    {
-                        "type": "listItem",
-                        "content": [
-                            {
-                                "type": "paragraph",
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": "Argus/Jive validation rules.",
-                                        "marks": [
-                                            {
-                                                "type": "link",
-                                                "attrs": {
-                                                    "href": f"{settings.argus_validation_rules}",
-                                                    "title": "Argus/Jive validation rules",
-                                                },
-                                            }
-                                        ],
-                                    },
-                                ],
-                            }
-                        ],
-                    },
-                ],
-            }
+                    }
         )
     else:
         adf_document["content"].append(

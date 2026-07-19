@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     max_excel_errors: int = Field(alias="MAX_EXCEL_ERRORS", default=50000)
 
-    allowed_domains: str | frozenset = Field(alias="ALLOWED_DOMAINS", default="")
+    allowed_domains: str | frozenset[str] = Field(alias="ALLOWED_DOMAINS", default="")
 
     repository_username: str = Field(alias="REPO_USERNAME", default="")
     repository_password: str = Field(alias="REPO_PASSWORD", default="")
@@ -34,10 +34,7 @@ class Settings(BaseSettings):
     proforma_dataset_type_label: str = Field(
         alias="PROFORMA_DATASET_TYPE_LABEL", default="Dataset type"
     )
-
-    data_cleanaing_checklist: str = Field(alias="DATA_CLEANING_CHECKLIST")
-    data_analysis_checklist: str = Field(alias="DATA_ANALYSIS_CHECKLIST")
-    argus_validation_rules: str = Field(alias="ARGUS_VALIDATION_RULES")
+    jive_documentation: Json[list[dict[str, str]]] = Field(default_factory=list, alias="JIVE_DOCUMENTATION")
 
     jira_api_email: str = Field(alias="JIRA_API_EMAIL")
     jira_api_token: str = Field(alias="JIRA_API_TOKEN")

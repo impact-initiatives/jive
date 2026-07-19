@@ -17,3 +17,4 @@ dataset_config/
 *.vscode
 *.code-workspace
 data/
+*.ipynb

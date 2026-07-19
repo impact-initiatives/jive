@@ -59,7 +59,7 @@ jobs:
           images: ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}
           tags: |
             type=raw,value=latest
-            type=raw,value=${{ inputs.release_type }}-${{ inputs.release_tag }}
+            type=raw,value=${{ inputs.release_tag }}
             type=sha
 
       - name: Build and push
@@ -78,4 +78,4 @@ jobs:
       #     creds: ${{ secrets.AZURE_CREDENTIALS }}
       # - name: Deploy to containerapp
       #   run: |
-      #     az containerapp update -n ${{ inputs.container_app_name }} -g ${{ secrets.ACR_RESOURCE_GROUP }} --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_type }}-${{ inputs.release_tag }}
+      #     az containerapp update -n ${{ inputs.container_app_name }} -g ${{ secrets.ACR_RESOURCE_GROUP }} --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_tag }}
