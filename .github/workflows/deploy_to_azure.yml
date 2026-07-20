@@ -19,6 +19,10 @@ on:
         description: 'Type of release.'
         required: true
         type: string
+      build_context:
+        description: 'Docker build context path.'
+        required: true
+        type: string
         # type: environment/choices not supported for workflow_call
       # container_app_name:
       #   description: 'Name of the Azure container app the image is for.'
@@ -65,7 +69,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
-          context: ./worker
+          context: ${{ inputs.build_context }}
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

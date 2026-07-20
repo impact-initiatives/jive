@@ -88,6 +88,7 @@ jobs:
       acr_name: acrimpact
       image_name: jive-worker
       release_type: ${{ inputs.release_type }}
+      build_context: ./worker
       # container_app_name: jive-worker
     secrets:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
@@ -102,6 +103,7 @@ jobs:
       acr_name: acrimpact
       image_name: jive-api
       release_type: ${{ inputs.release_type }}
+      build_context: ./api
       # container_app_name: jive-ingress
     secrets:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
