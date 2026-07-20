@@ -5,13 +5,6 @@ from .models import PipelineResponse, ResultItemModel
 
 settings = get_settings()
 
-try:
-    with open(settings.jive_version_file) as f:
-        jive_version = f.read().strip()
-except Exception:
-    jive_version = "unknown"
-
-
 def format_comment_adf(
     issue_key: str,
     response: PipelineResponse,
@@ -457,7 +450,7 @@ def format_comment_adf(
             "content": [
                 {
                     "type": "text",
-                    "text": f"JIVE v{jive_version} | ",
+                    "text": f"JIVE v{settings.jive_version} | ",
                     "marks": [{"type": "em"}],
                 },
                 {
