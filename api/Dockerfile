@@ -7,7 +7,7 @@ FROM python:3.12-slim-trixie AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /bin/
 
 ENV UV_NO_DEV=1
-
+ARG RELEASE_TAG
 COPY . /app
 WORKDIR /app
 RUN uv sync --locked

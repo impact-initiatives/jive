@@ -1,3 +1,4 @@
+import datetime
 import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -211,7 +212,12 @@ def test_publish_results_small_file(
         summary=SummaryModel(
             passed=True, admin_errors=0, errors=0, warnings=0, info=0, admin_info=0
         ),
-        metadata=MetadataModel(dataset_type="msna"),
+        metadata=MetadataModel(
+            dataset_type="msna",
+            file_name="report.xlsx",
+            validation_date=datetime.datetime.now().isoformat(),
+            version="2026010100",
+        ),
         warnings=[],
         errors=[],
         info=[],
@@ -237,7 +243,12 @@ def test_publish_results_large_file(
     response = PipelineResponse.model_construct(
         success=True,
         summary={"total_errors": 0, "total_warnings": 0},
-        metadata=MetadataModel(dataset_type="msna"),
+        metadata=MetadataModel(
+            dataset_type="msna",
+            file_name="report.xlsx",
+            validation_date=datetime.datetime.now().isoformat(),
+            version="2026010100",
+        ),
         warnings=[],
         errors=[],
         info=[],
@@ -288,8 +299,9 @@ def test_run_validation_minor_schema_mismatch(
         },
         "metadata": {
             "dataset_type": "jmmi_dataset",
-            "timestamp": "2023-01-01T00:00:00Z",
+            "validation_date": "2023-01-01T00:00:00Z",
             "version": "1.0.0",
+            "file_name": "report.xlsx",
         },
         # warnings, info, admin_errors are missing
     }

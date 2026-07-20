@@ -46,8 +46,9 @@ def test_worker_process_message_with_secure_link(
         "success": True,
         "metadata": {
             "dataset_type": "jmmi_dataset",
-            "timestamp": "2023-01-01T00:00:00Z",
+            "validation_date": "2023-01-01T00:00:00Z",
             "version": "1.0.0",
+            "file_name": "report.xlsx",
         },
         "summary": {
             "errors": 0,

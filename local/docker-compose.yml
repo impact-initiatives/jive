@@ -34,6 +34,8 @@ services:
     build:
       context: ../..
       dockerfile: jive/worker/Dockerfile.local
+      args: 
+        RELEASE_TAG: 2026071900
     container_name: jive-worker
     command: ["python", "-m", "worker.main"] 
     env_file:

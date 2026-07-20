@@ -1,15 +1,15 @@
-from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 from .config import get_settings
 from .models import PipelineResponse, ResultItemModel
 
 settings = get_settings()
+
 try:
-    jive_version = version("jive-jira-integration")
-except PackageNotFoundError:
-    jive_version = "0.1.0"
-JIVE_VERSION = jive_version
+    with open(settings.jive_version_file) as f:
+        jive_version = f.read().strip()
+except Exception:
+    jive_version = "unknown"
 
 
 def format_comment_adf(
@@ -451,20 +451,18 @@ def format_comment_adf(
     # 5. Micro-Performance Stat Footer
     adf_document["content"].append({"type": "rule"})
 
-    timestamp_str = (
-        response.metadata.timestamp
-        if hasattr(response, "metadata")
-        and response.metadata
-        and hasattr(response.metadata, "timestamp")
-        else "N/A"
-    )
     adf_document["content"].append(
         {
             "type": "paragraph",
             "content": [
                 {
                     "type": "text",
-                    "text": f"JIVE Automated Validation Engine v{JIVE_VERSION} | ",
+                    "text": f"JIVE v{jive_version} | ",
+                    "marks": [{"type": "em"}],
+                },
+                {
+                    "type": "text",
+                    "text": f"Argus v{response.metadata.version} | ",
                     "marks": [{"type": "em"}],
                 },
                 {
@@ -472,7 +470,11 @@ def format_comment_adf(
                     "text": "Validated at: ",
                     "marks": [{"type": "em"}, {"type": "strong"}],
                 },
-                {"type": "text", "text": timestamp_str, "marks": [{"type": "em"}]},
+                {
+                    "type": "text",
+                    "text": response.metadata.validation_date,
+                    "marks": [{"type": "em"}],
+                },
             ],
         }
     )

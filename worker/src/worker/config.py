@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     secure_link_username: str = Field(alias="SECURE_LINK_USERNAME", default="")
     secure_link_password: str = Field(alias="SECURE_LINK_PASSWORD", default="")
 
+    jive_version_file: str = Field(alias="JIVE_VERSION_FILE", default="/app/jive_version.txt")
+
     def parsed_allowed_domains(self) -> frozenset[str]:
         """Return domains as frozenset."""
         return frozenset(filter(None, self.allowed_domains.split(",")))

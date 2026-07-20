@@ -16,14 +16,20 @@ RUN    uv pip install --no-cache /argus
 COPY ./jive/worker ./
 
 # remove local reference to argus in toml file
-RUN grep -v '\[tool.uv.sources\]' pyproject.toml | \
-grep -v 'argus.*=.*{' > pyproject.toml
+RUN sed -i 's|argus @ git+https://github.com/impact-initiatives/argus\.git|argus @ file:///argus|' pyproject.toml && \
+    sed -i '/\[tool.uv.sources\]/d' pyproject.toml && \
+    sed -i '/argus = { path =/d' pyproject.toml
 
 RUN uv pip install .
 
 FROM python:3.12-slim-trixie AS runner
+ARG RELEASE_TAG
 
 WORKDIR /app
+RUN echo ${RELEASE_TAG} > /app/argus_version.txt
+ENV ARGUS_VERSION_FILE=/app/argus_version.txt
+RUN echo ${RELEASE_TAG} > /app/jive_version.txt
+ENV JIVE_VERSION_FILE=/app/jive_version.txt
 RUN mkdir -p /app/logs /app/dataset_config
 
 # Copy the pre-compiled virtual environment from the builder

@@ -25,7 +25,8 @@ def _make_response(
 
     # Mock metadata
     response.metadata.dataset_type = "jmmi"
-    response.metadata.timestamp = "2023-01-01T12:00:00Z"
+    response.metadata.validation_date = "2023-01-01T12:00:00Z"
+    response.metadata.file_name = "report.xlsx"
 
     def _convert_items(items: list[dict[str, str]]):
         validated_items: list[ResultItemModel] = []

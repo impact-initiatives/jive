@@ -64,6 +64,9 @@ class SummaryModel(BaseModel):
 
 class MetadataModel(BaseModel):
     dataset_type: str
+    validation_date: str
+    file_name: str
+    version: str
 
 
 class PipelineResponse(BaseModel):

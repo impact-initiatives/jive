@@ -47,7 +47,12 @@ def test_export_populated_response(tmp_path):
             info=0,
             admin_info=0,
         ),
-        metadata=MetadataModel(dataset_type="msna"),
+        metadata=MetadataModel(
+            dataset_type="msna_dataset",
+            version="2026010100",
+            file_name="data.xlsx",
+            validation_date="20260101",
+        ),
         warnings=[
             ResultItemModel(
                 severity="warning",
@@ -96,7 +101,12 @@ def test_export_invalid_details(tmp_path):
             info=0,
             admin_info=0,
         ),
-        metadata=MetadataModel(dataset_type="msna"),
+        metadata=MetadataModel(
+            dataset_type="msna",
+            version="2026010100",
+            file_name="data.xlsx",
+            validation_date="20260101",
+        ),
         errors=[
             ResultItemModel(
                 severity="error",
