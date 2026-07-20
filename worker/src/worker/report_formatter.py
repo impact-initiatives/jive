@@ -5,6 +5,7 @@ from .models import PipelineResponse, ResultItemModel
 
 settings = get_settings()
 
+
 def format_comment_adf(
     issue_key: str,
     response: PipelineResponse,
