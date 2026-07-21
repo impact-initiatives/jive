@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -73,7 +75,7 @@ class Watcher(BaseModel):
 
 
 class SubTaskOutwardIssue(BaseModel):
-    fields: dict
+    fields: dict[str, Any] = Field(default_factory=dict)
     id: str
     key: str
     self: str
@@ -95,7 +97,7 @@ class SubTaskEntry(BaseModel):
 class DescriptionBody(BaseModel):
     type: str
     version: int
-    content: list  # Simplified - expand as needed
+    content: list[Any] = Field(default_factory=list)
 
 
 class Comment(BaseModel):
@@ -106,7 +108,7 @@ class Comment(BaseModel):
     self: str
     updateAuthor: AuthorInfo
     updated: str | None = None
-    visibility: dict | None = None
+    visibility: dict[str, Any] | None = None
 
 
 class Worklog(BaseModel):
@@ -120,7 +122,7 @@ class Worklog(BaseModel):
     timeSpentSeconds: int
     updateAuthor: AuthorInfo
     updated: str
-    visibility: dict | None = None
+    visibility: dict[str, Any] | None = None
 
 
 class IssueLink(BaseModel):
@@ -171,3 +173,51 @@ class ServiceDeskResponse(BaseModel):
     projectName: str
     projectKey: str
     _links: dict[str, str]
+
+
+class FormTemplate(BaseModel):
+    id: str
+
+
+class Form(BaseModel):
+    formTemplate: FormTemplate
+    id: str
+    internal: bool
+    lock: bool
+    name: str
+    submitted: bool
+    updated: str
+
+
+class SubmitSettings(BaseModel):
+    lock: bool
+    pdf: bool
+
+
+class DesignSettings(BaseModel):
+    language: str
+    name: str
+    primaryLocale: str
+    submit: SubmitSettings
+    translatedLocale: str
+
+
+class Design(BaseModel):
+    conditions: dict[str, Any] = Field(default_factory=dict)
+    layout: list[dict[str, Any]] = Field(default_factory=list)
+    questions: dict[str, Any] = Field(default_factory=dict)
+    sections: dict[str, Any] = Field(default_factory=dict)
+    settings: DesignSettings
+
+
+class State(BaseModel):
+    answers: dict[str, Any] = Field(default_factory=dict)
+    status: str
+    visibility: str
+
+
+class FormDocument(BaseModel):
+    design: Design
+    id: str
+    state: State
+    updated: str

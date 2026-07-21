@@ -10,9 +10,10 @@ from tenacity import (
     wait_exponential,
 )
 
-from .config import get_settings
-from .jira.jira_client import JiraAPIError, _check_retryable
-from .logger import get_logger
+from ..config import get_settings
+from ..jira.jira_client import JiraAPIError, check_retryable
+from ..logger import get_logger
+from .models import Form, FormDocument
 
 logger = get_logger("jive.proforma_parser")
 settings = get_settings()
@@ -50,7 +51,7 @@ class ProformaParser:
         logger.info("Fetching Atlassian Cloud ID", extra={"url": url})
 
         response = self.session.get(url, auth=self.auth, timeout=(3.05, 15))
-        _check_retryable(response)
+        check_retryable(response)
         response.raise_for_status()
 
         self.cloud_id = response.json()["cloudId"]
@@ -75,7 +76,7 @@ class ProformaParser:
             response = self.session.get(
                 url, auth=self.auth, headers=self.headers, timeout=(3.05, 15)
             )
-            _check_retryable(response)
+            check_retryable(response)
             if response.status_code in (403, 404):
                 logger.warning(
                     "ProForma API returned status code, forms might not be configured/enabled",
@@ -84,33 +85,31 @@ class ProformaParser:
                 return {}
             response.raise_for_status()
 
-            forms = response.json()
-            submitted = [f for f in forms if f.get("submitted")]
-            if not submitted:
+            forms = [Form.model_validate(item) for item in response.json()]
+            if not forms or not forms[0].submitted:
                 logger.warning(
                     "No submitted ProForma form found for issue", extra={"issue_id": issue_id}
                 )
                 return {}
 
             # Fetch detailed answers of the first submitted form
-            form_id = submitted[0]["id"]
-            form_detail_url = f"{url}/{form_id}"
+            form_detail_url = f"{url}/{forms[0].id}"
             logger.info(
-                "Fetching ProForma form details", extra={"issue_id": issue_id, "form_id": form_id}
+                "Fetching ProForma form details",
+                extra={"issue_id": issue_id, "form_id": forms[0].id},
             )
 
             detail_response = self.session.get(
                 form_detail_url, auth=self.auth, headers=self.headers, timeout=(3.05, 15)
             )
-            _check_retryable(detail_response)
+            check_retryable(detail_response)
             detail_response.raise_for_status()
 
-            form = detail_response.json()
-            questions = form.get("design", {}).get("questions", {})
-            answers = form.get("state", {}).get("answers", {})
+            form = FormDocument.model_validate(detail_response.json())
+            answers = form.state.answers
 
             result = {}
-            for qid, q in questions.items():
+            for qid, q in form.design.questions.items():
                 label = q.get("label", "")
                 question_key = q.get("questionKey", "")
                 answer = answers.get(qid, {})

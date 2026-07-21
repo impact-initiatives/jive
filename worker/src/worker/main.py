@@ -13,9 +13,9 @@ from .excel_exporter import export_response_to_excel
 from .impact_repo_client import ImpactRepoClient
 from .jira.jira_client import JiraClient
 from .jira.models import IssueAttachment
+from .jira.proforma_parser import ProformaParser
 from .logger import get_logger
 from .models import JiraSubmissionPayload
-from .proforma_parser import ProformaParser
 from .worker_utils import (
     check_idempotency,
     download_dataset,
@@ -72,9 +72,7 @@ def dead_letter_message(
     try:
         if jira is None:
             jira = JiraClient()
-        error_adf: dict[
-            str, int | str | list[dict[str, str | list[dict[str, str | list[dict[str, str]]]]]]
-        ] = {
+        error_adf = {
             "version": 1,
             "type": "doc",
             "content": [

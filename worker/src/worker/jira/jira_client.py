@@ -41,7 +41,7 @@ class JiraAPIError(Exception):
     pass
 
 
-def _check_retryable(response: requests.Response):
+def check_retryable(response: requests.Response):
     """Raises JiraAPIError if the response has a retryable status code."""
     if response.status_code in settings.retry_status_codes:
         raise JiraAPIError(f"Jira returned {response.status_code}: {response.text[:200]}")
@@ -82,9 +82,7 @@ class JiraClient:
     def post_comment(
         self,
         issue_key: str,
-        adf_content: dict[
-            str, int | str | list[dict[str, str | list[dict[str, str | list[dict[str, str]]]]]]
-        ],
+        adf_content: dict[str, Any],
     ) -> bool:
         """Posts an Atlassian Document Format (ADF) comment to the issue."""
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}/comment"
@@ -94,7 +92,7 @@ class JiraClient:
         response = self.session.post(url, json=payload, timeout=(3.05, 30))
         duration_ms = int((time.monotonic() - start) * 1000)
 
-        _check_retryable(response)
+        check_retryable(response)
 
         if response.status_code == 201:
             logger.info(
@@ -121,9 +119,10 @@ class JiraClient:
         """Uploads a file to the Jira issue as an attachment."""
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}/attachments"
 
-        headers: dict[str, str] = {
+        headers = {
             "X-Atlassian-Token": "no-check",
             "Accept": "application/json",
+            "Content-Type": None,
         }
 
         with open(file_path, "rb") as f:
@@ -138,7 +137,7 @@ class JiraClient:
             response = self.session.post(url, headers=headers, files=files, timeout=(3.05, 120))
             duration_ms = int((time.monotonic() - start) * 1000)
 
-        _check_retryable(response)
+        check_retryable(response)
 
         if response.status_code == 200:
             logger.info(
@@ -179,7 +178,7 @@ class JiraClient:
         """Fetch the Service Desk ID associated with a project key."""
         url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{project_key}"
         response = self.session.get(url, timeout=(3.05, 30))
-        _check_retryable(response)
+        check_retryable(response)
         if response.status_code == 200:
             response_data = ServiceDeskResponse.model_validate(response.json())
             return response_data.id
@@ -238,7 +237,7 @@ class JiraClient:
                 response = self.session.post(
                     upload_url, headers=headers, files=files, timeout=(3.05, 120)
                 )
-                _check_retryable(response)
+                check_retryable(response)
 
                 if response.status_code != 201:
                     logger.error(
@@ -283,7 +282,7 @@ class JiraClient:
             response = self.session.post(
                 attach_url, headers=attach_headers, json=payload, timeout=(3.05, 30)
             )
-            _check_retryable(response)
+            check_retryable(response)
 
             if response.status_code == 201:
                 logger.info(
@@ -321,7 +320,7 @@ class JiraClient:
         """
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=attachment"
         response = self.session.get(url, timeout=(3.05, 30))
-        _check_retryable(response)
+        check_retryable(response)
         if response.status_code != 200:
             logger.error(
                 "Failed to fetch attachments",
@@ -350,7 +349,7 @@ class JiraClient:
             "Resolving issue ID from key", extra={"issue_key": issue_key, "url": _sanitize_url(url)}
         )
         response = self.session.get(url, timeout=(3.05, 30))
-        _check_retryable(response)
+        check_retryable(response)
         if response.status_code == 200:
             response_data = IssueResponse.model_validate(response.json())
             issue_id = response_data.id
@@ -458,7 +457,7 @@ class JiraClient:
         response = http_client.get(url, **kwargs)
         duration_ms = int((time.monotonic() - start) * 1000)
 
-        _check_retryable(response)
+        check_retryable(response)
 
         if response.status_code == 200:
             max_bytes = settings.max_attachment_size * 1024 * 1024

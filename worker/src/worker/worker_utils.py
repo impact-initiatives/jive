@@ -7,9 +7,9 @@ from .config import get_settings
 from .impact_repo_client import ImpactRepoClient
 from .jira.jira_client import JiraClient
 from .jira.models import IssueAttachment
+from .jira.proforma_parser import ProformaParser
 from .logger import get_logger
 from .models import JiraSubmissionPayload, PipelineResponse
-from .proforma_parser import ProformaParser
 from .report_formatter import format_comment_adf
 
 logger = get_logger("jive.worker_utils")
@@ -115,7 +115,7 @@ def resolve_dataset(
     issue_id: str | None = None,
     attachments: list[IssueAttachment] | None = None,
     secure_link: str | None = None,
-    proforma_answers: dict | None = None,
+    proforma_answers: dict[str, str] | None = None,
 ) -> Path | None:
     """Orchestrates resolving the dataset using a fallback/priority strategy:
 
@@ -211,7 +211,7 @@ def download_dataset(
     tmp_path: Path,
     resolved_issue_id: str,
     attachments: list[IssueAttachment] | None,
-    proforma_answers: dict | None = None,
+    proforma_answers: dict[str, str] | None = None,
 ) -> Path | None:
     """Downloads the dataset attachment or resolves external links.
     Returns Path if successful, None otherwise."""
@@ -256,7 +256,7 @@ def resolve_context(
     proforma: ProformaParser,
     payload: JiraSubmissionPayload,
     resolved_issue_id: str,
-    proforma_answers: dict | None = None,
+    proforma_answers: dict[str, str] | None = None,
 ) -> tuple[str, str | None, str | None]:
     """Parses ProForma answers to extract context variables
     (dataset type, repo URL, repo action)."""

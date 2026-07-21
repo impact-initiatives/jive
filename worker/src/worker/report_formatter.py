@@ -70,7 +70,7 @@ def format_comment_adf(
     )
 
     # IMPACT Repository URL Bullet
-    repo_node_content = [
+    repo_node_content: list[dict[str, Any]] = [
         {"type": "text", "text": "IMPACT Repository Resource: ", "marks": [{"type": "strong"}]}
     ]
     if repo_url is not None:
@@ -378,10 +378,10 @@ def format_comment_adf(
             }
         )
         if settings.jive_documentation:
-            adf_jive_documentation = {"type": "bulletList", "content": []}
+            adf_jive_documentation: dict[str, Any] = {"type": "bulletList", "content": []}
             for doc in settings.jive_documentation:
                 for name, url in doc.items():
-                    adf_jive_documentation["content"].append(
+                    _ = adf_jive_documentation["content"].append(
                         {
                             "type": "listItem",
                             "content": [

@@ -4,11 +4,13 @@ import sys
 from datetime import UTC, datetime
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
+from typing import override
 
 
 class JSONFormatter(logging.Formatter):
     """Formats log records as JSON for Azure Log Analytics ingestion."""
 
+    @override
     def format(self, record: logging.LogRecord) -> str:
         log_entry = {
             "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),

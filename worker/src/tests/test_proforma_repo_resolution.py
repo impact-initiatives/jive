@@ -42,7 +42,7 @@ def mock_env_vars(monkeypatch):
 
 from ..worker.impact_repo_client import ImpactRepoClient  # noqa: E402
 from ..worker.jira.jira_client import JiraClient  # noqa: E402
-from ..worker.proforma_parser import ProformaParser  # noqa: E402
+from ..worker.jira.proforma_parser import ProformaParser  # noqa: E402
 from ..worker.worker_utils import resolve_dataset  # noqa: E402
 
 
@@ -74,7 +74,17 @@ def test_get_proforma_answers():
     _ = responses.add(
         responses.GET,
         "https://api.atlassian.com/jira/forms/cloud/mock-cloud-id-12345/issue/issue-id-999/form",
-        json=[{"id": "form-uuid-abc-123", "submitted": True}],
+        json=[
+            {
+                "id": "form-uuid-abc-123",
+                "submitted": True,
+                "internal": True,
+                "lock": True,
+                "name": "name",
+                "updated": "20260101",
+                "formTemplate": {"id": "123"},
+            }
+        ],
         status=200,
     )
     _ = responses.add(
@@ -92,7 +102,14 @@ def test_get_proforma_answers():
                             {"id": "choice-2", "label": "MSNA Dataset"},
                         ],
                     },
-                }
+                },
+                "settings": {
+                    "language": "en",
+                    "name": "New employee onboarding",
+                    "primaryLocale": "en-US",
+                    "submit": {"lock": True, "pdf": True},
+                    "translatedLocale": "en-GB",
+                },
             },
             "state": {
                 "answers": {
@@ -100,8 +117,12 @@ def test_get_proforma_answers():
                         "text": "https://repository.impact-initiatives.org/resources/test-dataset"
                     },
                     "2": {"choices": ["choice-1"]},
-                }
+                },
+                "status": "some_status",
+                "visibility": "some_visibility",
             },
+            "id": "form_id",
+            "updated": "20260110",
         },
         status=200,
     )
