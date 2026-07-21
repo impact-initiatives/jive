@@ -210,7 +210,7 @@ def download_dataset(
     payload: JiraSubmissionPayload,
     tmp_path: Path,
     resolved_issue_id: str,
-    attachments: list,
+    attachments: list[IssueAttachment] | None,
     proforma_answers: dict | None = None,
 ) -> Path | None:
     """Downloads the dataset attachment or resolves external links.

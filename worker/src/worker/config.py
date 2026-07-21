@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     jira_api_email: str = Field(alias="JIRA_API_EMAIL")
     jira_api_token: str = Field(alias="JIRA_API_TOKEN")
     jira_base_url: str = Field(alias="JIRA_BASE_URL")
+    retry_status_codes: set[int] = {429, 500, 502, 503, 504}
 
     secure_link_username: str = Field(alias="SECURE_LINK_USERNAME", default="")
     secure_link_password: str = Field(alias="SECURE_LINK_PASSWORD", default="")

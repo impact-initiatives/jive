@@ -377,38 +377,36 @@ def format_comment_adf(
                 ],
             }
         )
-        for doc in settings.jive_documentation:
-            for name, url in doc.items():
-                adf_document["content"].append(
-                    {
-                        "type": "bulletList",
-                        "content": [
-                            {
-                                "type": "listItem",
-                                "content": [
-                                    {
-                                        "type": "paragraph",
-                                        "content": [
-                                            {
-                                                "type": "text",
-                                                "text": f"{name}",
-                                                "marks": [
-                                                    {
-                                                        "type": "link",
-                                                        "attrs": {
-                                                            "href": f"{url}",
-                                                            "title": f"{name}",
-                                                        },
-                                                    }
-                                                ],
-                                            },
-                                        ],
-                                    }
-                                ],
-                            },
-                        ],
-                    }
-                )
+        if settings.jive_documentation:
+            adf_jive_documentation = {"type": "bulletList", "content": []}
+            for doc in settings.jive_documentation:
+                for name, url in doc.items():
+                    adf_jive_documentation["content"].append(
+                        {
+                            "type": "listItem",
+                            "content": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": f"{name}",
+                                            "marks": [
+                                                {
+                                                    "type": "link",
+                                                    "attrs": {
+                                                        "href": f"{url}",
+                                                        "title": f"{name}",
+                                                    },
+                                                }
+                                            ],
+                                        },
+                                    ],
+                                }
+                            ],
+                        },
+                    )
+            adf_document["content"].append(adf_jive_documentation)
     else:
         adf_document["content"].append(
             {

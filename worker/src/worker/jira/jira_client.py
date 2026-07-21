@@ -2,6 +2,7 @@ import logging
 import time
 import urllib.parse
 from pathlib import Path
+from typing import Any
 
 import requests
 from requests.sessions import Session
@@ -26,7 +27,6 @@ from .models import (
 
 logger = get_logger("jive.jira_client")
 settings = get_settings()
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
 def _sanitize_url(url: str) -> str:
@@ -43,7 +43,7 @@ class JiraAPIError(Exception):
 
 def _check_retryable(response: requests.Response):
     """Raises JiraAPIError if the response has a retryable status code."""
-    if response.status_code in RETRYABLE_STATUS_CODES:
+    if response.status_code in settings.retry_status_codes:
         raise JiraAPIError(f"Jira returned {response.status_code}: {response.text[:200]}")
 
 
@@ -121,10 +121,9 @@ class JiraClient:
         """Uploads a file to the Jira issue as an attachment."""
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}/attachments"
 
-        headers: dict[str, str | None] = {
+        headers: dict[str, str] = {
             "X-Atlassian-Token": "no-check",
             "Accept": "application/json",
-            "Content-Type": None,
         }
 
         with open(file_path, "rb") as f:
@@ -331,7 +330,10 @@ class JiraClient:
             return None
 
         response_data = IssueResponse.model_validate(response.json())
-        return response_data.fields.attachment
+        if response_data.fields is not None:
+            return response_data.fields.attachment
+        else:
+            return None
 
     @retry(
         stop=stop_after_attempt(3),
@@ -446,7 +448,7 @@ class JiraClient:
 
         # When using a custom session, it carries its own auth.
         # If an explicit auth tuple is provided, we use it (e.g. for secure links).
-        kwargs: dict[str, bool | tuple[float, int] | tuple[str, str]] = {
+        kwargs: dict[str, Any] = {
             "stream": True,
             "timeout": (3.05, 300),
         }

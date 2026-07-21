@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import polars as pl
 import xlsxwriter
@@ -119,8 +119,17 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
 
     with xlsxwriter.Workbook(str(output_path)) as workbook:
         # Format for header
-        header_format = workbook.add_format(
-            {"bold": True, "text_wrap": True, "valign": "top", "bg_color": "#D3D3D3", "border": 1}
+        header_format = cast(
+            dict[str, Any],
+            workbook.add_format(
+                {
+                    "bold": True,
+                    "text_wrap": True,
+                    "valign": "top",
+                    "bg_color": "#D3D3D3",
+                    "border": 1,
+                }
+            ),
         )
 
         _ = df_summary.write_excel(

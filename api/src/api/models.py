@@ -29,7 +29,7 @@ class JiraSubmissionPayload(BaseModel):
         description="If true, bypasses the idempotency guard and forces validation to run",
     )
 
-    model_config: ConfigDict = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore")
 
     @model_validator(mode="before")
     @classmethod
