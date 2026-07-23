@@ -90,7 +90,7 @@ jobs:
   build_and_push_jive_worker_images:
     needs: create_jive_release
     if: ${{ always() && needs.create_jive_release.result == 'success' }}
-    uses: impact-initiatives/jive/.github/workflows/push_to_azure_acr.yml@$main
+    uses: impact-initiatives/jive/.github/workflows/push_to_azure_acr.yml@main
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact

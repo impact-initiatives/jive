@@ -1,4 +1,4 @@
-name: Build and push jive to Azure
+name: Build and push jive to Azure container registry
 
 on:
   workflow_call:
