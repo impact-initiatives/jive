@@ -1,0 +1,48 @@
+name: Create container app revision
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: 'Release tag in format "YYYYMMDDXX".'
+        required: true
+        type: string
+      image_name:
+        description: 'Name of the Docker image to build.'
+        required: true
+        type: string
+      acr_name:
+        description: 'Azure container registry name.'
+        required: true
+        type: string
+      # release_type:
+      #   description: 'Type of release.'
+      #   required: true
+      #   type: string
+        # type: environment/choices not supported for workflow_call
+      container_app_name:
+        description: 'Name of the Azure container app the image is for.'
+        required: true
+        type: string
+
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: Azure Login
+        uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy containerapp
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az containerapp update -n ${{ inputs.container_app_name }} \
+            -g ${{ secrets.ACR_RESOURCE_GROUP }} \
+            --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_tag }} \
+            --revision-suffix ${{ inputs.release_tag }}
+
+      

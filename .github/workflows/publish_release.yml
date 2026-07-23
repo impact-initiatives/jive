@@ -21,6 +21,10 @@ on:
         description: 'Publish an "Arugs" release.'
         required: true
         type: boolean
+      deploy_jive:
+        description: 'Create Jive container app revision.'
+        required: true
+        type: boolean
       release_argus_schemas:
         description: 'Publish an "Arugs Schemas" release.'
         required: true
@@ -86,30 +90,50 @@ jobs:
   build_and_push_jive_worker_images:
     needs: create_jive_release
     if: ${{ always() && needs.create_jive_release.result == 'success' }}
-    uses: impact-initiatives/jive/.github/workflows/deploy_to_azure.yml@${{ inputs.release_tag }}
+    uses: impact-initiatives/jive/.github/workflows/push_to_azure_acr.yml@$main
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
       image_name: jive-worker
-      release_type: ${{ inputs.release_type }}
+      # release_type: ${{ inputs.release_type }}
       build_context: ./worker
-      container_app_name: jive-worker
     secrets:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
 
+  create_container_app_revision_worker:
+    needs: build_and_push_jive_worker_images
+    if: ${{ inputs.deploy_jive && always() && needs.build_and_push_jive_worker_images.result == 'success' }}
+    uses: impact-initiatives/jive/.github/workflows/push_to_azure_containerapp.yml@main
+    with:
+      release_tag: ${{ inputs.release_tag }}
+      acr_name: acrimpact
+      image_name: jive-worker
+      # release_type: ${{ inputs.release_type }}
+      container_app_name: jive-worker
+
   build_and_push_jive_api_images:
     needs: create_jive_release
     if: ${{ always() && needs.create_jive_release.result == 'success' }}
-    uses: impact-initiatives/jive/.github/workflows/deploy_to_azure.yml@${{ inputs.release_tag }}
+    uses: impact-initiatives/jive/.github/workflows/push_to_azure_acr.yml@main
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
       image_name: jive-api
-      release_type: ${{ inputs.release_type }}
+      # release_type: ${{ inputs.release_type }}
       build_context: ./api
-      container_app_name: jive-api
     secrets:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+
+  create_container_app_revision_api:
+    needs: build_and_push_jive_api_images
+    if: ${{ inputs.deploy_jive && always() && needs.build_and_push_jive_api_images.result == 'success' }}
+    uses: impact-initiatives/jive/.github/workflows/push_to_azure_containerapp.yml@main
+    with:
+      release_tag: ${{ inputs.release_tag }}
+      acr_name: acrimpact
+      image_name: jive-api
+      # release_type: ${{ inputs.release_type }}
+      container_app_name: jive-api
     
