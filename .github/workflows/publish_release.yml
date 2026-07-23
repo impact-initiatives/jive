@@ -103,7 +103,7 @@ jobs:
 
   create_container_app_revision_worker:
     needs: build_and_push_jive_worker_images
-    if: ${{ inputs.deploy_jive && always() && needs.build_and_push_jive_worker_images.result == 'success' }}
+    if: ${{ inputs.deploy_jive && always() && ( needs.build_and_push_jive_worker_images.result == 'success' || needs.build_and_push_jive_worker_images.result == 'skipped')}}
     uses: impact-initiatives/jive/.github/workflows/push_to_azure_containerapp.yml@main
     with:
       release_tag: ${{ inputs.release_tag }}
@@ -128,7 +128,7 @@ jobs:
 
   create_container_app_revision_api:
     needs: build_and_push_jive_api_images
-    if: ${{ inputs.deploy_jive && always() && needs.build_and_push_jive_api_images.result == 'success' }}
+    if: ${{ inputs.deploy_jive && always() && (needs.build_and_push_jive_api_images.result == 'success' || needs.build_and_push_jive_api_images.result == 'skipped')}}
     uses: impact-initiatives/jive/.github/workflows/push_to_azure_containerapp.yml@main
     with:
       release_tag: ${{ inputs.release_tag }}
