@@ -1,4 +1,4 @@
-name: Publish Release
+name: Jive builder and deployer
 
 # Jive and argus are deployed together so can share the same release tag.
 # argus schemas can be released independently so can possibly have
@@ -13,16 +13,12 @@ on:
         description: '"Jive" and "Argus" release tag in format "YYYYMMDDXX" .'
         required: true
         type: string
-      release_jive:
-        description: 'Publish a "Jive" release.'
-        required: true
-        type: boolean
       release_argus:
         description: 'Publish an "Arugs" release.'
         required: true
         type: boolean
-      deploy_jive:
-        description: 'Create Jive container app revision.'
+      release_jive:
+        description: 'Publish a "Jive" release.'
         required: true
         type: boolean
       release_argus_schemas:
@@ -33,6 +29,10 @@ on:
         description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
         required: true
         type: string
+      deploy_jive:
+        description: 'Create Jive container app revision.'
+        required: true
+        type: boolean      
       release_type:
         description: 'Type of release.'
         required: true
