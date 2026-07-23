@@ -28,12 +28,10 @@ on:
       AZURE_CREDENTIALS:
         required: true
 
-
 jobs:
-  build-push:
+  create_revision:
     runs-on: ubuntu-latest
-    steps:
-      
+    steps:      
       - name: Azure Login
         uses: azure/login@v3
         with:

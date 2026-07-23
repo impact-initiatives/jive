@@ -137,7 +137,7 @@ jobs:
       acr_name: acrimpact
       image_name: jive-api
       # release_type: ${{ inputs.release_type }}
-      container_app_name: jive-api
+      container_app_name: jive-ingress
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
     
