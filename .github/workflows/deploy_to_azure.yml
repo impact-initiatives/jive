@@ -24,10 +24,10 @@ on:
         required: true
         type: string
         # type: environment/choices not supported for workflow_call
-      # container_app_name:
-      #   description: 'Name of the Azure container app the image is for.'
-      #   required: true
-        # type: string
+      container_app_name:
+        description: 'Name of the Azure container app the image is for.'
+        required: true
+        type: string
     secrets:
       ACR_USERNAME:
         required: true
