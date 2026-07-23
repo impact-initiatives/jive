@@ -41,7 +41,7 @@ jobs:
       - name: Deploy containerapp
         run: |
             az containerapp update -n ${{ inputs.container_app_name }} \
-            -g ${{ secrets.ACR_RESOURCE_GROUP }} \
+            -g ${{ inputs.acr_name }} \
             --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_tag }} \
             --revision-suffix ${{ inputs.release_tag }}
 
