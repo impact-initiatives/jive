@@ -81,12 +81,15 @@ jobs:
       - name: Azure Login
         uses: azure/login@v3
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Deploy worker containerapp
-        run: |
-          az containerapp update -n ${{ inputs.container_app_name }} \
-          -g ${{ secrets.ACR_RESOURCE_GROUP }} \
-          --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_tag }} \
-          --revision-suffix ${{ inputs.release_tag }}
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENTID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+      - name: Deploy containerapp
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az containerapp update -n ${{ inputs.container_app_name }} \
+            -g ${{ secrets.ACR_RESOURCE_GROUP }} \
+            --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_tag }} \
+            --revision-suffix ${{ inputs.release_tag }}
 
       
