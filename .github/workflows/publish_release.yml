@@ -89,7 +89,7 @@ jobs:
       image_name: jive-worker
       release_type: ${{ inputs.release_type }}
       build_context: ./worker
-      # container_app_name: jive-worker
+      container_app_name: jive-worker
     secrets:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
@@ -104,7 +104,7 @@ jobs:
       image_name: jive-api
       release_type: ${{ inputs.release_type }}
       build_context: ./api
-      # container_app_name: jive-ingress
+      container_app_name: jive-api
     secrets:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
