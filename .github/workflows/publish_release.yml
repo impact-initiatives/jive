@@ -111,6 +111,8 @@ jobs:
       image_name: jive-worker
       # release_type: ${{ inputs.release_type }}
       container_app_name: jive-worker
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
   build_and_push_jive_api_images:
     needs: create_jive_release
@@ -136,4 +138,6 @@ jobs:
       image_name: jive-api
       # release_type: ${{ inputs.release_type }}
       container_app_name: jive-api
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
     

@@ -74,18 +74,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Azure Login
-        uses: azure/login@v3
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Deploy containerapp
-        uses: azure/cli@v2
-        with:
-          azcliversion: latest
-          inlineScript: |
-            az containerapp update -n ${{ inputs.container_app_name }} \
-            -g ${{ secrets.ACR_RESOURCE_GROUP }} \
-            --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_tag }} \
-            --revision-suffix ${{ inputs.release_tag }}
+
 
       
