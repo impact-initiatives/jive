@@ -113,6 +113,7 @@ jobs:
       container_app_name: jive-worker
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
 
   build_and_push_jive_api_images:
     needs: create_jive_release
@@ -140,4 +141,5 @@ jobs:
       container_app_name: jive-ingress
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
     

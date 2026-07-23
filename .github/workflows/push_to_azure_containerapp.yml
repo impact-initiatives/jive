@@ -27,6 +27,8 @@ on:
     secrets:
       AZURE_CREDENTIALS:
         required: true
+      ACR_RESOURCE_GROUP:
+        required: true
 
 jobs:
   create_revision:
@@ -39,7 +41,7 @@ jobs:
       - name: Deploy containerapp
         run: |
             az containerapp update -n ${{ inputs.container_app_name }} \
-            -g ${{ inputs.acr_name }} \
+            -g ${{ secrets.ACR_RESOURCE_GROUP }} \
             --image ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}:${{ inputs.release_tag }} \
             --revision-suffix ${{ inputs.release_tag }}
 
