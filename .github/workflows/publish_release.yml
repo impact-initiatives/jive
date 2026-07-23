@@ -13,6 +13,10 @@ on:
         description: '"Jive" and "Argus" release tag in format "YYYYMMDDXX" .'
         required: true
         type: string
+      release_jive:
+        description: 'Publish a "Jive" release.'
+        required: true
+        type: boolean
       release_argus:
         description: 'Publish an "Arugs" release.'
         required: true
@@ -66,7 +70,7 @@ jobs:
 
   create_jive_release:
     needs: create_argus_release
-    if: ${{ always() &&  needs.create_argus_release.result == 'success' || needs.create_argus_release.result == 'skipped' }}
+    if: ${{ inputs.release_jive && ( always() &&  (needs.create_argus_release.result == 'success' || needs.create_argus_release.result == 'skipped' ))}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -82,7 +86,7 @@ jobs:
   build_and_push_jive_worker_images:
     needs: create_jive_release
     if: ${{ always() && needs.create_jive_release.result == 'success' }}
-    uses: impact-initiatives/jive/.github/workflows/deploy_to_azure.yml@main
+    uses: impact-initiatives/jive/.github/workflows/deploy_to_azure.yml@${{ inputs.release_tag }}
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
@@ -97,7 +101,7 @@ jobs:
   build_and_push_jive_api_images:
     needs: create_jive_release
     if: ${{ always() && needs.create_jive_release.result == 'success' }}
-    uses: impact-initiatives/jive/.github/workflows/deploy_to_azure.yml@main
+    uses: impact-initiatives/jive/.github/workflows/deploy_to_azure.yml@${{ inputs.release_tag }}
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
