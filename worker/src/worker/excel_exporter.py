@@ -24,6 +24,16 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
     total_detail_rows = 0
     truncated = False
 
+    # build readme
+    readme_text = (
+        "Details\n"
+        "=====================================\n\n"
+        f"File Name:  {output_path.name}\n"
+        f"Dataset file:  {response.metadata.file_name}\n"
+        f"Validation Date:   {response.metadata.validation_date}\n\n"
+    )
+    df_readme = pl.DataFrame({"read_me": [readme_text]})
+
     # Consolidate results
     all_issues: list[ResultItemModel] = []
 
@@ -127,6 +137,24 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
                 "bg_color": "#D3D3D3",
                 "border": 1,
             }
+        )
+
+        _ = df_readme.write_excel(
+            workbook=workbook,
+            worksheet="read_me",
+            table_style=None,
+            hide_gridlines=True,
+            autofit=False,
+            include_header=False,
+            column_formats={
+                "read_me": {
+                    "text_wrap": True,
+                    "valign": "top",
+                    "font_size": 11,
+                }
+            },
+            column_widths={"read_me": 500},
+            row_heights={0: 500},
         )
 
         _ = df_summary.write_excel(
