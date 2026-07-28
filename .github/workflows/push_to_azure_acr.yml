@@ -40,7 +40,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with: 
-          repository: ${{ inputs.release_tag }}
+          ref: ${{ inputs.release_tag }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
