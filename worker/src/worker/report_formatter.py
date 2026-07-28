@@ -1,5 +1,7 @@
 from typing import Any
 
+from pydantic import Json
+
 from .config import get_settings
 from .models import PipelineResponse, ResultItemModel
 
@@ -369,17 +371,28 @@ def format_comment_adf(
                 ],
             }
         )
-        adf_document["content"].append(
-            {
-                "type": "paragraph",
-                "content": [
-                    {"type": "text", "text": "Validation Resources:", "marks": [{"type": "strong"}]}
-                ],
-            }
-        )
+        documentation_list: Json[list[dict[str, str]]] = []
         if settings.jive_documentation:
+            documentation_list.extend(settings.jive_documentation)
+        if settings.jmmi_documentation and "jmmi" in response.metadata.dataset_type:
+            documentation_list.extend(settings.jmmi_documentation)
+
+        if documentation_list:
+            adf_document["content"].append(
+                {
+                    "type": "paragraph",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Validation Resources:",
+                            "marks": [{"type": "strong"}],
+                        }
+                    ],
+                }
+            )
+
             adf_jive_documentation: dict[str, Any] = {"type": "bulletList", "content": []}
-            for doc in settings.jive_documentation:
+            for doc in documentation_list:
                 for name, url in doc.items():
                     _ = adf_jive_documentation["content"].append(
                         {

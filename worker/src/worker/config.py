@@ -38,6 +38,10 @@ class Settings(BaseSettings):
         default_factory=list, alias="JIVE_DOCUMENTATION"
     )
 
+    jmmi_documentation: Json[list[dict[str, str]]] = Field(
+        default_factory=list, alias="JMMI_DOCUMENTATION"
+    )
+
     jira_api_email: str = Field(alias="JIRA_API_EMAIL")
     jira_api_token: str = Field(alias="JIRA_API_TOKEN")
     jira_base_url: str = Field(alias="JIRA_BASE_URL")
