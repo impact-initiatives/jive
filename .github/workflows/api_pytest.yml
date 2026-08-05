@@ -2,10 +2,10 @@ name: Run api tests
 on: 
   push:
     paths:
-      - 'api/**/*.py''
+      - 'api/**/*.py'
   pull_request:
     paths:
-      - 'api/**/*.py''
+      - 'api/**/*.py'
 jobs:
   run_tests:
     name: Run tests

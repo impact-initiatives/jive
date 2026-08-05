@@ -5,7 +5,7 @@ on:
       'worker/**/*.py'
   pull_request:
     paths:
-      - 'worker/**/*.py''
+      - 'worker/**/*.py'
 jobs:
   ruff:
     runs-on: ubuntu-latest
