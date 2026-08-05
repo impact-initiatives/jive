@@ -17,7 +17,13 @@ def test_export_empty_response(tmp_path):
     response = PipelineResponse.model_construct(
         success=True,
         summary={"passed": True, "admin_errors": 0, "errors": 0, "warnings": 0, "info": 0},
-        metadata=MetadataModel.model_construct(dataset_type= "msna", file_name= "some_dataset.xlsx", validation_date= "20260101"),
+        metadata=MetadataModel.model_construct(
+            dataset_type="msna",
+            file_name="some_dataset.xlsx",
+            validation_date="20260101",
+            argus_schemas_version="2026010100",
+            argus_version="2026010100",
+        ),
         warnings=[],
         errors=[],
         info=[],
@@ -52,6 +58,7 @@ def test_export_populated_response(tmp_path):
             argus_version="2026010100",
             file_name="data.xlsx",
             validation_date="20260101",
+            argus_schemas_version="2026010100",
         ),
         warnings=[
             ResultItemModel(
@@ -106,6 +113,7 @@ def test_export_invalid_details(tmp_path):
             argus_version="2026010100",
             file_name="data.xlsx",
             validation_date="20260101",
+            argus_schemas_version="2026010100",
         ),
         errors=[
             ResultItemModel(
