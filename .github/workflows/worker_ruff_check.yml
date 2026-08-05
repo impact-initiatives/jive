@@ -2,10 +2,10 @@ name: Run Api ruff check
 on: 
   push:
     paths:
-      - 'worker/**'
+      'worker/**/*.py'
   pull_request:
     paths:
-      - 'worker/**'
+      - 'worker/**/*.py''
 jobs:
   ruff:
     runs-on: ubuntu-latest

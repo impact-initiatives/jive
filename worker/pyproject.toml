@@ -28,7 +28,9 @@ argus = { path = "../../argus", editable = true }
 
 [tool.ruff]
 exclude = [
-"*.ipynb"
+"*.ipynb",
+"../local/",
+"../api/"
 ]
 line-length = 100
 [tool.ruff.lint]

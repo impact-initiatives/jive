@@ -2,10 +2,10 @@ name: Run worker tests
 on: 
   push:
     paths:
-      - 'worker/**'
+      - 'worker/**/*.py''
   pull_request:
     paths:
-      - 'worker/**'
+      - 'worker/**/*.py'
 jobs:
   run_tests:
     name: Run tests
