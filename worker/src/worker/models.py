@@ -66,7 +66,8 @@ class MetadataModel(BaseModel):
     dataset_type: str
     validation_date: str
     file_name: str
-    version: str
+    argus_version: str
+    argus_schemas_version: str
 
 
 class PipelineResponse(BaseModel):

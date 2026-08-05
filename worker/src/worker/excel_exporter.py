@@ -30,7 +30,10 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
         "=====================================\n\n"
         f"File Name:  {output_path.name}\n"
         f"Dataset file:  {response.metadata.file_name}\n"
-        f"Validation Date:   {response.metadata.validation_date}\n\n"
+        f"Validation Date:   {response.metadata.validation_date}\n"
+        f"Jive Version:   {settings.jive_version}\n"
+        f"Argus Version:   {response.metadata.argus_version}\n"
+        f"Argus Schemas Version:   {response.metadata.argus_schemas_version}\n\n"
     )
     df_readme = pl.DataFrame({"read_me": [readme_text]})
 

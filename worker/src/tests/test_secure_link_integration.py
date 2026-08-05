@@ -47,7 +47,8 @@ def test_worker_process_message_with_secure_link(
         "metadata": {
             "dataset_type": "jmmi_dataset",
             "validation_date": "2023-01-01T00:00:00Z",
-            "version": "1.0.0",
+            "argus_version": "1.0.0",
+            "argus_schemas_version": "1.0.0",
             "file_name": "report.xlsx",
         },
         "summary": {

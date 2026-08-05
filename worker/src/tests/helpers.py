@@ -13,6 +13,7 @@ def set_default_env_vars():
     os.environ.setdefault("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
     os.environ.setdefault("JIVE_API_KEY", "secure-pass")
     os.environ.setdefault("JIVE_DOCUMENTATION", '[{"doco":"url"}]')
+    os.environ.setdefault("JMMI_DOCUMENTATION", '[{"doco":"url"}]')
 
     os.environ.setdefault("AZURE_STORAGE_CONNECTION_STRING", "secure-pass")
 

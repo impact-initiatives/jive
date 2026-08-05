@@ -467,7 +467,12 @@ def format_comment_adf(
                 },
                 {
                     "type": "text",
-                    "text": f"Argus v{response.metadata.version} | ",
+                    "text": f"Argus v{response.metadata.argus_version} | ",
+                    "marks": [{"type": "em"}],
+                },
+                {
+                    "type": "text",
+                    "text": f"Argus Schemas v{response.metadata.argus_schemas_version} | ",
                     "marks": [{"type": "em"}],
                 },
                 {
