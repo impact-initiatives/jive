@@ -195,11 +195,11 @@ class SubmitSettings(BaseModel):
 
 
 class DesignSettings(BaseModel):
-    language: str
+    language: str = Field(default="")
     name: str
-    primaryLocale: str
+    primaryLocale: str = Field(default="")
     submit: SubmitSettings
-    translatedLocale: str
+    translatedLocale: str = Field(default="")
 
 
 class Design(BaseModel):
