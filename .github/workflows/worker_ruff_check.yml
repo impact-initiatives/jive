@@ -2,7 +2,7 @@ name: Run Api ruff check
 on: 
   push:
     paths:
-      'worker/**/*.py'
+      - 'worker/**/*.py'
   pull_request:
     paths:
       - 'worker/**/*.py'
@@ -17,6 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v4.0.0
+        with:
+          src: "./worker/**/*.py"
       - run: ruff format .
       - run: ruff check . --fix
       - run: ruff format .
