@@ -82,7 +82,7 @@ def dead_letter_message(
                         {
                             "type": "text",
                             "text": f"Validation failed after {msg.dequeue_count} attempts."
-                            + " The JIVE team has been notified.",
+                            + " Please contact RQA.",
                             "marks": [{"type": "strong"}],
                         }
                     ],
@@ -163,6 +163,35 @@ def process_message(msg: QueueMessage, payload: JiraSubmissionPayload):
             raise ValueError("Failed to resolve issue ID from key.")
 
 
+def failure_message(issue_key: str, jira: JiraClient | None = None):
+    try:
+        if jira is None:
+            jira = JiraClient()
+        error_adf = {
+            "version": 1,
+            "type": "doc",
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Jive failed to process Jira issue. Please contact RQA.",
+                            "marks": [{"type": "strong"}],
+                        }
+                    ],
+                }
+            ],
+        }
+        _ = jira.post_comment(issue_key, error_adf)
+    except Exception as notify_err:
+        logger.error(
+            "Failed to post failure notification to Jira",
+            exc_info=notify_err,
+            extra={"issue_key": issue_key},
+        )
+
+
 def main():
     logger.info("Getting queue client...")
     queue_client = get_queue_client()
@@ -220,6 +249,7 @@ def main():
                         exc_info=e,
                         extra={"issue_key": payload.issue_key},
                     )
+                    failure_message(payload.issue_key)
 
             if not has_message:
                 time.sleep(5)
