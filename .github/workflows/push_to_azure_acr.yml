@@ -76,7 +76,7 @@ jobs:
           images: ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}
           tags: |
             type=raw,value=latest
-            type=raw,value=${{ steps.determine_ref.outputs.target_ref }}
+            type=raw,value=${{ inputs.release_tag }}
             type=sha          
 
       - name: Build and push
@@ -87,7 +87,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
-            RELEASE_TAG=${{ steps.determine_ref.outputs.target_ref }}
+            RELEASE_TAG=${{ inputs.release_tag }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
