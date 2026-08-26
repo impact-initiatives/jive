@@ -37,10 +37,27 @@ jobs:
       contents: read
 
     steps:
+      - name: Determine target ref
+        id: determine_ref
+        run: |
+          TAG="${{ inputs.release_tag }}"
+          # Try to fetch the tag
+          if git ls-remote --exit-code --refs origin refs/tags/$TAG > /dev/null 2>&1; then
+            echo "Target ref found: $TAG"
+            echo "target_ref=$TAG" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG not found, falling back to latest release"
+            # Get the latest tag from the repo
+            LATEST=$(git ls-remote --tags origin | grep 'refs/tags/' | sed 's/refs\/tags\///' | grep -v '\^{}' | sort -V | tail -n1)
+            echo "Latest tag: $LATEST"
+            echo "target_ref=$LATEST" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout
         uses: actions/checkout@v6
         with: 
-          ref: ${{ inputs.release_tag }}
+          ref: ${{ steps.determine_ref.outputs.target_ref }}
+          fetch-depth: 0  
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -59,7 +76,7 @@ jobs:
           images: ${{ inputs.acr_name }}.azurecr.io/${{ inputs.image_name }}
           tags: |
             type=raw,value=latest
-            type=raw,value=${{ inputs.release_tag }}
+            type=raw,value=${{ steps.determine_ref.outputs.target_ref }}
             type=sha          
 
       - name: Build and push
@@ -70,7 +87,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
-            RELEASE_TAG=${{ inputs.release_tag }}
+            RELEASE_TAG=${{ steps.determine_ref.outputs.target_ref }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
