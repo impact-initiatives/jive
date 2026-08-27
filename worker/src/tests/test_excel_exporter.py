@@ -18,7 +18,8 @@ def test_export_empty_response(tmp_path):
         success=True,
         summary={"passed": True, "admin_errors": 0, "errors": 0, "warnings": 0, "info": 0},
         metadata=MetadataModel.model_construct(
-            dataset_type="msna",
+            programme_type="jmmi",
+            output_type="dataset",
             file_name="some_dataset.xlsx",
             validation_date="20260101",
             argus_schemas_version="2026010100",
@@ -54,7 +55,8 @@ def test_export_populated_response(tmp_path):
             admin_info=0,
         ),
         metadata=MetadataModel.model_construct(
-            dataset_type="msna_dataset",
+            programme_type="jmmi",
+            output_type="dataset",
             argus_version="2026010100",
             file_name="data.xlsx",
             validation_date="20260101",
@@ -109,7 +111,8 @@ def test_export_invalid_details(tmp_path):
             admin_info=0,
         ),
         metadata=MetadataModel.model_construct(
-            dataset_type="msna",
+            programme_type="jmmi",
+            output_type="dataset",
             argus_version="2026010100",
             file_name="data.xlsx",
             validation_date="20260101",

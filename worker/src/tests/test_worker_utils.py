@@ -47,13 +47,17 @@ def mock_impact_repo() -> MagicMock:
 
 @pytest.fixture
 def payload():
-    return JiraSubmissionPayload(issue_key="TEST-123", dataset_type="jmmi_dataset")
+    return JiraSubmissionPayload(
+        issue_key="TEST-123",
+        programme_type="jmmi",
+        output_type="dataset",
+    )
 
 
 @pytest.fixture
 def payload_split_dataset():
     return JiraSubmissionPayload(
-        issue_key="TEST-123", type_of_programme="jmmi", type_of_output="Quant Dataset"
+        issue_key="TEST-123", programme_type="jmmi", output_type="Quant Dataset"
     )
 
 
@@ -144,8 +148,7 @@ def test_download_dataset_failure(
 
 
 def test_resolve_context_default(mock_proforma: MagicMock, payload: JiraSubmissionPayload):
-    dt, repo, action = resolve_context(mock_proforma, payload, "1000", {})
-    assert dt == "jmmi_dataset"
+    repo, action = resolve_context(mock_proforma, payload, "1000", {})
     assert repo is None
     assert action is None
 
@@ -153,8 +156,7 @@ def test_resolve_context_default(mock_proforma: MagicMock, payload: JiraSubmissi
 def test_resolve_context_default_split_dataset(
     mock_proforma: MagicMock, payload_split_dataset: JiraSubmissionPayload
 ):
-    dt, repo, action = resolve_context(mock_proforma, payload_split_dataset, "1000", {})
-    assert dt == "jmmi_dataset"
+    repo, action = resolve_context(mock_proforma, payload_split_dataset, "1000", {})
     assert repo is None
     assert action is None
 
@@ -165,8 +167,7 @@ def test_resolve_context_with_proforma(mock_proforma: MagicMock, payload: JiraSu
         "Link to the resource": "https://repository.example.com/msna",
         "Published or archived": "Archived",
     }
-    dt, repo, action = resolve_context(mock_proforma, payload, "1000", answers)
-    assert dt == "msna"
+    repo, action = resolve_context(mock_proforma, payload, "1000", answers)
     assert repo == "https://repository.example.com/msna"
     assert action == "Archived"
 
@@ -187,7 +188,10 @@ def test_run_validation(
             "warnings": 0,
             "info": 0,
         },
-        "metadata": {"dataset_type": "msna"},
+        "metadata": {
+            "programme_type": "jmmi",
+            "output_type": "dataset",
+        },
         "warnings": [],
         "errors": [],
         "info": [],
@@ -195,10 +199,12 @@ def test_run_validation(
         "admin_info": [],
     }
 
-    result = run_validation(tmp_path / "data.xlsx", "msna", payload)
+    result = run_validation(tmp_path / "data.xlsx", payload)
 
     mock_pipeline_instance.run_all.assert_called_with(
-        filepath=tmp_path / "data.xlsx", dataset_type="msna"
+        filepath=tmp_path / "data.xlsx",
+        programme_type="jmmi",
+        output_type="dataset",
     )
     mock_pipeline_instance.run_all.assert_called_once()
     assert isinstance(result, PipelineResponse)
@@ -213,7 +219,8 @@ def test_publish_results_small_file(
             passed=True, admin_errors=0, errors=0, warnings=0, info=0, admin_info=0
         ),
         metadata=MetadataModel(
-            dataset_type="msna",
+            programme_type="jmmi",
+            output_type="dataset",
             file_name="report.xlsx",
             validation_date=datetime.datetime.now().isoformat(),
             argus_version="2026010100",
@@ -230,7 +237,7 @@ def test_publish_results_small_file(
     mock_jira_client.upload_public_jsm_attachment.return_value = True
     payload.project_key = "RQA"
 
-    publish_results(mock_jira_client, payload, response, report_file, None, None, "jmmi")
+    publish_results(mock_jira_client, payload, response, report_file, None, None)
 
     mock_jira_client.upload_public_jsm_attachment.assert_called_once_with(
         "TEST-123", "RQA", report_file
@@ -245,7 +252,8 @@ def test_publish_results_large_file(
         success=True,
         summary={"total_errors": 0, "total_warnings": 0},
         metadata=MetadataModel(
-            dataset_type="msna",
+            programme_type="jmmi",
+            output_type="dataset",
             file_name="report.xlsx",
             validation_date=datetime.datetime.now().isoformat(),
             argus_version="2026010100",
@@ -268,7 +276,7 @@ def test_publish_results_large_file(
     worker_utils.settings = get_settings()
 
     _ = report_file.write_text("dummy content")
-    publish_results(mock_jira_client, payload, response, report_file, None, None, "jmmi_dataset")
+    publish_results(mock_jira_client, payload, response, report_file, None, None)
 
     mock_jira_client.upload_public_jsm_attachment.assert_not_called()
     mock_jira_client.upload_attachment.assert_not_called()
@@ -300,7 +308,8 @@ def test_run_validation_minor_schema_mismatch(
             "passed": True,
         },
         "metadata": {
-            "dataset_type": "jmmi_dataset",
+            "programme_type": "jmmi",
+            "output_type": "dataset",
             "validation_date": "2023-01-01T00:00:00Z",
             "argus_version": "1.0.0",
             "argus_schemas_version": "1.2.3",
@@ -309,7 +318,7 @@ def test_run_validation_minor_schema_mismatch(
         # warnings, info, admin_errors are missing
     }
 
-    result = run_validation(tmp_path / "data.xlsx", "msna_dataset", payload)
+    result = run_validation(tmp_path / "data.xlsx", payload)
 
     assert isinstance(result, PipelineResponse)
     assert result.success is True

@@ -20,8 +20,10 @@ class JiraSubmissionPayload(BaseModel):
     project_key: str = Field(default="", description="The Jira Project Key")
     rcid: str = Field(default="", description="The RCID from the ticket summary")
     dataset_type: str = Field(default="", description="The type of assessment")
-    type_of_output: str = Field(default="")
-    type_of_programme: str = Field(default="")
+    output_type: str = Field(validation_alias=AliasChoices("type_of_output", "output_type"))
+    programme_type: str = Field(
+        validation_alias=AliasChoices("type_of_programme", "programme_type")
+    )
     secure_link: str | None = Field(
         default=None,
         description="Optional URL to download the dataset from instead of Jira attachments",
@@ -43,6 +45,12 @@ class JiraSubmissionPayload(BaseModel):
             data["dataset_type"] = dt.lower()
         return data
 
+    @model_validator(mode="after")
+    def lowercase_all(self):
+        self.output_type = self.output_type.lower()
+        self.programme_type = self.programme_type.lower()
+        return self
+
 
 class ResultItemModel(BaseModel):
     rule: str
@@ -63,7 +71,8 @@ class SummaryModel(BaseModel):
 
 
 class MetadataModel(BaseModel):
-    dataset_type: str
+    output_type: str
+    programme_type: str
     validation_date: str
     file_name: str
     argus_version: str

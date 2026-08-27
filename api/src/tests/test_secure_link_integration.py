@@ -39,7 +39,8 @@ def test_webhook_ingress_with_secure_link(mock_get_queue_client):
 
     payload = {
         "issue_key": "RQA-123",
-        "dataset_type": "jmmi",
+        "programme_type": "jmmi",
+        "output_type": "dataset",
         "secure_link": "https://example.com/dataset.xlsx",
     }
 

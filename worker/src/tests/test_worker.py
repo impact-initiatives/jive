@@ -42,7 +42,11 @@ class TestDeadLetterMessage:
         msg.id = "msg-001"
         msg.dequeue_count = 4
 
-        payload = JiraSubmissionPayload(issue_key="RQA-999", dataset_type="jmmi")
+        payload = JiraSubmissionPayload(
+            issue_key="RQA-999",
+            programme_type="jmmi",
+            output_type="dataset",
+        )
         error = RuntimeError("Something broke")
 
         dead_letter_message(msg, payload, error)
@@ -70,7 +74,11 @@ class TestDeadLetterMessage:
         msg.id = "msg-002"
         msg.dequeue_count = 3
 
-        payload = JiraSubmissionPayload(issue_key="RQA-500")
+        payload = JiraSubmissionPayload(
+            issue_key="RQA-500",
+            programme_type="jmmi",
+            output_type="dataset",
+        )
         dead_letter_message(msg, payload, ValueError("Bad data"))
 
         mock_jira.post_comment.assert_called_once()
@@ -93,7 +101,11 @@ class TestDeadLetterMessage:
         msg.id = "msg-003"
         msg.dequeue_count = 5
 
-        payload = JiraSubmissionPayload(issue_key="RQA-600")
+        payload = JiraSubmissionPayload(
+            issue_key="RQA-600",
+            programme_type="jmmi",
+            output_type="dataset",
+        )
         dead_letter_message(msg, payload, RuntimeError("Exceeded retries"))
         mock_poison_client.send_message.assert_called_once()
 
@@ -119,7 +131,9 @@ class TestWorkerMainLoop:
 
         msg = MagicMock()
         msg.dequeue_count = 1
-        msg.content = json.dumps({"issue_key": "RQA-100", "dataset_type": "jmmi"})
+        msg.content = json.dumps(
+            {"issue_key": "RQA-100", "programme_type": "jmmi", "output_type": "dataset"}
+        )
 
         # First call returns a message, second call raises SystemExit to break the loop
         mock_queue.receive_messages.side_effect = [[msg], SystemExit]
@@ -140,7 +154,9 @@ class TestWorkerMainLoop:
 
         msg = MagicMock()
         msg.dequeue_count = MAX_RETRIES + 1
-        msg.content = json.dumps({"issue_key": "RQA-200", "dataset_type": "jmmi"})
+        msg.content = json.dumps(
+            {"issue_key": "RQA-200", "programme_type": "jmmi", "output_type": "dataset"}
+        )
 
         mock_queue.receive_messages.side_effect = [[msg], SystemExit]
 
@@ -163,7 +179,9 @@ class TestWorkerMainLoop:
 
         msg = MagicMock()
         msg.dequeue_count = 1
-        msg.content = json.dumps({"issue_key": "RQA-300"})
+        msg.content = json.dumps(
+            {"issue_key": "RQA-300", "programme_type": "jmmi", "output_type": "dataset"}
+        )
 
         mock_process.side_effect = RuntimeError("Pipeline crashed")
         mock_queue.receive_messages.side_effect = [[msg], SystemExit]

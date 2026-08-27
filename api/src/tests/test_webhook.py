@@ -38,7 +38,8 @@ async def test_webhook_valid_payload():
         "issue_key": "RQA-100",
         "project_key": "RQA",
         "rcid": "RCID-001",
-        "dataset_type": "jmmi",
+        "programme_type": "jmmi",
+        "output_type": "dataset",
     }
 
     with patch("api.main.get_queue_client") as mock_queue:
@@ -61,7 +62,7 @@ async def test_webhook_valid_payload():
 async def test_webhook_invalid_api_key():
     """Invalid API key should return 401."""
     transport = ASGITransport(app=app)
-    payload = {"issue_key": "RQA-100"}
+    payload = {"issue_key": "RQA-100", "programme_type": "jmmi", "output_type": "dataset"}
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post(
@@ -93,7 +94,7 @@ async def test_webhook_missing_issue_key():
 async def test_webhook_no_api_key_header():
     """No API key header should return 401."""
     transport = ASGITransport(app=app)
-    payload = {"issue_key": "RQA-100"}
+    payload = {"issue_key": "RQA-100", "programme_type": "jmmi", "output_type": "dataset"}
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post("/api/webhook", json=payload)
@@ -134,7 +135,8 @@ async def test_webhook_500_internal_error():
         "issue_key": "RQA-100",
         "project_key": "RQA",
         "rcid": "RCID-001",
-        "dataset_type": "jmmi",
+        "programme_type": "jmmi",
+        "output_type": "dataset",
     }
 
     # Mock something internal to raise a raw Exception
@@ -156,7 +158,7 @@ async def test_webhook_azure_queue_not_found():
     from azure.core.exceptions import ResourceNotFoundError
 
     transport = ASGITransport(app=app)
-    payload = {"issue_key": "RQA-100", "dataset_type": "jmmi"}
+    payload = {"issue_key": "RQA-100", "programme_type": "jmmi", "output_type": "dataset"}
 
     with patch("api.main.get_queue_client") as mock_queue:
         mock_client = MagicMock()
@@ -181,7 +183,7 @@ async def test_webhook_azure_queue_not_found():
 async def test_webhook_azure_queue_unhandled_exception():
     """If the queue throws an unhandled exception (e.g., connection error), it should return 500."""
     transport = ASGITransport(app=app, raise_app_exceptions=False)
-    payload = {"issue_key": "RQA-100", "dataset_type": "jmmi"}
+    payload = {"issue_key": "RQA-100", "programme_type": "jmmi", "output_type": "dataset"}
 
     with patch("api.main.get_queue_client") as mock_queue:
         mock_client = MagicMock()

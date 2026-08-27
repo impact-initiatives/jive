@@ -45,7 +45,8 @@ def test_worker_process_message_with_secure_link(
     mock_pipeline.run_all.return_value = {
         "success": True,
         "metadata": {
-            "dataset_type": "jmmi_dataset",
+            "programme_type": "jmmi",
+            "output_type": "dataset",
             "validation_date": "2023-01-01T00:00:00Z",
             "argus_version": "1.0.0",
             "argus_schemas_version": "1.0.0",
@@ -71,7 +72,8 @@ def test_worker_process_message_with_secure_link(
     mock_msg = MagicMock()
     payload_data = {
         "issue_key": "RQA-123",
-        "dataset_type": "jmmi",
+        "programme_type": "jmmi",
+        "output_type": "dataset",
         "secure_link": "https://example.com/dataset.xlsx",
     }
     mock_msg.content = json.dumps(payload_data)

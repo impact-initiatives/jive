@@ -14,7 +14,8 @@ def format_comment_adf(
     attachment_url: str | None = None,
     repo_url: str | None = None,
     repo_action: str | None = None,
-    original_dataset_type: str | None = None,
+    original_programme_type: str | None = None,
+    original_output_type: str | None = None,
 ) -> dict[str, Any]:
     """
     Formats the PipelineResponse into a premium Atlassian Document Format (ADF) comment
@@ -91,8 +92,11 @@ def format_comment_adf(
     )
 
     # Dataset Format Bullet
-    dataset_display = original_dataset_type.upper() if original_dataset_type else "Unknown"
-    fallback_type = response.metadata.dataset_type
+    dataset_display = (
+        f"{original_programme_type.upper() if original_programme_type else 'Unknown'}"
+        + f" {original_output_type.upper() if original_output_type else ''}"
+    )
+    fallback_type = response.metadata.programme_type + response.metadata.output_type
     context_list.append(
         {
             "type": "listItem",
@@ -374,7 +378,7 @@ def format_comment_adf(
         documentation_list: Json[list[dict[str, str]]] = []
         if settings.jive_documentation:
             documentation_list.extend(settings.jive_documentation)
-        if settings.jmmi_documentation and "jmmi" in response.metadata.dataset_type:
+        if settings.jmmi_documentation and response.metadata.programme_type == "jmmi":
             documentation_list.extend(settings.jmmi_documentation)
 
         if documentation_list:

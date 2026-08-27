@@ -24,7 +24,8 @@ def _make_response(
     response.success = success
 
     # Mock metadata
-    response.metadata.dataset_type = "jmmi"
+    response.metadata.programme_type = "jmmi"
+    response.metadata.output_type = "dataset"
     response.metadata.validation_date = "2023-01-01T12:00:00Z"
     response.metadata.file_name = "report.xlsx"
 

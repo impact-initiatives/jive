@@ -23,15 +23,20 @@ class TestJiraSubmissionPayload:
             issue_key="RQA-123",
             project_key="RQA",
             rcid="RCID-456",
-            dataset_type="jmmi",
+            programme_type="jmmi",
+            output_type="dataset",
         )
         assert payload.issue_key == "RQA-123"
         assert payload.project_key == "RQA"
         assert payload.rcid == "RCID-456"
-        assert payload.dataset_type == "jmmi"
+        assert payload.programme_type == "jmmi"
 
     def test_minimal_payload_only_issue_key(self):
-        payload = JiraSubmissionPayload(issue_key="RQA-001")
+        payload = JiraSubmissionPayload(
+            issue_key="RQA-001",
+            programme_type="jmmi",
+            output_type="dataset",
+        )
         assert payload.issue_key == "RQA-001"
         assert payload.project_key == ""
         assert payload.rcid == ""
@@ -46,6 +51,8 @@ class TestJiraSubmissionPayload:
         payload = JiraSubmissionPayload(
             issue_key="RQA-200",
             dataset_type={"value": "JMMI"},
+            programme_type="jmmi",
+            output_type="dataset",
         )
         assert payload.dataset_type == "jmmi"
 
@@ -53,8 +60,10 @@ class TestJiraSubmissionPayload:
         payload = JiraSubmissionPayload(
             issue_key="RQA-201",
             dataset_type="JMMI",
+            programme_type="JMMI",
+            output_type="dataset",
         )
-        assert payload.dataset_type == "jmmi"
+        assert payload.programme_type == "jmmi"
 
     def test_extra_fields_ignored(self):
         """Extra fields from Jira should not cause validation errors."""
@@ -62,6 +71,8 @@ class TestJiraSubmissionPayload:
             issue_key="RQA-300",
             unknown_field="some_value",
             another_field=42,
+            programme_type="JMMI",
+            output_type="dataset",
         )
         assert payload.issue_key == "RQA-300"
         assert not hasattr(payload, "unknown_field")
@@ -72,8 +83,10 @@ class TestJiraSubmissionPayload:
             project_key="RQA",
             rcid="RCID-789",
             dataset_type="jmmi",
+            programme_type="JMMI",
+            output_type="dataset",
         )
         json_str = payload.model_dump_json()
         restored = JiraSubmissionPayload.model_validate_json(json_str)
         assert restored.issue_key == payload.issue_key
-        assert restored.dataset_type == payload.dataset_type
+        assert restored.programme_type == payload.programme_type

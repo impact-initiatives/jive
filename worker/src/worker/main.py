@@ -136,11 +136,11 @@ def process_message(msg: QueueMessage, payload: JiraSubmissionPayload):
                 proforma_answers,
             )
 
-            dataset_type, repo_url, repo_action = resolve_context(
+            repo_url, repo_action = resolve_context(
                 proforma, payload, resolved_issue_id, proforma_answers
             )
             if dataset_path is not None:
-                response = run_validation(dataset_path, dataset_type, payload)
+                response = run_validation(dataset_path, payload)
 
                 duration_ms = int((time.monotonic() - start_time) * 1000)
                 logger.info(
@@ -151,9 +151,7 @@ def process_message(msg: QueueMessage, payload: JiraSubmissionPayload):
                 excel_report_path = tmp_path / f"JIVE_Validation_Report_{payload.issue_key}.xlsx"
                 export_response_to_excel(response, excel_report_path)
 
-                publish_results(
-                    jira, payload, response, excel_report_path, repo_url, repo_action, dataset_type
-                )
+                publish_results(jira, payload, response, excel_report_path, repo_url, repo_action)
 
                 total_ms = int((time.monotonic() - start_time) * 1000)
                 logger.info(
@@ -226,7 +224,9 @@ def main():
                     )
                     dead_letter_message(
                         msg,
-                        JiraSubmissionPayload(issue_key="UNKNOWN"),
+                        JiraSubmissionPayload(
+                            issue_key="UNKNOWN", programme_type="UNKNOWN", output_type="UNKNOWN"
+                        ),
                         ValueError("Malformed JSON payload"),
                     )
                     queue_client.delete_message(msg)

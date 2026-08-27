@@ -257,39 +257,16 @@ def resolve_context(
     payload: JiraSubmissionPayload,
     resolved_issue_id: str,
     proforma_answers: dict[str, str] | None = None,
-) -> tuple[str, str | None, str | None]:
+) -> tuple[str | None, str | None]:
     """Parses ProForma answers to extract context variables
     (dataset type, repo URL, repo action)."""
-    dataset_type = payload.dataset_type
     repo_url = None
     repo_action = None
-
-    if not dataset_type.strip():
-        dataset_type = (
-            f"{payload.type_of_programme.lower()}_"
-            f"{'dataset' if 'dataset' in payload.type_of_output.lower() else 'analysis'}"
-        )
 
     if proforma_answers:
         # Dynamically detect dataset type and other context fields
         # from ProForma answers if available
         # Extract dataset type
-        needle = proforma.dataset_type_label.lower()
-        for label, val in proforma_answers.items():
-            if needle in label.lower():
-                val_clean = val.strip().lower()
-                if "jmmi" in val_clean:
-                    dataset_type = "jmmi"
-                elif "msna" in val_clean:
-                    dataset_type = "msna"
-                elif "esnfi" in val_clean:
-                    dataset_type = "esnfi"
-                else:
-                    dataset_type = val_clean
-                logger.info(
-                    "Detected dataset type dynamically from ProForma answers",
-                    extra={"issue_key": payload.issue_key, "dataset_type": dataset_type},
-                )
 
         # Extract repository resource URL and action type
         for label, val in proforma_answers.items():
@@ -302,27 +279,27 @@ def resolve_context(
             if "published or archived" in label.lower():
                 repo_action = val.strip()
 
-    return dataset_type, repo_url, repo_action
+    return repo_url, repo_action
 
 
-def run_validation(
-    dataset_path: Path, dataset_type: str, payload: JiraSubmissionPayload
-) -> PipelineResponse:
+def run_validation(dataset_path: Path, payload: JiraSubmissionPayload) -> PipelineResponse:
     """Executes the validation pipeline against the dataset and returns the structured response."""
     # Ensure we only pass supported types to the pipeline, otherwise fall back to generic "other"
-
-    pipeline_dataset_type = dataset_type
 
     logger.info(
         "Running validation pipeline",
         extra={
             "issue_key": payload.issue_key,
-            "dataset_type": dataset_type,
-            "pipeline_type": pipeline_dataset_type,
+            "programme_type": payload.programme_type,
+            "output_type": payload.output_type,
         },
     )
     pipeline = ValidationPipeline()
-    response_dict = pipeline.run_all(filepath=dataset_path, dataset_type=pipeline_dataset_type)
+    response_dict = pipeline.run_all(
+        filepath=dataset_path,
+        programme_type=payload.programme_type,
+        output_type=payload.output_type,
+    )
 
     try:
         # 1. Attempt strict parsing (standard Pydantic validation)
@@ -350,7 +327,10 @@ def run_validation(
             return PipelineResponse.model_construct(
                 success=False,
                 summary={"passed": False, "admin_errors": 1, "errors": 0, "warnings": 0, "info": 0},
-                metadata={"dataset_type": dataset_type},
+                metadata={
+                    "programme_type": payload.programme_type,
+                    "output_type": payload.output_type,
+                },
                 errors=[],
                 warnings=[],
                 info=[],
@@ -376,7 +356,6 @@ def publish_results(
     excel_report_path: Path,
     repo_url: str | None,
     repo_action: str | None,
-    dataset_type: str,
 ):
     """Handles uploading the report file to Jira and posting the summary ADF comment."""
 
@@ -421,7 +400,8 @@ def publish_results(
         attachment_url=None,
         repo_url=repo_url,
         repo_action=repo_action,
-        original_dataset_type=dataset_type,
+        original_programme_type=payload.programme_type,
+        original_output_type=payload.output_type,
     )
 
     if file_size_mb > settings.max_attachment_size:

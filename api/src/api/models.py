@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 
 class JiraSubmissionPayload(BaseModel):
@@ -18,8 +18,10 @@ class JiraSubmissionPayload(BaseModel):
     project_key: str = Field(default="", description="The Jira Project Key")
     rcid: str = Field(default="", description="The RCID from the ticket summary")
     dataset_type: str = Field(default="", description="The type of assessment")
-    type_of_output: str = Field(default="")
-    type_of_programme: str = Field(default="")
+    output_type: str = Field(validation_alias=AliasChoices("type_of_output", "output_type"))
+    programme_type: str = Field(
+        validation_alias=AliasChoices("type_of_programme", "programme_type")
+    )
     secure_link: str | None = Field(
         default=None,
         description="Optional URL to download the dataset from instead of Jira attachments",
@@ -40,3 +42,9 @@ class JiraSubmissionPayload(BaseModel):
         elif isinstance(dt, str):
             data["dataset_type"] = dt.lower()
         return data
+
+    @model_validator(mode="after")
+    def lowercase_all(self):
+        self.output_type = self.output_type.lower()
+        self.programme_type = self.programme_type.lower()
+        return self
