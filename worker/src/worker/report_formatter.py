@@ -96,7 +96,7 @@ def format_comment_adf(
         f"{original_programme_type.upper() if original_programme_type else 'Unknown'}"
         + f" {original_output_type.upper() if original_output_type else ''}"
     )
-    fallback_type = response.metadata.programme_type + response.metadata.output_type
+    fallback_type = response.metadata.programme_type + ' ' + response.metadata.output_type
     context_list.append(
         {
             "type": "listItem",
