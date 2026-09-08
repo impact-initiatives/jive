@@ -21,9 +21,10 @@ RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/im
     uv pip install --no-cache /argus
 
 # get latest jive release tag which is what this is building
-RUN git ls-remote --tags --refs --sort=-v:refname \
-      https://github.com/impact-initiatives/jive.git \
-    | awk 'NR==1 {sub("refs/tags/", "", $2); print $2}' > /jive_version.txt
+RUN TAG=$(curl -fsSL https://api.github.com/repos/impact-initiatives/jive/releases/latest \
+        | awk -F'"' '/"tag_name"/ {print $4; exit}') && \
+    test -n "$TAG" && \
+    echo "$TAG" > /jive_version.txt
 
 COPY ./ ./
 
