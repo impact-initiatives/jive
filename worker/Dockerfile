@@ -3,7 +3,7 @@ FROM python:3.12-slim-trixie AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /bin/
 
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 ENV UV_NO_DEV=1
 ARG RELEASE_TAG
 
@@ -24,6 +24,7 @@ RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/im
 RUN TAG=$(curl -fsSL https://api.github.com/repos/impact-initiatives/jive/releases/latest \
         | awk -F'"' '/"tag_name"/ {print $4; exit}') && \
     test -n "$TAG" && \
+    echo "JIVE tag: $TAG" && \
     echo "$TAG" > /jive_version.txt
 
 COPY ./ ./
