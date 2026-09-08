@@ -14,13 +14,16 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN git clone --depth 100 --filter=blob:none --no-checkout https://github.com/impact-initiatives/argus.git /argus && \
     cd /argus && \
     git fetch origin --tags && \
-    LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1)) && \
-    git checkout $LATEST_TAG && \
-    echo "$LATEST_TAG" > /argus_version.txt && \
+    LATEST_ARGUS_TAG=$(git describe --tags $(git rev-list --tags --max-count=1)) && \
+    git checkout $LATEST_ARGUS_TAG && \
+    echo "$LATEST_ARGUS_TAG" > /argus_version.txt && \
     cd ..  && \
     uv pip install --no-cache /argus
 
-RUN echo ${RELEASE_TAG} > /jive_version.txt
+# get latest jive release tag which is what this is building
+RUN git ls-remote --tags --refs --sort=-v:refname \
+      https://github.com/impact-initiatives/jive.git \
+    | awk 'NR==1 {sub("refs/tags/", "", $2); print $2}' > /jive_version.txt
 
 COPY ./ ./
 
