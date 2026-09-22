@@ -1,4 +1,4 @@
-name: Run Api ruff check
+name: Run worker ruff check
 on: 
   push:
     paths:
@@ -17,7 +17,7 @@ jobs:
       contents: write
     defaults:
       run:
-        working-directory: "./worker"
+        working-directory: "/worker"
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v4.0.0
