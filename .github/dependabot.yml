@@ -13,7 +13,8 @@ updates:
       interval: "weekly"    
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "argus"
     groups:
       all-dependencies:
         patterns: ["*"]
-        exclude-patterns: ["argus"]
