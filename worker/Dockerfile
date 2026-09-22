@@ -30,8 +30,8 @@ RUN TAG=$(curl -fsSL https://api.github.com/repos/impact-initiatives/jive/releas
 COPY ./ ./
 
 # remove local reference to argus in toml file
-RUN sed -e '/^\[tool\.uv\.sources\]$/d' -e '/^argus = { path =/d' pyproject.toml > pyproject.toml.tmp && \
-    mv pyproject.toml.tmp pyproject.toml
+# RUN sed -e '/^\[tool\.uv\.sources\]$/d' -e '/^argus = { path =/d' pyproject.toml > pyproject.toml.tmp && \
+#     mv pyproject.toml.tmp pyproject.toml
     
 RUN uv pip install .
 

@@ -16,9 +16,10 @@ RUN    uv pip install --no-cache /argus
 COPY ./jive/worker ./
 
 # remove local reference to argus in toml file
-RUN sed -i 's|argus @ git+https://github.com/impact-initiatives/argus\.git|argus @ file:///argus|' pyproject.toml && \
-    sed -i '/\[tool.uv.sources\]/d' pyproject.toml && \
-    sed -i '/argus = { path =/d' pyproject.toml
+RUN sed -i 's|argus @ git+https://github.com/impact-initiatives/argus\.git|argus @ file:///argus|' pyproject.toml 
+# && \
+    # sed -i '/\[tool.uv.sources\]/d' pyproject.toml && \
+    # sed -i '/argus = { path =/d' pyproject.toml
 
 RUN uv pip install .
 
