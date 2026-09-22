@@ -10,9 +10,10 @@ updates:
   - package-ecosystem: "uv" 
     directory: "/worker"
     schedule:
-      interval: "weekly"    
+      interval: "cron"
+      cronjob: "0 0 1 * *"   
     cooldown:
-      default-days: 14
+      default-days: 7
     ignore:
       - dependency-name: "argus"
     groups:
@@ -21,9 +22,10 @@ updates:
   - package-ecosystem: "uv" 
     directory: "/api"
     schedule:
-      interval: "weekly"    
+      interval: "cron"
+      cronjob: "0 0 1 * *"  
     cooldown:
-      default-days: 14
+      default-days: 7
     groups:
       all-dependencies:
         patterns: ["*"]
