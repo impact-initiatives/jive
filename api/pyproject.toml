@@ -12,6 +12,16 @@ dependencies = [
     "uvicorn>=0.51.0",
 ]
 
+[dependency-groups]
+dev = [
+    "httpx2>=2.5.0",
+    "ipykernel>=7.3.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.20",
+]
+
 [tool.ruff]
 exclude = [
 "*.ipynb",
@@ -24,16 +34,6 @@ select = ["UP", "E", "F", "I", "B", "SIM"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
-
-[dependency-groups]
-dev = [
-    "httpx2>=2.5.0",
-    "ipykernel>=7.3.0",
-    "pytest>=9.1.1",
-    "pytest-asyncio>=1.4.0",
-    "pytest-cov>=7.1.0",
-    "ruff>=0.15.20",
-]
 
 [build-system]
 requires = ["uv_build>=0.11.28,<0.12"]
