@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "azure-storage-queue>=12.17.0",
-    "polars>=1.42.1",
+    "polars>=1.44.2",
     "pydantic>=2.13.4",
     "tenacity>=9.1.4",
     "xlsxwriter>=3.2.9",
@@ -20,7 +20,7 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "responses>=0.26.2",
-    "ruff>=0.15.20",
+    "ruff>=0.16.7",
 ]
 
 [tool.ruff]
@@ -37,6 +37,6 @@ select = ["UP", "E", "F", "I", "B", "SIM"]
 asyncio_mode = "strict"
 
 [build-system]
-requires = ["uv_build>=0.11.28,<0.12"]
+requires = ["uv_build>=0.12.14,<0.13"]
 build-backend = "uv_build"
 
