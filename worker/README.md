@@ -44,11 +44,11 @@ For local deployments using docker a `.env` file is required. Create a `.env` fi
 
 If you want to use this file locally outside of docker then the `config.py` file will need to be updated. Uncomment and configure this code in `config.py` but do not commit the change:
 ```python 
- model_config: SettingsConfigDict = SettingsConfigDict(
-        env_file=".env", # set this to the correct name and location
-        env_ignore_empty=True,
-        extra="ignore",
-    )
+model_config: SettingsConfigDict = SettingsConfigDict(
+    env_file=".env",  # set this to the correct name and location
+    env_ignore_empty=True,
+    extra="ignore",
+)
 ```
 
 ### Running the Services Locally
