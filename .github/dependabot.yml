@@ -14,7 +14,7 @@ updates:
     cooldown:
       default-days: 7
     ignore:
-      - argus
+       - dependency-name: "argus"
     groups:
       all-dependencies:
         patterns: ["*"]
