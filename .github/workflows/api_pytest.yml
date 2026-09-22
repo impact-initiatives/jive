@@ -11,12 +11,13 @@ on:
       - 'api/pyproject.toml'
       - 'api/uv.lock'
 jobs:
+  if: github.actor != 'github-actions[bot]'
   run_tests:
     name: Run tests
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: "./api"
+        working-directory: "api"
     steps:
         - uses: actions/checkout@v6
         - name: Install uv

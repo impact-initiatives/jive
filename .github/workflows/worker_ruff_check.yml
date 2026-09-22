@@ -11,13 +11,14 @@ on:
       - 'worker/pyproject.toml'
       - 'worker/uv.lock'
 jobs:
+  if: github.actor != 'github-actions[bot]'
   ruff:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     defaults:
       run:
-        working-directory: "/worker"
+        working-directory: "worker"
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v4.0.0
