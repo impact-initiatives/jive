@@ -17,7 +17,6 @@ updates:
     # ignore requirements-dev.txt
     allow:
       - dependency-type: "direct"
-      - dependency-file: "pyproject.toml"
     ignore:
       - dependency-name: "argus"
     groups:
