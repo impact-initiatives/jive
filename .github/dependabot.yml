@@ -3,6 +3,8 @@
 # Please see the documentation for all configuration options:
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
+# Note: [dependency-groups] will only get updated if there is an update in dependencies
+
 version: 2
 updates:
   - package-ecosystem: "uv" 
@@ -10,7 +12,7 @@ updates:
     schedule:
       interval: "weekly"    
     cooldown:
-      default-days: 7
+      default-days: 14
     ignore:
       - dependency-name: "argus"
     groups:
@@ -21,7 +23,7 @@ updates:
     schedule:
       interval: "weekly"    
     cooldown:
-      default-days: 7
+      default-days: 14
     groups:
       all-dependencies:
         patterns: ["*"]
