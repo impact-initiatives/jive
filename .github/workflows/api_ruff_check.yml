@@ -17,10 +17,12 @@ jobs:
       contents: write
     defaults:
       run:
-        working-directory: "api"
+        working-directory: "./api"
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v4.0.0
+        with:
+          src: "./api" 
       - run: ruff format .
       - run: ruff check . --fix
       - run: ruff format .
