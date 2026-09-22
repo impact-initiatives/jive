@@ -14,6 +14,10 @@ updates:
       cronjob: "0 0 1 * *"   
     cooldown:
       default-days: 7
+    # ignore requirements-dev.txt
+    allow:
+      - dependency-type: "direct"
+        dependency-file: "pyproject.toml"
     ignore:
       - dependency-name: "argus"
     groups:
