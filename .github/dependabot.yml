@@ -6,17 +6,23 @@
 version: 2
 updates:
   - package-ecosystem: "uv" 
-    directories: 
-      - "/api" 
-      - "/worker"
+    directory: "/api"
     schedule:
-      interval: "weekly"    
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      api-dependencies:
+        patterns: ["*"]
+  
+  - package-ecosystem: "uv" 
+    directory: "/worker"
+    schedule:
+      interval: "weekly"
     cooldown:
       default-days: 7
     ignore:
-       - dependency-name: "argus"
+      - dependency-name: "argus"
     groups:
-      all-dependencies:
+      worker-dependencies:
         patterns: ["*"]
-        exclude-patterns: ["argus"]
-
