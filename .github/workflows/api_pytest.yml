@@ -11,7 +11,6 @@ on:
       - 'api/pyproject.toml'
       - 'api/uv.lock'
 jobs:
-  if: github.actor != 'github-actions[bot]'
   run_tests:
     name: Run tests
     runs-on: ubuntu-latest

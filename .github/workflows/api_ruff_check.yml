@@ -11,7 +11,6 @@ on:
       - 'api/pyproject.toml'
       - 'api/uv.lock'
 jobs:
-  if: github.actor != 'github-actions[bot]'
   ruff:
     runs-on: ubuntu-latest
     permissions:
