@@ -18,4 +18,5 @@ updates:
     groups:
       all-dependencies:
         patterns: ["*"]
+        exclude-patterns: ["argus"]
 
