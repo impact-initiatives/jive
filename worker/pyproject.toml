@@ -23,9 +23,6 @@ dev = [
     "ruff>=0.15.20",
 ]
 
-[tool.uv.dev-dependencies]
-argus = { path = "../../argus", editable = true }
-
 [tool.ruff]
 exclude = [
 "*.ipynb",
