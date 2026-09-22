@@ -34,10 +34,10 @@ A background python worker that asynchronously pulls jobs from the queue.
 To create the python environment run:
 ```bash
 uv sync  --all-extras
-uv pip install -r requirements-dev.txt 
+uv pip install -e ../../argus
 ```
 
-Note: `requirements-dev.txt`  installs the local version of argus and assumes its stored in the same parent folder as `Jive`. This must be maintained here as including it as a uv source complicates other ci/cd processes like docker image builds and dependabot.
+Note: `uv pip install...` installs the local version of argus and assumes its stored in the same parent folder as `Jive`. This must be maintained here as including it as a uv source complicates other ci/cd processes like docker image builds and dependabot.
 
 ### Environment Variables
 For local deployments using docker a `.env` file is required. Create a `.env` file in the api project root. `.env.example` contains the required environment variables. Change any value of `CHANGE_THIS` to the required value.
