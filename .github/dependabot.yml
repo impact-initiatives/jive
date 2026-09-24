@@ -8,24 +8,16 @@
 version: 2
 updates:
   - package-ecosystem: "uv" 
-    directory: "/worker"
+    directories: 
+      - "/worker"
+      - "/api"
     schedule:
       interval: "cron"
-      cronjob: "0 0 1 * *"   
+      cronjob: "0 0 * * 0"   
     cooldown:
       default-days: 7
     ignore:
       - dependency-name: "argus"
-    groups:
-      all-dependencies:
-        patterns: ["*"]
-  - package-ecosystem: "uv" 
-    directory: "/api"
-    schedule:
-      interval: "cron"
-      cronjob: "0 0 * * 0"  
-    cooldown:
-      default-days: 7
     groups:
       all-dependencies:
         patterns: ["*"]
