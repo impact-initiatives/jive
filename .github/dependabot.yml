@@ -12,8 +12,9 @@ updates:
       - "/worker"
       - "/api"
     schedule:
-      interval: "cron"
-      cronjob: "0 0 * * 0"   
+      interval: "weekly"
+      day: "sunday"
+      time: "06:00"  
     cooldown:
       default-days: 7
     ignore:
@@ -21,3 +22,27 @@ updates:
     groups:
       all-dependencies:
         patterns: ["*"]
+  - package-ecosystem: "docker"
+    directories: 
+      - "/worker"
+      - "/api"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "06:00" 
+    cooldown:
+      default-days: 7 
+    groups:
+      all-docker-files:
+        patterns: [ "*" ]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "06:00"
+    cooldown:
+      default-days: 7
+    groups:
+      all-actions:
+        patterns: [ "*" ]
