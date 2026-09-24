@@ -50,19 +50,7 @@ on:
 permissions:
   contents: write
 
-jobs:
-  
-  create_argus_schemas_release:
-      if: ${{ inputs.release_argus_schemas }} 
-      runs-on: ubuntu-latest
-      steps:
-        - name: Trigger argus_schemas workflow
-          uses: peter-evans/repository-dispatch@v4
-          with:
-            token: ${{ secrets.REPO_DISPATCH_TOKEN }}  
-            repository: impact-initiatives/argus_schemas
-            event-type: manual-release
-            client-payload: '{"release_tag": "${{ inputs.argus_schemas_release_tag }}"}'
+jobs:  
 
   create_argus_release:
     if: ${{ inputs.release_argus }} 
@@ -147,3 +135,16 @@ jobs:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
     
+  # leave this at the end so that the release is not made if other components fail
+  create_argus_schemas_release:
+    needs: create_container_app_revision_worker
+    if: ${{ always() &&  inputs.release_argus_schemas && ( needs.create_container_app_revision_worker.result == 'success' || needs.create_container_app_revision_worker.result == 'skipped')}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger argus_schemas workflow
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.REPO_DISPATCH_TOKEN }}  
+          repository: impact-initiatives/argus_schemas
+          event-type: manual-release
+          client-payload: '{"release_tag": "${{ inputs.argus_schemas_release_tag }}"}'
