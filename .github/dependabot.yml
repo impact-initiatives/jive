@@ -23,7 +23,7 @@ updates:
     directory: "/api"
     schedule:
       interval: "cron"
-      cronjob: "0 0 1 * *"  
+      cronjob: "0 0 * * 0"  
     cooldown:
       default-days: 7
     groups:
