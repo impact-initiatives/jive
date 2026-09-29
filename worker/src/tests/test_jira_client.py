@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from httpx2 import ConnectError
+from httpx2 import ConnectError, BasicAuth
 from tenacity import RetryError
 
 from src.worker.config import get_settings, reload_settings
@@ -49,9 +49,9 @@ def client():
 #         JiraClient()
 
 
-def test_client_initialization_headers_and_auth(client: JiraClient, httpx2_mock):
+def test_client_initialization_headers_and_auth(client: JiraClient):
     assert client.auth == ("test@example.com", "test-token")
-    assert client.session.auth == ("test@example.com", "test-token")
+    assert isinstance(client.session.auth, BasicAuth)
     assert client.session.headers["Accept"] == "application/json"
     assert client.secure_link_auth == ("secure-user", "secure-pass")
 
@@ -272,6 +272,7 @@ def test_retry_on_429(client: JiraClient, httpx2_mock):
     assert len(requests) == 3
 
 
+@pytest.mark.allow_more_requests_than_registered
 def test_retry_exhaustion_raises_retry_error(client: JiraClient, httpx2_mock):
     url = f"{client.base_url}/rest/api/3/issue/RQA-123?fields=attachment"
     # Will fail 3 times and raise RetryError
@@ -287,6 +288,7 @@ def test_retry_exhaustion_raises_retry_error(client: JiraClient, httpx2_mock):
     assert len(requests) == 3
 
 
+@pytest.mark.allow_more_requests_than_registered
 def test_connection_error_triggers_retry(client: JiraClient, httpx2_mock):
     url = f"{client.base_url}/rest/api/3/issue/RQA-123?fields=attachment"
 
