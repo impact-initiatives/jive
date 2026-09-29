@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from httpx2 import ConnectError, BasicAuth
+from httpx2 import BasicAuth, ConnectError
 from tenacity import RetryError
 
 from src.worker.config import get_settings, reload_settings
