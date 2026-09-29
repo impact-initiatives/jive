@@ -4,8 +4,7 @@ import urllib.parse
 from pathlib import Path
 from typing import Any
 
-import requests
-from requests.sessions import Session
+from httpx2 import Client, ConnectError, Response, Timeout, TimeoutException
 from tenacity import (
     before_sleep_log,
     retry,
@@ -41,7 +40,7 @@ class JiraAPIError(Exception):
     pass
 
 
-def check_retryable(response: requests.Response):
+def check_retryable(response: Response):
     """Raises JiraAPIError if the response has a retryable status code."""
     if response.status_code in settings.retry_status_codes:
         raise JiraAPIError(f"Jira returned {response.status_code}: {response.text[:200]}")
@@ -56,7 +55,6 @@ class JiraClient:
         self.auth: tuple[str, str] = (self.email, self.token)
         self.headers: dict[str, str] = {
             "Accept": "application/json",
-            "Content-Type": "application/json",
         }
 
         self.secure_link_user: str = settings.secure_link_username
@@ -67,16 +65,14 @@ class JiraClient:
             else None
         )
 
-        self.session: Session = requests.Session()
+        self.session: Client = Client()
         self.session.auth = self.auth
         self.session.headers.update(self.headers)
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def post_comment(
@@ -89,7 +85,9 @@ class JiraClient:
         payload = {"body": adf_content}
 
         start = time.monotonic()
-        response = self.session.post(url, json=payload, timeout=(3.05, 30))
+        response = self.session.post(
+            url, json=payload, timeout=Timeout(None, connect=3.05, read=30.0), follow_redirects=True
+        )
         duration_ms = int((time.monotonic() - start) * 1000)
 
         check_retryable(response)
@@ -110,9 +108,7 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def upload_attachment(self, issue_key: str, file_path: Path) -> bool:
@@ -122,7 +118,6 @@ class JiraClient:
         headers = {
             "X-Atlassian-Token": "no-check",
             "Accept": "application/json",
-            "Content-Type": None,
         }
 
         with open(file_path, "rb") as f:
@@ -134,7 +129,13 @@ class JiraClient:
                 )
             }
             start = time.monotonic()
-            response = self.session.post(url, headers=headers, files=files, timeout=(3.05, 120))
+            response = self.session.post(
+                url,
+                headers=headers,
+                files=files,
+                timeout=Timeout(None, connect=3.05, read=120),
+                follow_redirects=True,
+            )
             duration_ms = int((time.monotonic() - start) * 1000)
 
         check_retryable(response)
@@ -169,15 +170,15 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def get_service_desk_id(self, project_key: str) -> str | None:
         """Fetch the Service Desk ID associated with a project key."""
         url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{project_key}"
-        response = self.session.get(url, timeout=(3.05, 30))
+        response = self.session.get(
+            url, timeout=Timeout(None, connect=3.05, read=30.0), follow_redirects=True
+        )
         check_retryable(response)
         if response.status_code == 200:
             response_data = ServiceDeskResponse.model_validate(response.json())
@@ -192,9 +193,7 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def upload_public_jsm_attachment(
@@ -217,8 +216,6 @@ class JiraClient:
         )
         headers = {
             "X-Atlassian-Token": "no-check",
-            "Accept": "application/json",
-            "Content-Type": None,
         }
 
         try:
@@ -235,7 +232,11 @@ class JiraClient:
                     extra={"issue_key": issue_key, "service_desk_id": service_desk_id},
                 )
                 response = self.session.post(
-                    upload_url, headers=headers, files=files, timeout=(3.05, 120)
+                    upload_url,
+                    headers=headers,
+                    files=files,
+                    timeout=Timeout(None, connect=3.05, read=120.0),
+                    follow_redirects=True,
                 )
                 check_retryable(response)
 
@@ -280,7 +281,11 @@ class JiraClient:
                 "Confirming public JSM attachment on request", extra={"issue_key": issue_key}
             )
             response = self.session.post(
-                attach_url, headers=attach_headers, json=payload, timeout=(3.05, 30)
+                attach_url,
+                headers=attach_headers,
+                json=payload,
+                timeout=Timeout(None, connect=3.05, read=30.0),
+                follow_redirects=True,
             )
             check_retryable(response)
 
@@ -307,9 +312,7 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def get_attachments(self, issue_key: str) -> list[IssueAttachment] | None:
@@ -319,7 +322,9 @@ class JiraClient:
         and pass the result to both idempotency checks and download logic.
         """
         url = f"{self.base_url}/rest/api/3/issue/{issue_key}?fields=attachment"
-        response = self.session.get(url, timeout=(3.05, 30))
+        response = self.session.get(
+            url, timeout=Timeout(None, connect=3.05, read=30.0), follow_redirects=True
+        )
         check_retryable(response)
         if response.status_code != 200:
             logger.error(
@@ -337,9 +342,7 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def get_issue_id(self, issue_key: str) -> str | None:
@@ -348,7 +351,9 @@ class JiraClient:
         logger.info(
             "Resolving issue ID from key", extra={"issue_key": issue_key, "url": _sanitize_url(url)}
         )
-        response = self.session.get(url, timeout=(3.05, 30))
+        response = self.session.get(
+            url, timeout=Timeout(None, connect=3.05, read=30.0), follow_redirects=True
+        )
         check_retryable(response)
         if response.status_code == 200:
             response_data = IssueResponse.model_validate(response.json())
@@ -368,9 +373,7 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def download_proforma_attachment(
@@ -429,9 +432,7 @@ class JiraClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def _download_file_with_retry(
@@ -439,7 +440,7 @@ class JiraClient:
         url: str,
         output_path: Path,
         auth: tuple[str, str] | None = None,
-        session: requests.Session | None = None,
+        session: Client | None = None,
     ) -> bool:
         """Helper method to download a file with retries."""
         start = time.monotonic()
@@ -448,13 +449,12 @@ class JiraClient:
         # When using a custom session, it carries its own auth.
         # If an explicit auth tuple is provided, we use it (e.g. for secure links).
         kwargs: dict[str, Any] = {
-            "stream": True,
-            "timeout": (3.05, 300),
+            "timeout": Timeout(None, connect=3.05, read=300.0),
         }
         if auth is not None:
             kwargs["auth"] = auth
 
-        response = http_client.get(url, **kwargs)
+        response = http_client.get(url, **kwargs, follow_redirects=True)
         duration_ms = int((time.monotonic() - start) * 1000)
 
         check_retryable(response)
@@ -465,7 +465,7 @@ class JiraClient:
             try:
                 exceeded_size = False
                 with open(output_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
+                    for chunk in response.iter_bytes(chunk_size=8192):
                         downloaded_bytes += len(chunk)
                         if downloaded_bytes > max_bytes:
                             exceeded_size = True

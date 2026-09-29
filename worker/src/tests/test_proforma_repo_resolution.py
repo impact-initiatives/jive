@@ -4,8 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-import requests
-import responses
+from httpx2 import Client
 
 from src.worker.config import get_settings, reload_settings
 
@@ -46,34 +45,36 @@ from ..worker.jira.proforma_parser import ProformaParser  # noqa: E402
 from ..worker.worker_utils import resolve_dataset  # noqa: E402
 
 
-@responses.activate
-def test_get_cloud_id():
+def test_get_cloud_id(httpx2_mock):
     """Test retrieving and caching Atlassian Cloud ID."""
-    _ = responses.add(
-        responses.GET,
-        "https://mock/_edge/tenant_info",
+    url = "https://mock/_edge/tenant_info"
+    httpx2_mock.add_response(
+        method="GET",
+        url=url,
         json={"cloudId": "mock-cloud-id-12345"},
-        status=200,
+        status_code=200,
     )
 
-    client = ProformaParser(requests.Session(), auth=("mock", "mock"), base_url="https://mock")
+    client = ProformaParser(Client(), auth=("mock", "mock"), base_url="https://mock")
     cloud_id = client._get_cloud_id()
 
     assert cloud_id == "mock-cloud-id-12345"
     assert client.cloud_id == "mock-cloud-id-12345"
-    assert len(responses.calls) == 1
+    requests = httpx2_mock.get_requests(url=url)
+    assert len(requests) == 1
 
     cloud_id_cached = client._get_cloud_id()
     assert cloud_id_cached == "mock-cloud-id-12345"
-    assert len(responses.calls) == 1  # Should not make a second request
+    requests = httpx2_mock.get_requests(url=url)
+    assert len(requests) == 1
 
 
-@responses.activate
-def test_get_proforma_answers():
+def test_get_proforma_answers(httpx2_mock):
     """Test parsing of complex ProForma answers JSON."""
-    _ = responses.add(
-        responses.GET,
-        "https://api.atlassian.com/jira/forms/cloud/mock-cloud-id-12345/issue/issue-id-999/form",
+
+    httpx2_mock.add_response(
+        method="GET",
+        url="https://api.atlassian.com/jira/forms/cloud/mock-cloud-id-12345/issue/issue-id-999/form",
         json=[
             {
                 "id": "form-uuid-abc-123",
@@ -85,11 +86,12 @@ def test_get_proforma_answers():
                 "formTemplate": {"id": "123"},
             }
         ],
-        status=200,
+        status_code=200,
     )
-    _ = responses.add(
-        responses.GET,
-        "https://api.atlassian.com/jira/forms/cloud/mock-cloud-id-12345/issue/issue-id-999/form/form-uuid-abc-123",
+
+    httpx2_mock.add_response(
+        method="GET",
+        url="https://api.atlassian.com/jira/forms/cloud/mock-cloud-id-12345/issue/issue-id-999/form/form-uuid-abc-123",
         json={
             "design": {
                 "questions": {
@@ -124,10 +126,10 @@ def test_get_proforma_answers():
             "id": "form_id",
             "updated": "20260110",
         },
-        status=200,
+        status_code=200,
     )
 
-    client = ProformaParser(requests.Session(), auth=("mock", "mock"), base_url="https://mock")
+    client = ProformaParser(Client(), auth=("mock", "mock"), base_url="https://mock")
     client.cloud_id = "mock-cloud-id-12345"
 
     answers = client.get_answers("issue-id-999")
@@ -139,19 +141,23 @@ def test_get_proforma_answers():
     assert answers["repo_url"] == "https://repository.impact-initiatives.org/resources/test-dataset"
     assert answers["Dataset type"] == "JMMI Factsheet"
     assert answers["ds_type"] == "JMMI Factsheet"
-    assert len(responses.calls) == 2
+    requests = httpx2_mock.get_requests()
+    assert len(requests) == 2
 
 
-@responses.activate
-def test_get_repo_session():
+def test_get_repo_session(httpx2_mock):
     """Test authenticated WordPress session creation for IMPACT Repository."""
-    _ = responses.add(
-        responses.GET, "https://repository.impact-initiatives.org/wp-login.php", status=200
+
+    httpx2_mock.add_response(
+        method="GET",
+        url="https://repository.impact-initiatives.org/wp-login.php",
+        status_code=200,
     )
-    _ = responses.add(
-        responses.POST,
-        "https://repository.impact-initiatives.org/wp-login.php",
-        status=200,
+
+    httpx2_mock.add_response(
+        method="POST",
+        url="https://repository.impact-initiatives.org/wp-login.php",
+        status_code=200,
         headers={"Set-Cookie": "wordpress_logged_in_abc123=user%7C123; Path=/"},
     )
 
@@ -160,12 +166,12 @@ def test_get_repo_session():
 
     assert session is not None
     assert client.session is not None
-    assert len(responses.calls) == 2
-    assert "log=mock-wp-username%40example.com" in responses.calls[1].request.body
+    requests = httpx2_mock.get_requests()
+    assert len(requests) == 2
+    assert "log=mock-wp-username%40example.com" in str(requests[1].content.decode("utf-8"))
 
 
-@responses.activate
-def test_scrape_excel_url():
+def test_scrape_excel_url(httpx2_mock):
     """Test HTML scraping regex for extracting direct .xlsx links."""
     client = ImpactRepoClient()
 
@@ -179,14 +185,14 @@ def test_scrape_excel_url():
     </html>
     """  # noqa: E501
 
-    _ = responses.add(
-        responses.GET,
-        "https://repository.impact-initiatives.org/Ukraine_JMMI_R40_page",
-        body=mock_html,
-        status=200,
+    httpx2_mock.add_response(
+        method="GET",
+        url="https://repository.impact-initiatives.org/Ukraine_JMMI_R40_page",
+        status_code=200,
+        content=mock_html,
     )
 
-    client.get_authenticated_session = MagicMock(return_value=requests.Session())
+    client.get_authenticated_session = MagicMock(return_value=Client())
 
     excel_url = client.scrape_excel_url(
         "https://repository.impact-initiatives.org/Ukraine_JMMI_R40_page"
@@ -196,7 +202,8 @@ def test_scrape_excel_url():
         excel_url
         == "https://repository.impact-initiatives.org/resources/download/Ukraine_JMMI_R40.xlsx"
     )
-    assert len(responses.calls) == 1
+    requests = httpx2_mock.get_requests()
+    assert len(requests) == 1
 
 
 @patch("src.worker.worker_utils.JiraClient.download_proforma_attachment")

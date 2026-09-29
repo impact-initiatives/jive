@@ -3,8 +3,6 @@
 # Please see the documentation for all configuration options:
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
-# Note: [dependency-groups] will only get updated if there is an update in dependencies
-
 version: 2
 updates:
   - package-ecosystem: "uv" 
@@ -22,6 +20,8 @@ updates:
     groups:
       all-dependencies:
         patterns: ["*"]
+  # Note: there is currently an issue updating the uv build version using dependabot
+  # https://github.com/dependabot/dependabot-core/issues/13383
   - package-ecosystem: "docker"
     directories: 
       - "/worker"

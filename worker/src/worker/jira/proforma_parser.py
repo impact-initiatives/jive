@@ -1,7 +1,6 @@
 import logging
 
-import requests
-from requests.sessions import Session
+from httpx2 import Client, ConnectError, Timeout, TimeoutException
 from tenacity import (
     before_sleep_log,
     retry,
@@ -20,8 +19,8 @@ settings = get_settings()
 
 
 class ProformaParser:
-    def __init__(self, session: requests.Session, auth: tuple[str, str], base_url: str):
-        self.session: Session = session
+    def __init__(self, session: Client, auth: tuple[str, str], base_url: str):
+        self.session: Client = session
         self.auth: tuple[str, str] = auth
         self.base_url: str = base_url
         self.cloud_id: str | None = None
@@ -37,9 +36,7 @@ class ProformaParser:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (JiraAPIError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def _get_cloud_id(self) -> str:
@@ -50,7 +47,9 @@ class ProformaParser:
         url = f"{self.base_url}/_edge/tenant_info"
         logger.info("Fetching Atlassian Cloud ID", extra={"url": url})
 
-        response = self.session.get(url, auth=self.auth, timeout=(3.05, 15))
+        response = self.session.get(
+            url, auth=self.auth, timeout=Timeout(None, connect=3.05, read=30.0)
+        )
         check_retryable(response)
         response.raise_for_status()
 
@@ -74,7 +73,10 @@ class ProformaParser:
 
         try:
             response = self.session.get(
-                url, auth=self.auth, headers=self.headers, timeout=(3.05, 15)
+                url,
+                auth=self.auth,
+                headers=self.headers,
+                timeout=Timeout(None, connect=3.05, read=30.0),
             )
             check_retryable(response)
             if response.status_code in (403, 404):
@@ -100,7 +102,10 @@ class ProformaParser:
             )
 
             detail_response = self.session.get(
-                form_detail_url, auth=self.auth, headers=self.headers, timeout=(3.05, 15)
+                form_detail_url,
+                auth=self.auth,
+                headers=self.headers,
+                timeout=Timeout(None, connect=3.05, read=15.0),
             )
             check_retryable(detail_response)
             detail_response.raise_for_status()

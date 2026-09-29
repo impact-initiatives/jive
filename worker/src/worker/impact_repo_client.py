@@ -4,8 +4,7 @@ import time
 import urllib.parse
 from pathlib import Path
 
-import requests
-from requests.sessions import Session
+from httpx2 import Client, ConnectError, Timeout, TimeoutException
 from tenacity import (
     before_sleep_log,
     retry,
@@ -29,18 +28,16 @@ def _sanitize_url(url: str) -> str:
 
 class ImpactRepoClient:
     def __init__(self):
-        self.session: None | Session = None
+        self.session: None | Client = None
         self.session_created_at: None | float = None
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    def get_authenticated_session(self) -> requests.Session:
+    def get_authenticated_session(self) -> Client:
         """Return an authenticated Session for the IMPACT Repository (WordPress cookie auth).
 
         Sessions are cached but automatically re-authenticated after REPO_SESSION_TTL_SECONDS
@@ -62,7 +59,7 @@ class ImpactRepoClient:
             extra={"username": settings.repository_username.split("@")[0]},
         )
 
-        session: Session = requests.Session()
+        session: Client = Client()
         session.headers.update(
             {
                 "User-Agent": (
@@ -74,7 +71,11 @@ class ImpactRepoClient:
         )
 
         # Prime testcookie
-        _ = session.get(f"{base_url}/wp-login.php", timeout=(3.05, 15))
+        _ = session.get(
+            f"{base_url}/wp-login.php",
+            timeout=Timeout(None, connect=3.05, read=15.0),
+            follow_redirects=True,
+        )
 
         # Submit login form
         response = session.post(
@@ -86,8 +87,8 @@ class ImpactRepoClient:
                 "redirect_to": f"{base_url}/resources/",
                 "testcookie": "1",
             },
-            timeout=(3.05, 15),
-            allow_redirects=True,
+            timeout=Timeout(None, connect=3.05, read=15.0),
+            follow_redirects=True,
         )
         response.raise_for_status()
 
@@ -95,9 +96,7 @@ class ImpactRepoClient:
         # Note: originally this was:
         # (name).startswith("wordpress_logged_in") for name in session.cookies
         # adjusted to make the test work but not tested on actual site
-        logged_in = any(
-            str(item.name).startswith("wordpress_logged_in") for item in session.cookies
-        )
+        logged_in = any(name.startswith("wordpress_logged_in") for name in session.cookies)
         if not logged_in:
             raise OSError(
                 "WordPress login failed — no auth cookie received. "
@@ -112,9 +111,7 @@ class ImpactRepoClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def scrape_excel_url(self, page_url: str) -> str | None:
@@ -122,7 +119,9 @@ class ImpactRepoClient:
         logger.info("Scraping IMPACT Repository page for Excel link", extra={"page_url": page_url})
         try:
             session = self.get_authenticated_session()
-            response = session.get(page_url, timeout=(3.05, 30))
+            response = session.get(
+                page_url, timeout=Timeout(None, connect=3.05, read=30.0), follow_redirects=True
+            )
             response.raise_for_status()
 
             match = re.search(
@@ -140,7 +139,7 @@ class ImpactRepoClient:
                 "No .xlsx or .xls link found on repository page", extra={"page_url": page_url}
             )
             return None
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        except (ConnectError, TimeoutException):
             raise  # Let tenacity retry these
         except Exception as e:
             logger.error(
@@ -153,9 +152,7 @@ class ImpactRepoClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type(
-            (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
-        ),
+        retry=retry_if_exception_type((ConnectError, TimeoutException)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def download_excel(self, url: str, output_path: Path) -> bool:
@@ -175,12 +172,14 @@ class ImpactRepoClient:
             extra={"url": _sanitize_url(url), "output": str(output_path)},
         )
         max_bytes = settings.max_attachment_size * 1024 * 1024
-        response = session.get(url, stream=True, timeout=(3.05, 300))
+        response = session.get(
+            url, timeout=Timeout(None, connect=3.05, read=300.0), follow_redirects=True
+        )
         response.raise_for_status()
 
         downloaded_bytes = 0
         with open(output_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
+            for chunk in response.iter_bytes(chunk_size=8192):
                 downloaded_bytes += len(chunk)
                 if downloaded_bytes > max_bytes:
                     logger.error(
