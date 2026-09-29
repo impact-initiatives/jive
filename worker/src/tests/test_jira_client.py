@@ -19,6 +19,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from ..worker.jira.jira_client import JiraClient  # noqa: E402
 
 
+@pytest.fixture
+def httpx2_mock_with_relaxed_assertion(httpx2_mock):
+    """Disable strict assertion for tests that expect extra calls."""
+    httpx2_mock._options.assert_all_requests_were_expected = False
+    return httpx2_mock
+
+
 @pytest.fixture(autouse=True)
 def mock_env_vars(monkeypatch):
     """Ensure env vars are set for JiraClient initialization."""
@@ -272,7 +279,6 @@ def test_retry_on_429(client: JiraClient, httpx2_mock):
     assert len(requests) == 3
 
 
-@pytest.mark.allow_more_requests_than_registered
 def test_retry_exhaustion_raises_retry_error(client: JiraClient, httpx2_mock):
     url = f"{client.base_url}/rest/api/3/issue/RQA-123?fields=attachment"
     # Will fail 3 times and raise RetryError
@@ -288,7 +294,6 @@ def test_retry_exhaustion_raises_retry_error(client: JiraClient, httpx2_mock):
     assert len(requests) == 3
 
 
-@pytest.mark.allow_more_requests_than_registered
 def test_connection_error_triggers_retry(client: JiraClient, httpx2_mock):
     url = f"{client.base_url}/rest/api/3/issue/RQA-123?fields=attachment"
 
