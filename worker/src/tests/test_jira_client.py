@@ -20,7 +20,7 @@ from ..worker.jira.jira_client import JiraClient  # noqa: E402
 
 
 @pytest.fixture
-def httpx2_mock_with_relaxed_assertion(httpx2_mock):
+def httpx2_mock_relaxed(httpx2_mock):
     """Disable strict assertion for tests that expect extra calls."""
     httpx2_mock._options.assert_all_requests_were_expected = False
     return httpx2_mock
@@ -279,10 +279,10 @@ def test_retry_on_429(client: JiraClient, httpx2_mock):
     assert len(requests) == 3
 
 
-def test_retry_exhaustion_raises_retry_error(client: JiraClient, httpx2_mock):
+def test_retry_exhaustion_raises_retry_error(client: JiraClient, httpx2_mock_relaxed):
     url = f"{client.base_url}/rest/api/3/issue/RQA-123?fields=attachment"
     # Will fail 3 times and raise RetryError
-    httpx2_mock.add_response(
+    httpx2_mock_relaxed.add_response(
         method="GET",
         url=url,
         status_code=503,
@@ -290,14 +290,14 @@ def test_retry_exhaustion_raises_retry_error(client: JiraClient, httpx2_mock):
 
     with pytest.raises(RetryError):
         _ = client.get_attachments("RQA-123")
-    requests = httpx2_mock.get_requests(url=url)
+    requests = httpx2_mock_relaxed.get_requests(url=url)
     assert len(requests) == 3
 
 
-def test_connection_error_triggers_retry(client: JiraClient, httpx2_mock):
+def test_connection_error_triggers_retry(client: JiraClient, httpx2_mock_relaxed):
     url = f"{client.base_url}/rest/api/3/issue/RQA-123?fields=attachment"
 
-    httpx2_mock.add_exception(
+    httpx2_mock_relaxed.add_exception(
         ConnectError("Network down"),
         method="GET",
         url=url,
@@ -305,7 +305,7 @@ def test_connection_error_triggers_retry(client: JiraClient, httpx2_mock):
 
     with pytest.raises(RetryError):
         _ = client.get_attachments("RQA-123")
-    requests = httpx2_mock.get_requests(url=url)
+    requests = httpx2_mock_relaxed.get_requests(url=url)
     assert len(requests) == 3
 
 
