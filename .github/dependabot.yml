@@ -12,11 +12,11 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
-      time: "06:00"  
+      time: "00:00"  
     cooldown:
       default-days: 7
-    ignore:
-      - dependency-name: "argus"
+    # ignore:
+    #   - dependency-name: "argus"
     groups:
       all-dependencies:
         patterns: ["*"]
