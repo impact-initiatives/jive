@@ -1,5 +1,5 @@
 #Step1: Builder Stage
-FROM python:3.12-slim-trixie AS builder 
+FROM python:3.14-slim-trixie AS builder 
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /uvx /bin/
 
@@ -35,7 +35,7 @@ COPY ./ ./
     
 RUN uv pip install .
 
-FROM python:3.12-slim-trixie AS runner
+FROM python:3.14-slim-trixie AS runner
 
 WORKDIR /app
 
