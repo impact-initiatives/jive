@@ -34,7 +34,7 @@ def _parse_timestamp(ts_str: str) -> datetime:
         return datetime.min
     try:
         return datetime.fromisoformat(ts_str)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return datetime.min
 
 
