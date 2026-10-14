@@ -139,7 +139,7 @@ class ImpactRepoClient:
                 "No .xlsx or .xls link found on repository page", extra={"page_url": page_url}
             )
             return None
-        except (ConnectError, TimeoutException):
+        except ConnectError, TimeoutException:
             raise  # Let tenacity retry these
         except Exception as e:
             logger.error(
