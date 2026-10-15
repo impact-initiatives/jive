@@ -34,12 +34,8 @@ class Settings(BaseSettings):
     proforma_dataset_type_label: str = Field(
         alias="PROFORMA_DATASET_TYPE_LABEL", default="Dataset type"
     )
-    jive_documentation: Json[list[dict[str, str]]] = Field(
-        default_factory=list, alias="JIVE_DOCUMENTATION"
-    )
-
-    jmmi_documentation: Json[list[dict[str, str]]] = Field(
-        default_factory=list, alias="JMMI_DOCUMENTATION"
+    jive_documentation: dict[str, dict[str, str]] = Field(
+        default_factory=dict, alias="JIVE_DOCUMENTATION"
     )
 
     jira_api_email: str = Field(alias="JIRA_API_EMAIL")

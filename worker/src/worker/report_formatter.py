@@ -376,10 +376,18 @@ def format_comment_adf(
             }
         )
         documentation_list: Json[list[dict[str, str]]] = []
-        if settings.jive_documentation:
-            documentation_list.extend(settings.jive_documentation)
-        if settings.jmmi_documentation and response.metadata.programme_type == "jmmi":
-            documentation_list.extend(settings.jmmi_documentation)
+        if settings.jive_documentation is not None:
+            jive_docs = settings.jive_documentation.get("jive")
+            if jive_docs is not None:
+                documentation_list.append(jive_docs)
+
+            output_docs = settings.jive_documentation.get(response.metadata.output_type)
+            if output_docs is not None:
+                documentation_list.append(output_docs)
+
+            programme_docs = settings.jive_documentation.get(response.metadata.programme_type)
+            if programme_docs is not None:
+                documentation_list.append(programme_docs)
 
         if documentation_list:
             adf_document["content"].append(
