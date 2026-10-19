@@ -7,6 +7,7 @@ from ..worker.jira.models import AuthorInfo, AvatarUrls, IssueAttachment
 def set_default_env_vars():
     os.environ.setdefault("JIRA_API_EMAIL", "test@example.com")
     os.environ.setdefault("JIRA_API_TOKEN", "test-token")
+    os.environ.setdefault("JIRA_CLOUD_ID", "abc-123")
     os.environ.setdefault("JIRA_BASE_URL", "https://test.atlassian.net")
     os.environ.setdefault("SECURE_LINK_USERNAME", "secure-user")
     os.environ.setdefault("SECURE_LINK_PASSWORD", "secure-pass")
