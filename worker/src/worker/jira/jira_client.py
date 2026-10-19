@@ -4,7 +4,7 @@ import urllib.parse
 from pathlib import Path
 from typing import Any
 
-from httpx2 import Client, ConnectError, Response, Timeout, TimeoutException
+from httpx2 import BasicAuth, Client, ConnectError, Response, Timeout, TimeoutException
 from tenacity import (
     before_sleep_log,
     retry,
@@ -48,14 +48,20 @@ def check_retryable(response: Response):
 
 class JiraClient:
     def __init__(self):
-        self.email: str = settings.jira_api_email
+        self.session: Client = Client()
         self.token: str = settings.jira_api_token
-        self.base_url: str = settings.jira_base_url.rstrip("/")
-
-        self.auth: tuple[str, str] = (self.email, self.token)
         self.headers: dict[str, str] = {
             "Accept": "application/json",
         }
+
+        if settings.jira_auth_type == "basic":
+            self.email: str = settings.jira_api_email
+            self.auth: BasicAuth = BasicAuth(self.email, self.token)
+            self.session.auth = self.auth
+        else:
+            self.headers["Authorization"] = f"Bearer {self.token}"
+
+        self.base_url: str = settings.jira_base_url.rstrip("/")
 
         self.secure_link_user: str = settings.secure_link_username
         self.secure_link_pass: str = settings.secure_link_password
@@ -65,8 +71,6 @@ class JiraClient:
             else None
         )
 
-        self.session: Client = Client()
-        self.session.auth = self.auth
         self.session.headers.update(self.headers)
 
     @retry(

@@ -106,7 +106,7 @@ def process_message(msg: QueueMessage, payload: JiraSubmissionPayload):
     )
 
     jira = JiraClient()
-    proforma = ProformaParser(jira.session, jira.auth, jira.base_url)
+    proforma = ProformaParser(jira.session, jira.base_url)
     impact_repo = ImpactRepoClient()
 
     # Fetch attachments once — used for both idempotency and download
