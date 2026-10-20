@@ -15,7 +15,7 @@ set_default_env_vars()
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
+os.environ["JIRA_AUTH_TYPE"] = "basic"
 from ..worker.jira.jira_client import JiraClient  # noqa: E402
 
 
@@ -31,7 +31,8 @@ def mock_env_vars(monkeypatch):
     """Ensure env vars are set for JiraClient initialization."""
     monkeypatch.setenv("JIRA_API_EMAIL", "test@example.com")
     monkeypatch.setenv("JIRA_API_TOKEN", "test-token")
-    monkeypatch.setenv("JIRA_BASE_URL", "https://test.atlassian.net")
+    monkeypatch.setenv("JIRA_AUTH_TYPE", "basic")
+    monkeypatch.setenv("JIRA_API_BASE_URL", "https://test.atlassian.net")
     monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
     monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
     monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
@@ -57,7 +58,7 @@ def client():
 
 
 def test_client_initialization_headers_and_auth(client: JiraClient):
-    assert client.auth == ("test@example.com", "test-token")
+    assert client.auth._auth_header == BasicAuth("test@example.com", "test-token")._auth_header
     assert isinstance(client.session.auth, BasicAuth)
     assert client.session.headers["Accept"] == "application/json"
     assert client.secure_link_auth == ("secure-user", "secure-pass")

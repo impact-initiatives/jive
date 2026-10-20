@@ -24,6 +24,7 @@ os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
 )
 os.environ["JIRA_API_EMAIL"] = "mock-jira-email@example.com"
 os.environ["JIRA_API_TOKEN"] = "mock-jira-token"
+os.environ["JIRA_CLOUD_ID"] = "mock-cloud-id-12345"
 os.environ["REPO_USERNAME"] = "mock-wp-username@example.com"
 os.environ["REPO_PASSWORD"] = "mock-wp-password"
 get_settings()
@@ -32,7 +33,7 @@ get_settings()
 @pytest.fixture(autouse=True)
 def mock_env_vars(monkeypatch):
     """Ensure env vars are set for JiraClient initialization."""
-    monkeypatch.setenv("JIRA_BASE_URL", "https://test.atlassian.net")
+    monkeypatch.setenv("JIRA_API_BASE_URL", "https://test.atlassian.net")
     monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
     monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
     monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
@@ -43,30 +44,6 @@ from ..worker.impact_repo_client import ImpactRepoClient  # noqa: E402
 from ..worker.jira.jira_client import JiraClient  # noqa: E402
 from ..worker.jira.proforma_parser import ProformaParser  # noqa: E402
 from ..worker.worker_utils import resolve_dataset  # noqa: E402
-
-
-def test_get_cloud_id(httpx2_mock):
-    """Test retrieving and caching Atlassian Cloud ID."""
-    url = "https://mock/_edge/tenant_info"
-    httpx2_mock.add_response(
-        method="GET",
-        url=url,
-        json={"cloudId": "mock-cloud-id-12345"},
-        status_code=200,
-    )
-
-    client = ProformaParser(Client(), auth=("mock", "mock"), base_url="https://mock")
-    cloud_id = client._get_cloud_id()
-
-    assert cloud_id == "mock-cloud-id-12345"
-    assert client.cloud_id == "mock-cloud-id-12345"
-    requests = httpx2_mock.get_requests(url=url)
-    assert len(requests) == 1
-
-    cloud_id_cached = client._get_cloud_id()
-    assert cloud_id_cached == "mock-cloud-id-12345"
-    requests = httpx2_mock.get_requests(url=url)
-    assert len(requests) == 1
 
 
 def test_get_proforma_answers(httpx2_mock):
@@ -129,8 +106,7 @@ def test_get_proforma_answers(httpx2_mock):
         status_code=200,
     )
 
-    client = ProformaParser(Client(), auth=("mock", "mock"), base_url="https://mock")
-    client.cloud_id = "mock-cloud-id-12345"
+    client = ProformaParser(Client())
 
     answers = client.get_answers("issue-id-999")
 
@@ -212,7 +188,7 @@ def test_scrape_excel_url(httpx2_mock):
 def test_resolve_dataset_workflow(mock_download_excel, mock_scrape_url, mock_download_att):
     """Test unified fallback priority resolver strategy."""
     jira = JiraClient()
-    proforma = ProformaParser(jira.session, jira.auth, jira.base_url)
+    proforma = ProformaParser(jira.session)
     impact_repo = ImpactRepoClient()
     tmp_path = Path("/tmp/mock-dir")
 

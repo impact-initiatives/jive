@@ -1,16 +1,7 @@
-import logging
-
-from httpx2 import Client, ConnectError, Timeout, TimeoutException
-from tenacity import (
-    before_sleep_log,
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
+from httpx2 import Client, Timeout
 
 from ..config import get_settings
-from ..jira.jira_client import JiraAPIError, check_retryable
+from ..jira.jira_client import check_retryable
 from ..logger import get_logger
 from .models import Form, FormDocument
 
@@ -19,54 +10,19 @@ settings = get_settings()
 
 
 class ProformaParser:
-    def __init__(self, session: Client, auth: tuple[str, str], base_url: str):
+    def __init__(self, session: Client):
         self.session: Client = session
-        self.auth: tuple[str, str] = auth
-        self.base_url: str = base_url
-        self.cloud_id: str | None = None
-
         self.dataset_type_label: str = settings.proforma_dataset_type_label
         self.repo_label: str = settings.proforma_repository_label
-
         self.headers: dict[str, str] = {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=30),
-        retry=retry_if_exception_type((JiraAPIError, ConnectError, TimeoutException)),
-        before_sleep=before_sleep_log(logger, logging.WARNING),
-    )
-    def _get_cloud_id(self) -> str:
-        """Fetch and cache the Atlassian Cloud ID (required by ProForma Cloud API)."""
-        if self.cloud_id is not None:
-            return self.cloud_id
-
-        url = f"{self.base_url}/_edge/tenant_info"
-        logger.info("Fetching Atlassian Cloud ID", extra={"url": url})
-
-        response = self.session.get(
-            url, auth=self.auth, timeout=Timeout(None, connect=3.05, read=30.0)
-        )
-        check_retryable(response)
-        response.raise_for_status()
-
-        self.cloud_id = response.json()["cloudId"]
-        assert self.cloud_id is not None
-        logger.info("Atlassian Cloud ID cached successfully", extra={"cloud_id": self.cloud_id})
-        return self.cloud_id
-
     def get_answers(self, issue_id: str) -> dict[str, str]:
         """Return {label: answer_text} for all answered questions on the submitted ProForma form."""
-        try:
-            cloud_id = self._get_cloud_id()
-        except Exception as exc:
-            logger.warning("Could not fetch Atlassian Cloud ID for ProForma", exc_info=exc)
-            return {}
 
-        url = f"https://api.atlassian.com/jira/forms/cloud/{cloud_id}/issue/{issue_id}/form"
+        url = f"https://api.atlassian.com/jira/forms/cloud/{settings.jira_cloud_id}/issue/{issue_id}/form"
         logger.info(
             "Fetching ProForma forms list for issue", extra={"issue_id": issue_id, "url": url}
         )
@@ -74,7 +30,6 @@ class ProformaParser:
         try:
             response = self.session.get(
                 url,
-                auth=self.auth,
                 headers=self.headers,
                 timeout=Timeout(None, connect=3.05, read=30.0),
             )
@@ -103,7 +58,6 @@ class ProformaParser:
 
             detail_response = self.session.get(
                 form_detail_url,
-                auth=self.auth,
                 headers=self.headers,
                 timeout=Timeout(None, connect=3.05, read=15.0),
             )

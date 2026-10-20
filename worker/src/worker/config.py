@@ -1,5 +1,14 @@
-from pydantic import Field, computed_field
+from typing import Annotated, Literal
+
+from pydantic import AfterValidator, Field, computed_field
 from pydantic_settings import BaseSettings
+
+
+def _clean_url(v: str) -> str:
+    return v.rstrip("/")
+
+
+BaseUrl = Annotated[str, AfterValidator(_clean_url)]
 
 
 class Settings(BaseSettings):
@@ -38,9 +47,11 @@ class Settings(BaseSettings):
         default_factory=dict, alias="JIVE_DOCUMENTATION"
     )
 
-    jira_api_email: str = Field(alias="JIRA_API_EMAIL")
+    jira_auth_type: Literal["basic", "token"] = Field(alias="JIRA_AUTH_TYPE", default="basic")
+    jira_cloud_id: str = Field(alias="JIRA_CLOUD_ID")
+    jira_api_email: str = Field(alias="JIRA_API_EMAIL", default="")
     jira_api_token: str = Field(alias="JIRA_API_TOKEN")
-    jira_base_url: str = Field(alias="JIRA_BASE_URL")
+    jira_api_base_url: BaseUrl = Field(alias="JIRA_API_BASE_URL")
     retry_status_codes: set[int] = {429, 500, 502, 503, 504}
 
     secure_link_username: str = Field(alias="SECURE_LINK_USERNAME", default="")
