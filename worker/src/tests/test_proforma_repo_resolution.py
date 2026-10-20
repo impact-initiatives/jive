@@ -33,7 +33,7 @@ get_settings()
 @pytest.fixture(autouse=True)
 def mock_env_vars(monkeypatch):
     """Ensure env vars are set for JiraClient initialization."""
-    monkeypatch.setenv("JIRA_BASE_URL", "https://test.atlassian.net")
+    monkeypatch.setenv("JIRA_API_BASE_URL", "https://test.atlassian.net")
     monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
     monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
     monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
