@@ -58,10 +58,10 @@ class JiraClient:
             self.email: str = settings.jira_api_email
             self.auth: BasicAuth = BasicAuth(self.email, self.token)
             self.session.auth = self.auth
+            self.base_url = settings.jira_api_base_url
         else:
             self.headers["Authorization"] = f"Bearer {self.token}"
-
-        self.base_url: str = settings.jira_base_url.rstrip("/")
+            self.base_url = f"{settings.jira_api_base_url}/{settings.jira_cloud_id}"
 
         self.secure_link_user: str = settings.secure_link_username
         self.secure_link_pass: str = settings.secure_link_password

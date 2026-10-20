@@ -106,8 +106,7 @@ def test_get_proforma_answers(httpx2_mock):
         status_code=200,
     )
 
-    client = ProformaParser(Client(), base_url="https://mock")
-    client.cloud_id = "mock-cloud-id-12345"
+    client = ProformaParser(Client())
 
     answers = client.get_answers("issue-id-999")
 
@@ -189,7 +188,7 @@ def test_scrape_excel_url(httpx2_mock):
 def test_resolve_dataset_workflow(mock_download_excel, mock_scrape_url, mock_download_att):
     """Test unified fallback priority resolver strategy."""
     jira = JiraClient()
-    proforma = ProformaParser(jira.session, jira.base_url)
+    proforma = ProformaParser(jira.session)
     impact_repo = ImpactRepoClient()
     tmp_path = Path("/tmp/mock-dir")
 

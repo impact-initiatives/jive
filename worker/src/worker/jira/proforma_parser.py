@@ -1,5 +1,4 @@
 from httpx2 import Client, Timeout
-from httpx2._models import Headers
 
 from ..config import get_settings
 from ..jira.jira_client import check_retryable
@@ -11,15 +10,11 @@ settings = get_settings()
 
 
 class ProformaParser:
-    def __init__(self, session: Client, base_url: str):
+    def __init__(self, session: Client):
         self.session: Client = session
-        self.base_url: str = base_url
-        self.cloud_id: str | None = None
-
         self.dataset_type_label: str = settings.proforma_dataset_type_label
         self.repo_label: str = settings.proforma_repository_label
-
-        self.headers: Headers = self.session.headers | {
+        self.headers: dict[str, str] = {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
