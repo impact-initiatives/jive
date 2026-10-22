@@ -38,6 +38,6 @@ select = ["UP", "E", "F", "I", "B", "SIM"]
 asyncio_mode = "strict"
 
 [build-system]
-requires = ["uv_build>=0.13.1,<0.14"]
+requires = ["uv_build>=0.13.5,<0.14"]
 build-backend = "uv_build"
 
