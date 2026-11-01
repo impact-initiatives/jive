@@ -10,8 +10,8 @@ dependencies = [
     "pydantic>=2.13.4",
     "tenacity>=9.1.4",
     "xlsxwriter>=3.2.9",
-    "argus @ git+https://github.com/impact-initiatives/argus.git",
     "httpx2>=2.13.1",
+    "impact-initiatives-argus>=2026110100",
 ]
 
 [dependency-groups]

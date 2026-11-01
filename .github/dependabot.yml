@@ -15,8 +15,8 @@ updates:
       time: "00:00"  
     cooldown:
       default-days: 7
-    # ignore:
-    #   - dependency-name: "argus"
+      exclude: 
+        - "impact-initiatives-argus"
     groups:
       all-dependencies:
         patterns: ["*"]

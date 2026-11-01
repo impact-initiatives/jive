@@ -34,19 +34,6 @@ wheels = [
 ]
 
 [[package]]
-name = "argus"
-version = "2026.6.21.0"
-source = { git = "https://github.com/impact-initiatives/argus.git#70aa1809ee81d0d5d46af74709d9cb06862b6b51" }
-dependencies = [
-    { name = "fastexcel" },
-    { name = "httpx2" },
-    { name = "polars" },
-    { name = "pydantic-settings" },
-    { name = "pyyaml" },
-    { name = "rapidfuzz" },
-]
-
-[[package]]
 name = "asttokens"
 version = "3.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -511,6 +498,23 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f5/08/8eea9d4b8302028f3abb2c0813953f7aec26d33b7a8960ed760e65ff29fa/idna-3.20.tar.gz", hash = "sha256:a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44", size = 216463, upload-time = "2026-09-17T14:11:04.752Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl", hash = "sha256:ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c", size = 69583, upload-time = "2026-09-17T14:11:03.168Z" },
+]
+
+[[package]]
+name = "impact-initiatives-argus"
+version = "2026110100"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastexcel" },
+    { name = "httpx2" },
+    { name = "polars" },
+    { name = "pydantic-settings" },
+    { name = "pyyaml" },
+    { name = "rapidfuzz" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5a/ae/6e44ecf374f1fbc30e0aeab68e238db88e8487d68d720ff1248fd42fbf19/impact_initiatives_argus-2026110100.tar.gz", hash = "sha256:09f6ea1a8d2ce937c4736afe2b8307fbf603d43b84ab535ca1ca28c8da27a5b4", size = 90841, upload-time = "2026-11-01T08:13:33.022Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/97/5d0aa344138a44ae3212be5e88278457987a39dc8b59db3439e9e4aa873e/impact_initiatives_argus-2026110100-py3-none-any.whl", hash = "sha256:2f346a0587934c9c573ab72751fd848944a5b5bc35d4a0b9a0aa9ce7d2fe6967", size = 120720, upload-time = "2026-11-01T08:13:31.295Z" },
 ]
 
 [[package]]
@@ -1314,9 +1318,9 @@ name = "worker"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "argus" },
     { name = "azure-storage-queue" },
     { name = "httpx2" },
+    { name = "impact-initiatives-argus" },
     { name = "polars" },
     { name = "pydantic" },
     { name = "tenacity" },
@@ -1335,9 +1339,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "argus", git = "https://github.com/impact-initiatives/argus.git" },
     { name = "azure-storage-queue", specifier = ">=12.17.0" },
     { name = "httpx2", specifier = ">=2.13.1" },
+    { name = "impact-initiatives-argus", specifier = ">=2026110100" },
     { name = "polars", specifier = ">=1.44.2" },
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "tenacity", specifier = ">=9.1.4" },
