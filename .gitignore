@@ -26,6 +26,7 @@ data/
 .~lock*
 *.env
 *.xlsx
+!**/tests/**/*.xlsx
 *.csv
 *.json
 .DS_Store
