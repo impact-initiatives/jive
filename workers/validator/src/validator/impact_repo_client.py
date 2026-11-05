@@ -13,11 +13,11 @@ from tenacity import (
     wait_exponential,
 )
 
-from .config import get_settings
+from validator.config import get_settings
+
 from .logger import get_logger
 
 logger = get_logger("jive.impact_repo_client")
-settings = get_settings()
 
 
 def _sanitize_url(url: str) -> str:
@@ -28,6 +28,7 @@ def _sanitize_url(url: str) -> str:
 
 class ImpactRepoClient:
     def __init__(self):
+        self.settings = get_settings()
         self.session: None | Client = None
         self.session_created_at: None | float = None
 
@@ -45,18 +46,18 @@ class ImpactRepoClient:
         """
         if self.session is not None:
             elapsed = time.monotonic() - (self.session_created_at or 0)
-            if elapsed < settings.repository_session_ttl:
+            if elapsed < self.settings.repository_session_ttl:
                 return self.session
             logger.info("Repository session expired after %ds — re-authenticating", int(elapsed))
             self.session = None
 
-        if not settings.repository_username or not settings.repository_password:
+        if not self.settings.repository_username or not self.settings.repository_password:
             raise OSError("REPO_USERNAME and REPO_PASSWORD environment variables must be set")
 
         base_url = "https://repository.impact-initiatives.org"
         logger.info(
             "Creating authenticated session for IMPACT Repository",
-            extra={"username": settings.repository_username.split("@")[0]},
+            extra={"username": self.settings.repository_username.split("@")[0]},
         )
 
         session: Client = Client()
@@ -81,8 +82,8 @@ class ImpactRepoClient:
         response = session.post(
             f"{base_url}/wp-login.php",
             data={
-                "log": settings.repository_username,
-                "pwd": settings.repository_password,
+                "log": self.settings.repository_username,
+                "pwd": self.settings.repository_password,
                 "wp-submit": "Log In",
                 "redirect_to": f"{base_url}/resources/",
                 "testcookie": "1",
@@ -160,7 +161,7 @@ class ImpactRepoClient:
         session = self.get_authenticated_session()
         parsed_url = urllib.parse.urlparse(url)
 
-        if parsed_url.scheme != "https" or parsed_url.netloc not in settings.allowed_domains:
+        if parsed_url.scheme != "https" or parsed_url.netloc not in self.settings.allowed_domains:
             logger.error(
                 "SSRF Protection: URL domain not in allowed list",
                 extra={"url": _sanitize_url(url), "domain": parsed_url.netloc},
@@ -171,7 +172,7 @@ class ImpactRepoClient:
             "Downloading Excel file from IMPACT Repository",
             extra={"url": _sanitize_url(url), "output": str(output_path)},
         )
-        max_bytes = settings.max_attachment_size * 1024 * 1024
+        max_bytes = self.settings.max_attachment_size * 1024 * 1024
         response = session.get(
             url, timeout=Timeout(None, connect=3.05, read=300.0), follow_redirects=True
         )
@@ -186,7 +187,7 @@ class ImpactRepoClient:
                         "Download exceeded maximum allowed size",
                         extra={
                             "url": _sanitize_url(url),
-                            "max_mb": settings.max_attachment_size,
+                            "max_mb": self.settings.max_attachment_size,
                         },
                     )
                     response.close()

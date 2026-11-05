@@ -1,19 +1,20 @@
 from httpx2 import Client, Timeout
 
-from ..config import get_settings
+from validator.config import get_settings
+
 from ..logger import get_logger
 from .jira_client import check_retryable
 from .models import Form, FormDocument
 
 logger = get_logger("jive.proforma_parser")
-settings = get_settings()
 
 
 class ProformaParser:
     def __init__(self, session: Client):
+        self.settings = get_settings()
         self.session: Client = session
-        self.dataset_type_label: str = settings.proforma_dataset_type_label
-        self.repo_label: str = settings.proforma_repository_label
+        self.dataset_type_label: str = self.settings.proforma_dataset_type_label
+        self.repo_label: str = self.settings.proforma_repository_label
         self.headers: dict[str, str] = {
             "Accept": "application/json",
             "Content-Type": "application/json",
@@ -22,7 +23,7 @@ class ProformaParser:
     def get_answers(self, issue_id: str) -> dict[str, str]:
         """Return {label: answer_text} for all answered questions on the submitted ProForma form."""
 
-        url = f"https://api.atlassian.com/jira/forms/cloud/{settings.jira_cloud_id}/issue/{issue_id}/form"
+        url = f"https://api.atlassian.com/jira/forms/cloud/{self.settings.jira_cloud_id}/issue/{issue_id}/form"
         logger.info(
             "Fetching ProForma forms list for issue",
             extra={"issue_id": issue_id, "url": url},

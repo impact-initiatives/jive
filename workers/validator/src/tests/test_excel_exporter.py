@@ -1,9 +1,5 @@
 import polars as pl
 
-from .helpers import set_default_env_vars
-
-set_default_env_vars()
-
 from ..validator.excel_exporter import export_response_to_excel  # noqa: E402
 from ..validator.models import (  # noqa: E402
     MetadataModel,

@@ -1,23 +1,6 @@
-import os
 import uuid
 
 from ..validator.jira.models import AuthorInfo, AvatarUrls, IssueAttachment
-
-
-def set_default_env_vars():
-    os.environ.setdefault("JIRA_API_EMAIL", "test@example.com")
-    os.environ.setdefault("JIRA_API_TOKEN", "test-token")
-    os.environ.setdefault("JIRA_CLOUD_ID", "abc-123")
-    os.environ.setdefault("JIRA_API_BASE_URL", "https://test.atlassian.net")
-    os.environ.setdefault("SECURE_LINK_USERNAME", "secure-user")
-    os.environ.setdefault("SECURE_LINK_PASSWORD", "secure-pass")
-    os.environ.setdefault("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
-    os.environ.setdefault("JIVE_API_KEY", "secure-pass")
-    os.environ.setdefault("JIVE_DOCUMENTATION", '{"jive":{"doco":"url"}}')
-
-    os.environ.setdefault("AZURE_STORAGE_CONNECTION_STRING", "secure-pass")
-    os.environ["REPO_USERNAME"] = "mock-wp-username@example.com"
-    os.environ["REPO_PASSWORD"] = "mock-wp-password"
 
 
 def make_issue_response(

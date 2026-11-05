@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -6,47 +5,21 @@ from unittest.mock import MagicMock, patch
 import pytest
 from httpx2 import Client
 
-from validator.config import get_settings, reload_settings
-
-from .helpers import set_default_env_vars
-
-reload_settings()
-set_default_env_vars()
-
-
-project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(project_root))
-sys.path.append(str(project_root.parent / "argus"))
-
-# Set mock env vars
-os.environ["AZURE_STORAGE_CONNECTION_STRING"] = (
-    "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net"
-)
-os.environ["JIRA_API_EMAIL"] = "mock-jira-email@example.com"
-os.environ["JIRA_API_TOKEN"] = "mock-jira-token"
-os.environ["JIRA_CLOUD_ID"] = "mock-cloud-id-12345"
-os.environ["REPO_USERNAME"] = "mock-wp-username@example.com"
-os.environ["REPO_PASSWORD"] = "mock-wp-password"
-get_settings()
-
-
-@pytest.fixture(autouse=True)
-def mock_env_vars(monkeypatch):
-    """Ensure env vars are set for JiraClient initialization."""
-    monkeypatch.setenv("JIRA_API_BASE_URL", "https://test.atlassian.net")
-    monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
-    monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
-    monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
-    monkeypatch.setenv("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
-
-
 from ..validator.impact_repo_client import ImpactRepoClient  # noqa: E402
 from ..validator.jira.jira_client import JiraClient  # noqa: E402
 from ..validator.jira.proforma_parser import ProformaParser  # noqa: E402
 from ..validator.worker_utils import resolve_dataset  # noqa: E402
 
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
 
-def test_get_proforma_answers(httpx2_mock):
+
+@pytest.fixture
+def jira_client():
+    return JiraClient()
+
+
+def test_get_proforma_answers(httpx2_mock, jira_client: JiraClient):
     """Test parsing of complex ProForma answers JSON."""
 
     httpx2_mock.add_response(
@@ -105,8 +78,7 @@ def test_get_proforma_answers(httpx2_mock):
         },
         status_code=200,
     )
-
-    client = ProformaParser(Client())
+    client = ProformaParser(jira_client.session)
 
     answers = client.get_answers("issue-id-999")
 

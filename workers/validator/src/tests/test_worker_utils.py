@@ -7,10 +7,6 @@ import pytest
 
 from validator.config import get_settings, reload_settings
 
-from .helpers import set_default_env_vars
-
-set_default_env_vars()
-
 from ..validator.models import (  # noqa: E402
     JiraSubmissionPayload,
     MetadataModel,
@@ -283,7 +279,6 @@ def test_publish_results_large_file(
     report_file = tmp_path / "report.xlsx"
 
     reload_settings()
-    set_default_env_vars()
     os.environ["JIVE_MAX_ATTACHMENT_MB"] = "0"
     mock_jira_client.settings = get_settings()
 

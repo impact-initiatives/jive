@@ -5,9 +5,6 @@ from unittest.mock import MagicMock, patch
 
 from ..validator.main import process_message
 from ..validator.models import JiraSubmissionPayload
-from .helpers import set_default_env_vars
-
-set_default_env_vars()
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))

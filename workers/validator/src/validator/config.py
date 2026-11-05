@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, Field, computed_field
@@ -18,14 +19,14 @@ class Settings(BaseSettings):
     #     extra="ignore",
     # )
 
-    queue_connection_string: str = Field(alias="AZURE_STORAGE_CONNECTION_STRING")
+    queue_connection_string: str = Field(
+        alias="AZURE_STORAGE_CONNECTION_STRING", default="CHANGE_THIS"
+    )
     queue_name: str = Field(
         default="jive-validation-queue",
         alias="JIVE_QUEUE_NAME",
     )
-    api_key: str = Field(
-        alias="JIVE_API_KEY",
-    )
+    api_key: str = Field(alias="JIVE_API_KEY", default="CHANGE_THIS")
 
     max_attachment_size: int = Field(alias="JIVE_MAX_ATTACHMENT_MB", default=250)
     max_retries: int = Field(alias="JIVE_MAX_RETRIES", default=3)
@@ -48,10 +49,10 @@ class Settings(BaseSettings):
     )
 
     jira_auth_type: Literal["basic", "token"] = Field(alias="JIRA_AUTH_TYPE", default="basic")
-    jira_cloud_id: str = Field(alias="JIRA_CLOUD_ID")
+    jira_cloud_id: str = Field(alias="JIRA_CLOUD_ID", default="CHANGE_THIS")
     jira_api_email: str = Field(alias="JIRA_API_EMAIL", default="")
-    jira_api_token: str = Field(alias="JIRA_API_TOKEN")
-    jira_api_base_url: BaseUrl = Field(alias="JIRA_API_BASE_URL")
+    jira_api_token: str = Field(alias="JIRA_API_TOKEN", default="CHANGE_THIS")
+    jira_api_base_url: BaseUrl = Field(alias="JIRA_API_BASE_URL", default="CHANGE_THIS")
     retry_status_codes: set[int] = {429, 500, 502, 503, 504}
 
     secure_link_username: str = Field(alias="SECURE_LINK_USERNAME", default="")
@@ -68,6 +69,7 @@ class Settings(BaseSettings):
         except Exception:
             return "unknown"
 
+    @property
     def parsed_allowed_domains(self) -> frozenset[str]:
         """Return domains as frozenset."""
         return frozenset(filter(None, self.allowed_domains.split(",")))
@@ -76,16 +78,12 @@ class Settings(BaseSettings):
 _settings_instance: Settings | None = None
 
 
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Lazy load settings on first access."""
-    global _settings_instance
-    if _settings_instance is None:
-        _settings_instance = Settings()
-        _settings_instance.allowed_domains = _settings_instance.parsed_allowed_domains()
-    return _settings_instance
+    """Load settings once per process; subsequent calls return the same object."""
+    return Settings()
 
 
-def reload_settings():
+def reload_settings() -> None:
     """Reset cached settings (for testing)."""
-    global _settings_instance
-    _settings_instance = None
+    get_settings.cache_clear()

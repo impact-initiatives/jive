@@ -9,9 +9,7 @@ from tenacity import RetryError
 
 from validator.config import get_settings, reload_settings
 
-from .helpers import make_attachment, make_issue_response, set_default_env_vars
-
-set_default_env_vars()
+from .helpers import make_attachment, make_issue_response
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -26,17 +24,17 @@ def httpx2_mock_relaxed(httpx2_mock):
     return httpx2_mock
 
 
-@pytest.fixture(autouse=True)
-def mock_env_vars(monkeypatch):
-    """Ensure env vars are set for JiraClient initialization."""
-    monkeypatch.setenv("JIRA_API_EMAIL", "test@example.com")
-    monkeypatch.setenv("JIRA_API_TOKEN", "test-token")
-    monkeypatch.setenv("JIRA_AUTH_TYPE", "basic")
-    monkeypatch.setenv("JIRA_API_BASE_URL", "https://test.atlassian.net")
-    monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
-    monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
-    monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
-    monkeypatch.setenv("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
+# @pytest.fixture(autouse=True)
+# def mock_env_vars(monkeypatch):
+#     """Ensure env vars are set for JiraClient initialization."""
+#     monkeypatch.setenv("JIRA_API_EMAIL", "test@example.com")
+#     monkeypatch.setenv("JIRA_API_TOKEN", "test-token")
+#     monkeypatch.setenv("JIRA_AUTH_TYPE", "basic")
+#     monkeypatch.setenv("JIRA_API_BASE_URL", "https://test.atlassian.net")
+#     monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
+#     monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
+#     monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
+#     monkeypatch.setenv("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
 
 
 @pytest.fixture(autouse=True)
@@ -166,7 +164,6 @@ def test_download_from_secure_link_ssrf_blocked_domain(client: JiraClient, tmp_p
 # now handled by pydantic settings
 def test_download_from_secure_link_ssrf_empty_allowlist(client: JiraClient, tmp_path, monkeypatch):
     reload_settings()
-    set_default_env_vars()
     os.environ.setdefault("ALLOWED_DOMAINS", "")
     get_settings()
 
@@ -331,7 +328,6 @@ def test_no_retry_on_400(client: JiraClient, httpx2_mock):
 def test_jira_client_download_memory_limit(client: JiraClient, tmp_path, monkeypatch):
     """Test that download aborts if the file exceeds the maximum allowed size."""
     reload_settings()
-    set_default_env_vars()
     os.environ["JIVE_MAX_ATTACHMENT_MB"] = "0"
     get_settings()
     from src.validator.jira import jira_client

@@ -25,7 +25,6 @@ from .models import (
 )
 
 logger = get_logger("jive.jira_client")
-settings = get_settings()
 
 
 def _sanitize_url(url: str) -> str:
@@ -42,29 +41,30 @@ class JiraAPIError(Exception):
 
 def check_retryable(response: Response):
     """Raises JiraAPIError if the response has a retryable status code."""
-    if response.status_code in settings.retry_status_codes:
+    if response.status_code in get_settings().retry_status_codes:
         raise JiraAPIError(f"Jira returned {response.status_code}: {response.text[:200]}")
 
 
 class JiraClient:
     def __init__(self):
+        self.settings = get_settings()
         self.session: Client = Client()
-        self.token: str = settings.jira_api_token
+        self.token: str = self.settings.jira_api_token
         self.headers: dict[str, str] = {
             "Accept": "application/json",
         }
 
-        if settings.jira_auth_type == "basic":
-            self.email: str = settings.jira_api_email
+        if self.settings.jira_auth_type == "basic":
+            self.email: str = self.settings.jira_api_email
             self.auth: BasicAuth = BasicAuth(self.email, self.token)
             self.session.auth = self.auth
-            self.base_url = settings.jira_api_base_url
+            self.base_url = self.settings.jira_api_base_url
         else:
             self.headers["Authorization"] = f"Bearer {self.token}"
-            self.base_url = f"{settings.jira_api_base_url}/{settings.jira_cloud_id}"
+            self.base_url = f"{self.settings.jira_api_base_url}/{self.settings.jira_cloud_id}"
 
-        self.secure_link_user: str = settings.secure_link_username
-        self.secure_link_pass: str = settings.secure_link_password
+        self.secure_link_user: str = self.settings.secure_link_username
+        self.secure_link_pass: str = self.settings.secure_link_password
         self.secure_link_auth: tuple[str, str] | None = (
             (self.secure_link_user, self.secure_link_pass)
             if self.secure_link_user and self.secure_link_pass
@@ -479,7 +479,7 @@ class JiraClient:
         check_retryable(response)
 
         if response.status_code == 200:
-            max_bytes = settings.max_attachment_size * 1024 * 1024
+            max_bytes = self.settings.max_attachment_size * 1024 * 1024
             downloaded_bytes = 0
             try:
                 exceeded_size = False
@@ -496,7 +496,7 @@ class JiraClient:
                         "Download exceeded maximum allowed size",
                         extra={
                             "url": _sanitize_url(url),
-                            "max_mb": settings.max_attachment_size,
+                            "max_mb": self.settings.max_attachment_size,
                         },
                     )
                     response.close()
@@ -530,13 +530,13 @@ class JiraClient:
 
         parsed_url = urllib.parse.urlparse(url)
 
-        if parsed_url.scheme != "https" or parsed_url.netloc not in settings.allowed_domains:
+        if parsed_url.scheme != "https" or parsed_url.netloc not in self.settings.allowed_domains:
             logger.error(
                 "SSRF Protection: URL domain not in allowed list",
                 extra={
                     "url": _sanitize_url(url),
                     "domain": parsed_url.netloc,
-                    "allowed": list(settings.allowed_domains),
+                    "allowed": list(self.settings.allowed_domains),
                 },
             )
             return None

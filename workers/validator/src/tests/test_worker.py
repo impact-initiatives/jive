@@ -6,10 +6,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from .helpers import set_default_env_vars
-
-set_default_env_vars()
-
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.append(str(project_root.parent / "argus"))
