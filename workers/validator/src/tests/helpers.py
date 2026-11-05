@@ -16,6 +16,8 @@ def set_default_env_vars():
     os.environ.setdefault("JIVE_DOCUMENTATION", '{"jive":{"doco":"url"}}')
 
     os.environ.setdefault("AZURE_STORAGE_CONNECTION_STRING", "secure-pass")
+    os.environ["REPO_USERNAME"] = "mock-wp-username@example.com"
+    os.environ["REPO_PASSWORD"] = "mock-wp-password"
 
 
 def make_issue_response(
