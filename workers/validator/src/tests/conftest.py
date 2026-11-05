@@ -1,4 +1,3 @@
-
 import pytest
 
 from validator.config import reload_settings
