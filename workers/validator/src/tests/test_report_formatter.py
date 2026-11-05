@@ -143,10 +143,7 @@ class TestFormatCommentAdf:
         adf = format_comment_adf("RQA-123", response)
 
         full_text = self._get_all_text(adf)
-        assert (
-            "2 core quality checks passed" in full_text
-            or "2 checks passed" in full_text
-        )
+        assert "2 core quality checks passed" in full_text or "2 checks passed" in full_text
         assert "DuplicateSheetMatches" in full_text
         assert "UniqueColumn" in full_text
 

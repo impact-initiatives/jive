@@ -14,20 +14,31 @@ To run the process a programme type and dataset type must be specidifed. These a
 
 When Argus is run, the latest release from the schemas repository is downloaded by default.
 
-## Add To An Existing Project
-Install via a package manager like [uv](https://github.com/astral-sh/uv)
+## Setup 
+1. Clone the repository
+2. Install dependencies with [uv](https://github.com/astral-sh/uv):
 ```bash
-uv add impact-initiatives-argus
+   uv sync
 ```
-or pip
-```bash
-pip install impact-initiatives-argus
-```
-Download a dataset, if required. Some publicly available options include:
+3. Download a dataset, if required. Some publicly available options include:
 - [jmmi](https://repository.impact-initiatives.org/document/impact/031f3c9b/REACH_SSD_Dataset-Analysis_JMMI_March-2026.xlsx)
 - [other](https://repository.impact-initiatives.org/document/impact/d77de3de/KEN_2401_MSNA_data_camps.xlsx)
 
-It is easier to use the orchestrator directly to process a file:
+4. Run the process
+```bash
+uv run main.py --programme-type jmmi --output_type dataset "path/to/excel/file.xlsx"
+```
+or
+```bash
+uv run main.py --programme-type other --output_type dataset "path/to/excel/file.xlsx"
+```
+
+### Add to an existing project
+If adding to an existing project argus will need to be cloned and installed using pip.
+```bash
+uv pip install -e ../../argus # set to relevant directory
+```
+Once installed easier to use the orchestrator directly to process a file:
 ```python
 from argus.orchestrator.validation_pipeline import ValidationPipeline
 
@@ -43,21 +54,6 @@ except Exception as e:
     print(e)
 
 # process results
-```
-## Setup Locally
-1. Clone the repository
-2. Install dependencies with [uv](https://github.com/astral-sh/uv):
-```bash
-   uv sync
-```
-
-4. Run the process
-```bash
-uv run main.py --programme-type jmmi --output_type dataset "path/to/excel/file.xlsx"
-```
-or
-```bash
-uv run main.py --programme-type other --output_type dataset "path/to/excel/file.xlsx"
 ```
 ## Validation results 
 Results and errors will be returned in JSON format
@@ -119,7 +115,7 @@ See [translations](locales/README.md) for details on managing/expanding these.
 ## Contributing and Reporting Issues
 If you are interested in expanding the list of supported languages for the validation messages get in touch. 
 
-If you encounter any bugs report these on the [project issues page](https://github.com/impact-initiatives/argus/issues).
+If you encounter any bugs report these on the [project issues page](https://github.com/impact-initiatives/jive/issues).
 
 ## Related Projects
 - [Argus schemas](https://github.com/impact-initiatives/argus_schemas): Schemas supported by Argus.

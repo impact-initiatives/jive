@@ -11,9 +11,7 @@ def set_default_env_vars():
     os.environ.setdefault("JIRA_API_BASE_URL", "https://test.atlassian.net")
     os.environ.setdefault("SECURE_LINK_USERNAME", "secure-user")
     os.environ.setdefault("SECURE_LINK_PASSWORD", "secure-pass")
-    os.environ.setdefault(
-        "ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net"
-    )
+    os.environ.setdefault("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
     os.environ.setdefault("JIVE_API_KEY", "secure-pass")
     os.environ.setdefault("JIVE_DOCUMENTATION", '{"jive":{"doco":"url"}}')
 

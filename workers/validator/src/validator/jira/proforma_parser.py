@@ -1,8 +1,8 @@
 from httpx2 import Client, Timeout
 
 from ..config import get_settings
-from .jira_client import check_retryable
 from ..logger import get_logger
+from .jira_client import check_retryable
 from .models import Form, FormDocument
 
 logger = get_logger("jive.proforma_parser")

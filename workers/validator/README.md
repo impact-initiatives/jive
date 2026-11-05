@@ -7,7 +7,7 @@ A background python worker that asynchronously pulls jobs from the queue.
 ├── Dockerfile.local                
 ├── src
 │   ├── tests
-│   └── worker
+│   └── validator
 │       ├── config.py
 │       ├── excel_exporter.py       Generates multi-sheet Excel validation reports using Polars
 │       ├── impact_repo_client.py   
@@ -28,16 +28,12 @@ A background python worker that asynchronously pulls jobs from the queue.
 * Python 3.12+
 * [uv](https://docs.astral.sh/uv/) package manager
 * [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) (Local Azure Storage Emulator)
-* [Argus](https://github.com/impact-initiatives/argus) validation engine.
 
 ### Project Environment Setup
 To create the python environment run:
 ```bash
 uv sync  --all-extras
-uv pip install -e ../../argus
 ```
-
-Note: `uv pip install...` installs the local version of argus and assumes its stored in the same parent folder as `Jive`. This must be maintained here as including it as a uv source complicates other ci/cd processes like docker image builds and dependabot.
 
 ### Environment Variables
 For local deployments using docker a `.env` file is required. Create a `.env` file in the api project root. `.env.example` contains the required environment variables. Change any value of `CHANGE_THIS` to the required value.
@@ -58,7 +54,7 @@ To run this service use:
 # if the virtual environment is not active for worker
 source .venv/bin/activate
 ##########
-uv run -m worker.main
+uv run -m validator.main
 ```
 
 ### Running Tests

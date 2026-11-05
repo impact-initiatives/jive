@@ -15,7 +15,7 @@ jobs:
       projects: ${{ steps.filter.outputs.changes }}
     steps:
       - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -48,7 +48,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
       - name: Check formatting
         run: uvx ruff format . --check
       - name: Check linting

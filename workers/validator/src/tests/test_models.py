@@ -12,9 +12,7 @@ def mock_env_vars(monkeypatch):
     monkeypatch.setenv("JIVE_MAX_ATTACHMENT_MB", "250")
     monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
     monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
-    monkeypatch.setenv(
-        "ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net"
-    )
+    monkeypatch.setenv("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
 
 
 class TestJiraSubmissionPayload:
