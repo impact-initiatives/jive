@@ -1,14 +1,33 @@
+import os
+
 import pytest
 
 from validator.config import reload_settings
+
+# to prevent module errors about to values not being set leading to test import errors
+os.environ.setdefault("JIRA_API_EMAIL", "test@example.com")
+os.environ.setdefault("JIRA_API_TOKEN", "test-token")
+os.environ.setdefault("JIRA_CLOUD_ID", "mock-cloud-id-12345")
+os.environ.setdefault("JIRA_API_BASE_URL", "https://test.atlassian.net")
+os.environ.setdefault("JIRA_AUTH_TYPE", "basic")
+os.environ.setdefault("SECURE_LINK_USERNAME", "secure-user")
+os.environ.setdefault("SECURE_LINK_PASSWORD", "secure-pass")
+os.environ.setdefault("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
+os.environ.setdefault("JIVE_API_KEY", "secure-pass")
+os.environ.setdefault("JIVE_DOCUMENTATION", '{"jive":{"doco":"url"}}')
+
+os.environ.setdefault(
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "DefaultEndpointsProtocol=https;AccountName=mock;AccountKey=mock;EndpointSuffix=core.windows.net",
+)
+os.environ.setdefault("REPO_USERNAME", "mock-wp-username@example.com")
+os.environ.setdefault("REPO_PASSWORD", "mock-wp-password")
 
 
 @pytest.fixture(autouse=True)
 def set_default_env_vars(monkeypatch):
 
     reload_settings()
-
-    # print(f"BEFORE FIXTURE: JIRA_CLOUD_ID={os.environ.get('JIRA_CLOUD_ID')}")
 
     monkeypatch.setenv("JIRA_API_EMAIL", "test@example.com")
     monkeypatch.setenv("JIRA_API_TOKEN", "test-token")

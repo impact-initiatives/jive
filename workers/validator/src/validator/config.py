@@ -19,14 +19,12 @@ class Settings(BaseSettings):
     #     extra="ignore",
     # )
 
-    queue_connection_string: str = Field(
-        alias="AZURE_STORAGE_CONNECTION_STRING", default="CHANGE_THIS"
-    )
+    queue_connection_string: str = Field(alias="AZURE_STORAGE_CONNECTION_STRING")
     queue_name: str = Field(
         default="jive-validation-queue",
         alias="JIVE_QUEUE_NAME",
     )
-    api_key: str = Field(alias="JIVE_API_KEY", default="CHANGE_THIS")
+    api_key: str = Field(alias="JIVE_API_KEY")
 
     max_attachment_size: int = Field(alias="JIVE_MAX_ATTACHMENT_MB", default=250)
     max_retries: int = Field(alias="JIVE_MAX_RETRIES", default=3)
@@ -49,10 +47,10 @@ class Settings(BaseSettings):
     )
 
     jira_auth_type: Literal["basic", "token"] = Field(alias="JIRA_AUTH_TYPE", default="basic")
-    jira_cloud_id: str = Field(alias="JIRA_CLOUD_ID", default="CHANGE_THIS")
+    jira_cloud_id: str = Field(alias="JIRA_CLOUD_ID")
     jira_api_email: str = Field(alias="JIRA_API_EMAIL", default="")
-    jira_api_token: str = Field(alias="JIRA_API_TOKEN", default="CHANGE_THIS")
-    jira_api_base_url: BaseUrl = Field(alias="JIRA_API_BASE_URL", default="CHANGE_THIS")
+    jira_api_token: str = Field(alias="JIRA_API_TOKEN")
+    jira_api_base_url: BaseUrl = Field(alias="JIRA_API_BASE_URL")
     retry_status_codes: set[int] = {429, 500, 502, 503, 504}
 
     secure_link_username: str = Field(alias="SECURE_LINK_USERNAME", default="")
@@ -73,9 +71,6 @@ class Settings(BaseSettings):
     def parsed_allowed_domains(self) -> frozenset[str]:
         """Return domains as frozenset."""
         return frozenset(filter(None, self.allowed_domains.split(",")))
-
-
-_settings_instance: Settings | None = None
 
 
 @lru_cache(maxsize=1)
