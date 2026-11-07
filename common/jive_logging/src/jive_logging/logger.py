@@ -70,11 +70,7 @@ _config: LoggingConfig | None = None
 
 
 def configure(config: LoggingConfig) -> LoggingConfig:
-    """Apply process-wide logging config. Only the first caller wins.
-
-    Intended to be invoked by the owning application once, before
-    importing anything that creates loggers.
-    """
+    """Apply process-wide logging config."""
     global _config
     _config = _config or config
     for name, level in _config.third_party_levels.items():

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from fastexcel import CalamineCellError
+from jive_logging.logger import get_logger
 
 from ..config import settings
 from ..loaders.base import DataSheetMap
@@ -14,7 +15,6 @@ from ..models.base_dataset_schemas import BaseDatasetSchema
 from ..models.dynamic_defined_schema import DynamicDefinedDataset
 from ..models.dynamic_schema import DynamicDataset
 from ..models.resolver import find_dataset_files
-from ..utils.logging import get_logger
 from ..utils.yaml_loader import download_config
 from ..validators.base import BaseValidator, SeverityLevel, ValidationResult
 
@@ -87,7 +87,7 @@ class ValidationPipeline:
         token = i18n.set_locale(locale)
         programme_type = programme_type.lower()
         output_type = output_type.lower()
-        logger.info("Running the pipeline.", extra={"file": filepath.name})
+        logger.info("Running the validation pipeline.", extra={"file": filepath.name})
         results = self._run(
             filepath=filepath,
             programme_type=programme_type,

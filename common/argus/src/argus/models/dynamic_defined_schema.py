@@ -1,8 +1,9 @@
 from pathlib import Path, PosixPath
 from typing import override
 
+from jive_logging.logger import get_logger
+
 from ..models.base_dataset import BaseDataset
-from ..utils.logging import get_logger
 from ..utils.yaml_loader import load_file
 from ..validators.base import BaseValidator, SortedSheets, ValidationResult
 
