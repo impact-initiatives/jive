@@ -393,7 +393,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "httpx2", specifier = ">=2.16.0" },
-    { name = "jive-logging", directory = "../jive_logging" },
+    { name = "jive-logging", editable = "../jive_logging" },
     { name = "pydantic", specifier = ">=2.14.3" },
     { name = "pydantic-settings", specifier = ">=2.16.2" },
     { name = "tenacity", specifier = ">=9.2.1" },
@@ -412,7 +412,12 @@ dev = [
 [[package]]
 name = "jive-logging"
 version = "0.1.0"
-source = { directory = "../jive_logging" }
+source = { editable = "../jive_logging" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.17.2" }]
 
 [[package]]
 name = "jupyter-client"

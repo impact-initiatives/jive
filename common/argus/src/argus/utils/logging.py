@@ -1,8 +1,7 @@
 import logging
 
-from jive_logging.logger import get_logger
+from jive_logging.logger import LoggingConfig, configure, get_logger
 
-for noisy in ["fastexcel"]:
-    logging.getLogger(noisy).setLevel(logging.ERROR)
+configure(LoggingConfig(third_party_levels={"fastexcel": logging.ERROR}))
 
 __all__ = ["get_logger"]

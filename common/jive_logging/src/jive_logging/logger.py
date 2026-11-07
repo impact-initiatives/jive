@@ -1,6 +1,7 @@
 import json
 import logging
 import sys
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
@@ -56,12 +57,33 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_entry, default=str)
 
 
+@dataclass
+class LoggingConfig:
+    log_file: str | None = None
+    level: int = logging.INFO
+    rotate_when: str = "midnight"
+    backup_count: int = 30
+    third_party_levels: dict[str, int] = field(default_factory=dict)
+
+
+_config: LoggingConfig | None = None
+
+
+def configure(config: LoggingConfig) -> LoggingConfig:
+    """Apply process-wide logging config. Only the first caller wins.
+
+    Intended to be invoked by the owning application once, before
+    importing anything that creates loggers.
+    """
+    global _config
+    _config = _config or config
+    for name, level in _config.third_party_levels.items():
+        logging.getLogger(name).setLevel(level)
+    return _config
+
+
 def get_logger(
     name: str,
-    log_file: str = "jive-workers.log",
-    level: str = logging.INFO,
-    rotate_when: str = "midnight",
-    backup_count: int = 30,
 ) -> logging.Logger:
     """Returns a JSON-formatted logger.
 
@@ -72,24 +94,27 @@ def get_logger(
         Configured logger instance.
     """
     logger = logging.getLogger(name)
+    config = _config or LoggingConfig()
 
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(JSONFormatter())
 
-        Path("./logs").mkdir(exist_ok=True)
+        if config.log_file is not None:
+            Path("./logs").mkdir(exist_ok=True)
 
-        file_handler = TimedRotatingFileHandler(
-            f"logs/{log_file}",
-            when=rotate_when,  # Rotate at midnight
-            interval=1,  # Every 1 day
-            backupCount=backup_count,  # Keep 30 days of old logs
-            encoding="utf-8",
-        )
-        file_handler.setFormatter(JSONFormatter())
+            file_handler = TimedRotatingFileHandler(
+                f"logs/{config.log_file}",
+                when=config.rotate_when,
+                interval=1,
+                backupCount=config.backup_count,
+                encoding="utf-8",
+            )
+            file_handler.setFormatter(JSONFormatter())
+            logger.addHandler(file_handler)
 
         logger.addHandler(handler)
-        logger.addHandler(file_handler)
-        logger.setLevel(level)
+
+        logger.setLevel(config.level)
 
     return logger

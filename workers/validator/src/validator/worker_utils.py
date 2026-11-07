@@ -5,10 +5,10 @@ from argus.orchestrator.validation_pipeline import ValidationPipeline
 from jira.jira_client import JiraClient
 from jira.models import IssueAttachment
 from jira.proforma_parser import ProformaParser
-from jive_logging.logger import get_logger
 
 from .config import get_settings
 from .impact_repo_client import ImpactRepoClient
+from .logging import get_logger
 from .models import JiraSubmissionPayload, PipelineResponse
 from .report_formatter import format_comment_adf
 

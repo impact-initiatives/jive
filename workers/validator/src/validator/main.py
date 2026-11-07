@@ -10,11 +10,11 @@ from azure.storage.queue import QueueClient, QueueMessage
 from jira.jira_client import JiraClient
 from jira.models import IssueAttachment
 from jira.proforma_parser import ProformaParser
-from jive_logging.logger import get_logger
 
 from .config import get_settings
 from .excel_exporter import export_response_to_excel
 from .impact_repo_client import ImpactRepoClient
+from .logging import get_logger
 from .models import JiraSubmissionPayload
 from .worker_utils import (
     check_idempotency,
@@ -24,7 +24,7 @@ from .worker_utils import (
     run_validation,
 )
 
-logger = get_logger("jive.workers.validator")
+logger = get_logger("jive.validator")
 settings = get_settings()
 POISON_QUEUE_NAME = f"{settings.queue_name}-poison"
 

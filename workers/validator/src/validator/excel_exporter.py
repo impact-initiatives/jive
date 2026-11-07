@@ -3,9 +3,9 @@ from typing import Any
 
 import polars as pl
 import xlsxwriter
-from jive_logging.logger import get_logger
 
 from .config import get_settings
+from .logging import get_logger
 from .models import PipelineResponse, ResultItemModel
 
 logger = get_logger("jive.validator.excel_exporter")
