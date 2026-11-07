@@ -25,6 +25,12 @@ jobs:
             common/argus:
               - 'common/argus/**/*.py'
               - 'common/argus/pyproject.toml'
+            common/jira:
+              - 'common/jira/**/*.py'
+              - 'common/jira/pyproject.toml'
+            common/jive_logging:
+              - 'common/jive_logging/**/*.py'
+              - 'common/jive_logging/pyproject.toml'
             workers/validator:
               - 'workers/validator/**/*.py'
               - 'workers/validator/pyproject.toml'

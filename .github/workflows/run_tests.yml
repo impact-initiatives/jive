@@ -25,9 +25,12 @@ jobs:
               - 'api/**'
             common/argus:
               - 'common/argus/**'
+            common/jira:
+              - 'common/jira/**'
             workers/validator:
               - 'workers/validator/**'
               - 'common/argus/**'
+              - 'common/jira/**'
 
   test:
     name: Tests (${{ matrix.project }})

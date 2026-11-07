@@ -40,6 +40,7 @@ source = { editable = "." }
 dependencies = [
     { name = "fastexcel" },
     { name = "httpx2" },
+    { name = "jive-logging" },
     { name = "polars" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
@@ -58,6 +59,7 @@ dev = [
 requires-dist = [
     { name = "fastexcel", specifier = ">=0.19.0" },
     { name = "httpx2", specifier = ">=2.16.0" },
+    { name = "jive-logging", editable = "../jive_logging" },
     { name = "polars", specifier = ">=1.44.2" },
     { name = "pydantic-settings", specifier = ">=2.16.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },
@@ -416,6 +418,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/a3/a4/4692ecd7fa700ac10
 wheels = [
     { url = "https://files.pythonhosted.org/packages/be/c7/71eb0d51cdcbb63b857c931aa4e9218b078b5d9f8ecd383b234f28fe7b0f/jedi-0.20.1-py2.py3-none-any.whl", hash = "sha256:0fb16d86c4a4c73c37ba518c77419975e30fcc620658a8d14fbb5720cdd34142", size = 4885980, upload-time = "2026-10-12T17:42:21.585Z" },
 ]
+
+[[package]]
+name = "jive-logging"
+version = "0.1.0"
+source = { editable = "../jive_logging" }
 
 [[package]]
 name = "jupyter-client"

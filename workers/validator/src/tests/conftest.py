@@ -46,14 +46,3 @@ def set_default_env_vars(monkeypatch):
     )
     monkeypatch.setenv("REPO_USERNAME", "mock-wp-username@example.com")
     monkeypatch.setenv("REPO_PASSWORD", "mock-wp-password")
-
-    # print(f"AFTER PATCH: JIRA_CLOUD_ID={os.environ.get('JIRA_CLOUD_ID')}")
-
-    # reload_settings()
-    # get_settings()
-
-    # print(f"AFTER RELOAD: JIRA_CLOUD_ID={os.environ.get('JIRA_CLOUD_ID')}")
-
-    # yield
-
-    # reload_settings()

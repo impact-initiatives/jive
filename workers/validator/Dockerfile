@@ -18,6 +18,9 @@ ENV UV_NO_DEV=1
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 COPY workers/validator/ /app/workers/validator/
 COPY common/argus/ /app/common/argus/
+COPY common/jira/ /app/common/jira/
+COPY common/jive_logging/ /app/common/jive_logging/
+
 WORKDIR /app
 
 RUN uv sync --locked --directory workers/validator

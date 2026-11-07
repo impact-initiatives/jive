@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
     "uvicorn>=0.51.0",
+    "jive_logging"
 ]
 
 [dependency-groups]
@@ -21,6 +22,9 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.15.20",
 ]
+
+[tool.uv.sources]
+jive_logging = { path = "../common/jive_logging" , editable = true }
 
 [tool.ruff]
 exclude = [

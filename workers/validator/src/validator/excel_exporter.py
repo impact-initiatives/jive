@@ -3,12 +3,12 @@ from typing import Any
 
 import polars as pl
 import xlsxwriter
+from jive_logging.logger import get_logger
 
 from .config import get_settings
-from .logger import get_logger
 from .models import PipelineResponse, ResultItemModel
 
-logger = get_logger("jive.excel_exporter")
+logger = get_logger("jive.validator.excel_exporter")
 settings = get_settings()
 
 

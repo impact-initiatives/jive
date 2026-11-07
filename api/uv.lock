@@ -40,6 +40,7 @@ source = { editable = "." }
 dependencies = [
     { name = "azure-storage-queue" },
     { name = "fastapi" },
+    { name = "jive-logging" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "uvicorn" },
@@ -59,6 +60,7 @@ dev = [
 requires-dist = [
     { name = "azure-storage-queue", specifier = ">=12.17.0" },
     { name = "fastapi", specifier = ">=0.139.0" },
+    { name = "jive-logging", editable = "../common/jive_logging" },
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },
     { name = "uvicorn", specifier = ">=0.51.0" },
@@ -633,6 +635,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/a3/a4/4692ecd7fa700ac10
 wheels = [
     { url = "https://files.pythonhosted.org/packages/be/c7/71eb0d51cdcbb63b857c931aa4e9218b078b5d9f8ecd383b234f28fe7b0f/jedi-0.20.1-py2.py3-none-any.whl", hash = "sha256:0fb16d86c4a4c73c37ba518c77419975e30fcc620658a8d14fbb5720cdd34142", size = 4885980, upload-time = "2026-10-12T17:42:21.585Z" },
 ]
+
+[[package]]
+name = "jive-logging"
+version = "0.1.0"
+source = { editable = "../common/jive_logging" }
 
 [[package]]
 name = "jupyter-client"

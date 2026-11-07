@@ -5,6 +5,7 @@ import urllib.parse
 from pathlib import Path
 
 from httpx2 import Client, ConnectError, Timeout, TimeoutException
+from jive_logging.logger import get_logger
 from tenacity import (
     before_sleep_log,
     retry,
@@ -15,9 +16,7 @@ from tenacity import (
 
 from validator.config import get_settings
 
-from .logger import get_logger
-
-logger = get_logger("jive.impact_repo_client")
+logger = get_logger("jive.validator.impact_repo_client")
 
 
 def _sanitize_url(url: str) -> str:

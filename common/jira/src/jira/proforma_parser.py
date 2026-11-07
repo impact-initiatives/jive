@@ -1,20 +1,17 @@
 from httpx2 import Client, Timeout
+from jive_logging.logger import get_logger
 
-from validator.config import get_settings
-
-from ..logger import get_logger
+from .config import Settings, get_settings
 from .jira_client import check_retryable
 from .models import Form, FormDocument
 
-logger = get_logger("jive.proforma_parser")
+logger = get_logger("jive.jira.proforma_parser")
 
 
 class ProformaParser:
     def __init__(self, session: Client):
-        self.settings = get_settings()
+        self.settings: Settings = get_settings()
         self.session: Client = session
-        self.dataset_type_label: str = self.settings.proforma_dataset_type_label
-        self.repo_label: str = self.settings.proforma_repository_label
         self.headers: dict[str, str] = {
             "Accept": "application/json",
             "Content-Type": "application/json",

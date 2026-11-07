@@ -2,18 +2,17 @@ from datetime import datetime
 from pathlib import Path
 
 from argus.orchestrator.validation_pipeline import ValidationPipeline
+from jira.jira_client import JiraClient
+from jira.models import IssueAttachment
+from jira.proforma_parser import ProformaParser
+from jive_logging.logger import get_logger
 
 from .config import get_settings
 from .impact_repo_client import ImpactRepoClient
-from .jira.jira_client import JiraClient
-from .jira.models import IssueAttachment
-from .jira.proforma_parser import ProformaParser
-from .logger import get_logger
 from .models import JiraSubmissionPayload, PipelineResponse
 from .report_formatter import format_comment_adf
 
-logger = get_logger("jive.validator_utils")
-# SUPPORTED_SCHEMA_TYPES = {"jmmi", "msna", "other"}
+logger = get_logger("jive.validator.worker_utils")
 
 settings = get_settings()
 
@@ -145,7 +144,7 @@ def resolve_dataset(
     if issue_id and proforma_answers:
         # Find label matching the repo label pattern (case-insensitive)
         page_url = None
-        needle = proforma.repo_label.lower()
+        needle = proforma.settings.proforma_repository_label.lower()
         for label, val in proforma_answers.items():
             if needle in label.lower():
                 page_url = val

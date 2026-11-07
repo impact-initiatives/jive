@@ -56,7 +56,13 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_entry, default=str)
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(
+    name: str,
+    log_file: str = "jive-workers.log",
+    level: str = logging.INFO,
+    rotate_when: str = "midnight",
+    backup_count: int = 30,
+) -> logging.Logger:
     """Returns a JSON-formatted logger.
 
     Args:
@@ -74,16 +80,16 @@ def get_logger(name: str) -> logging.Logger:
         Path("./logs").mkdir(exist_ok=True)
 
         file_handler = TimedRotatingFileHandler(
-            "logs/jive-worker.log",
-            when="midnight",  # Rotate at midnight
+            f"logs/{log_file}",
+            when=rotate_when,  # Rotate at midnight
             interval=1,  # Every 1 day
-            backupCount=30,  # Keep 30 days of old logs
+            backupCount=backup_count,  # Keep 30 days of old logs
             encoding="utf-8",
         )
         file_handler.setFormatter(JSONFormatter())
 
         logger.addHandler(handler)
         logger.addHandler(file_handler)
-        logger.setLevel(logging.INFO)
+        logger.setLevel(level)
 
     return logger

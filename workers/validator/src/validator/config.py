@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import AfterValidator, Field, computed_field
 from pydantic_settings import BaseSettings
@@ -46,15 +46,7 @@ class Settings(BaseSettings):
         default_factory=dict, alias="JIVE_DOCUMENTATION"
     )
 
-    jira_auth_type: Literal["basic", "token"] = Field(alias="JIRA_AUTH_TYPE", default="basic")
-    jira_cloud_id: str = Field(alias="JIRA_CLOUD_ID")
-    jira_api_email: str = Field(alias="JIRA_API_EMAIL", default="")
-    jira_api_token: str = Field(alias="JIRA_API_TOKEN")
-    jira_api_base_url: BaseUrl = Field(alias="JIRA_API_BASE_URL")
     retry_status_codes: set[int] = {429, 500, 502, 503, 504}
-
-    secure_link_username: str = Field(alias="SECURE_LINK_USERNAME", default="")
-    secure_link_password: str = Field(alias="SECURE_LINK_PASSWORD", default="")
 
     jive_version_file: str = Field(alias="JIVE_VERSION_FILE", default="/app/jive_version.txt")
 

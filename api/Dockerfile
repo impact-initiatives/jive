@@ -4,6 +4,8 @@ COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /uvx /bin/
 
 ENV UV_NO_DEV=1
 COPY . /app
+COPY common/jive_logging/ /app/common/jive_logging/
+
 WORKDIR /app
 
 RUN uv sync --locked

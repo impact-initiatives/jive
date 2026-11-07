@@ -7,13 +7,13 @@ from azure.storage.queue import QueueClient
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from jive_logging.logger import get_logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import settings
-from .logger import get_logger
 from .models import JiraSubmissionPayload
 
-logger = get_logger("jive.ingress")
+logger = get_logger("jive.ingress", "jive-api")
 
 app = FastAPI(title="JIVE Ingress Webhook")
 
