@@ -1,0 +1,120 @@
+import json
+import logging
+import sys
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
+from typing import override
+
+
+class JSONFormatter(logging.Formatter):
+    """Formats log records as JSON for Azure Log Analytics ingestion."""
+
+    @override
+    def format(self, record: logging.LogRecord) -> str:
+        log_entry = {
+            "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        # Include any custom extra fields dynamically
+        standard_attrs = {
+            "name",
+            "msg",
+            "args",
+            "levelname",
+            "levelno",
+            "pathname",
+            "filename",
+            "module",
+            "exc_info",
+            "exc_text",
+            "stack_info",
+            "lineno",
+            "funcName",
+            "created",
+            "msecs",
+            "relativeCreated",
+            "thread",
+            "threadName",
+            "processName",
+            "process",
+            "message",
+        }
+        for key, value in record.__dict__.items():
+            if key not in standard_attrs:
+                log_entry[key] = value
+
+        if record.exc_info:
+            log_entry["exception"] = self.formatException(record.exc_info)
+            log_entry["exception_type"] = (
+                type(record.exc_info[1]).__name__ if record.exc_info[1] else "Exception"
+            )
+
+        return json.dumps(log_entry, default=str)
+
+
+@dataclass
+class LoggingConfig:
+    log_file: str | None = None
+    level: int = logging.INFO
+    rotate_when: str = "midnight"
+    backup_count: int = 30
+    third_party_levels: dict[str, int] = field(default_factory=dict)
+
+
+_config: LoggingConfig | None = None
+
+
+def configure(config: LoggingConfig) -> LoggingConfig:
+    """Apply process-wide logging config. Only the first caller wins.
+
+    Intended to be invoked by the owning application once, before
+    importing anything that creates loggers.
+    """
+    global _config
+    _config = _config or config
+    for name, level in _config.third_party_levels.items():
+        logging.getLogger(name).setLevel(level)
+    return _config
+
+
+def get_logger(
+    name: str,
+) -> logging.Logger:
+    """Returns a JSON-formatted logger.
+
+    Args:
+        name: Logger name (typically module name).
+
+    Returns:
+        Configured logger instance.
+    """
+    logger = logging.getLogger(name)
+    config = _config or LoggingConfig()
+
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(JSONFormatter())
+
+        if config.log_file is not None:
+            Path("./logs").mkdir(exist_ok=True)
+
+            file_handler = TimedRotatingFileHandler(
+                f"logs/{config.log_file}",
+                when=config.rotate_when,
+                interval=1,
+                backupCount=config.backup_count,
+                encoding="utf-8",
+            )
+            file_handler.setFormatter(JSONFormatter())
+            logger.addHandler(file_handler)
+
+        logger.addHandler(handler)
+
+        logger.setLevel(config.level)
+
+    return logger

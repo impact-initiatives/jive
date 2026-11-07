@@ -13,10 +13,6 @@ on:
         description: '"Jive" and "Argus" release tag in format "YYYYMMDDXX" .'
         required: true
         type: string
-      release_argus:
-        description: 'Publish an "Arugs" release.'
-        required: true
-        type: boolean
       release_jive:
         description: 'Publish a "Jive" release.'
         required: true
@@ -52,21 +48,8 @@ permissions:
 
 jobs:  
 
-  create_argus_release:
-    if: ${{ inputs.release_argus }} 
-    runs-on: ubuntu-latest
-    steps:
-        - name: Trigger argus workflow
-          uses: peter-evans/repository-dispatch@v4
-          with:
-            token: ${{ secrets.REPO_DISPATCH_TOKEN }}  
-            repository: impact-initiatives/argus
-            event-type: manual-release
-            client-payload: '{"release_tag": "${{ inputs.release_tag }}"}'
-
   create_jive_release:
-    needs: create_argus_release
-    if: ${{ inputs.release_jive && ( always() &&  (needs.create_argus_release.result == 'success' || needs.create_argus_release.result == 'skipped' ))}}
+    if: ${{ inputs.release_jive &&  always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -88,7 +71,7 @@ jobs:
       acr_name: acrimpact
       image_name: jive-worker
       # release_type: ${{ inputs.release_type }}
-      build_context: ./worker
+      build_context: ./workers/validator
     secrets:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}

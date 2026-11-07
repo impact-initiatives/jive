@@ -10,12 +10,12 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import settings
-from .logger import get_logger
+from .logging import get_logger
 from .models import JiraSubmissionPayload
 
-logger = get_logger("jive.ingress")
+logger = get_logger("jive.api")
 
-app = FastAPI(title="JIVE Ingress Webhook")
+app = FastAPI(title="JIVE api Webhook")
 
 
 @app.exception_handler(StarletteHTTPException)

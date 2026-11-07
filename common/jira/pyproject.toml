@@ -1,0 +1,36 @@
+[project]
+name = "jira"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+
+requires-python = ">=3.14"
+dependencies = [
+    "httpx2>=2.16.0",
+    "pydantic>=2.14.3",
+    "pydantic-settings>=2.16.2",
+    "tenacity>=9.2.1",
+    "jive_logging"
+]
+
+
+[tool.uv.sources]
+jive_logging = { path = "../../common/jive_logging" , editable = true }
+
+
+[dependency-groups]
+dev = [
+    "httpx2-pytest>=2.0.0",
+    "ipykernel>=7.3.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.2",
+]
+
+[project.scripts]
+jira = "jira:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"

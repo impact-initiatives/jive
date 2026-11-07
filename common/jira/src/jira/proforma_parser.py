@@ -1,0 +1,106 @@
+from httpx2 import Client, Timeout
+from jive_logging.logger import get_logger
+
+from .config import Settings, get_settings
+from .jira_client import check_retryable
+from .models import Form, FormDocument
+
+logger = get_logger("jive.jira.proforma_parser")
+
+
+class ProformaParser:
+    def __init__(self, session: Client):
+        self.settings: Settings = get_settings()
+        self.session: Client = session
+        self.headers: dict[str, str] = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+    def get_answers(self, issue_id: str) -> dict[str, str]:
+        """Return {label: answer_text} for all answered questions on the submitted ProForma form."""
+
+        url = f"https://api.atlassian.com/jira/forms/cloud/{self.settings.jira_cloud_id}/issue/{issue_id}/form"
+        logger.info(
+            "Fetching ProForma forms list for issue",
+            extra={"issue_id": issue_id, "url": url},
+        )
+
+        try:
+            response = self.session.get(
+                url,
+                headers=self.headers,
+                timeout=Timeout(None, connect=3.05, read=30.0),
+            )
+            check_retryable(response)
+            if response.status_code in (403, 404):
+                logger.warning(
+                    "ProForma API returned status code, forms might not be configured/enabled",
+                    extra={"issue_id": issue_id, "status_code": response.status_code},
+                )
+                return {}
+            response.raise_for_status()
+
+            forms = [Form.model_validate(item) for item in response.json()]
+            if not forms or not forms[0].submitted:
+                logger.warning(
+                    "No submitted ProForma form found for issue",
+                    extra={"issue_id": issue_id},
+                )
+                return {}
+
+            # Fetch detailed answers of the first submitted form
+            form_detail_url = f"{url}/{forms[0].id}"
+            logger.info(
+                "Fetching ProForma form details",
+                extra={"issue_id": issue_id, "form_id": forms[0].id},
+            )
+
+            detail_response = self.session.get(
+                form_detail_url,
+                headers=self.headers,
+                timeout=Timeout(None, connect=3.05, read=15.0),
+            )
+            check_retryable(detail_response)
+            detail_response.raise_for_status()
+
+            form = FormDocument.model_validate(detail_response.json())
+            answers = form.state.answers
+
+            result = {}
+            for qid, q in form.design.questions.items():
+                label = q.get("label", "")
+                question_key = q.get("questionKey", "")
+                answer = answers.get(qid, {})
+
+                # Choices take priority over text for radio/checkbox types
+                choice_ids = answer.get("choices", [])
+                if choice_ids:
+                    choice_map = {c["id"]: c["label"] for c in q.get("choices", [])}
+                    value = ", ".join(
+                        choice_map.get(cid, "").strip()
+                        for cid in choice_ids
+                        if choice_map.get(cid, "").strip()
+                    )
+                else:
+                    value = answer.get("text", "").strip()
+
+                if not value:
+                    continue
+                if label:
+                    result[label] = value
+                if question_key:
+                    result[question_key] = value
+
+            logger.info(
+                "Successfully parsed ProForma answers",
+                extra={"issue_id": issue_id, "fields_parsed": list(result.keys())},
+            )
+            return result
+        except Exception as e:
+            logger.error(
+                "Failed to parse ProForma answers",
+                exc_info=e,
+                extra={"issue_id": issue_id},
+            )
+            return {}

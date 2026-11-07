@@ -1,20 +1,36 @@
-.venv/
+# Python-generated files
 __pycache__/
 *.py[cod]
 *$py.class
-*.env
-.pytest_cache/
-.ruff_cache
+build/
+dist/
+wheels/
+*.egg-info/
 .coverage
+.ruff_cache/
+.pytest_cache/
 htmlcov/
-*.xlsx
-*.csv
-.DS_Store
-output/
+*.pot
+
+# Virtual environments
+.venv/
+
+# Local development files
+*.ipynb
 logs/
+output/
 scripts/
 dataset_config/
-*.vscode
-*.code-workspace
+config_directory/
 data/
-*.ipynb
+.~lock*
+*.env
+*.xlsx
+!**/tests/**/*.xlsx
+*.csv
+*.json
+.DS_Store
+
+# IDE files
+*.vscode/
+*.code-workspace
