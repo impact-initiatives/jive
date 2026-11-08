@@ -1,0 +1,351 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-03 12:02+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/argus/validators/schema_validators/unexpected_sheets_validator.py:28
+msgid "unexpected_sheets_validator.unexpected_sheets"
+msgstr "{count} unexpected sheets were found in the dataset. Check to see if these are required to be published/archived. Check output for details."
+
+#: src/argus/validators/schema_validators/unexpected_sheets_validator.py:41
+msgid "unexpected_sheets_validator.hidden_sheets"
+msgstr "There are {count} hidden sheets in the dataset. Check to see if these should be shown or removed before the dataset is published/archived. Check output for details."
+
+#: src/argus/validators/schema_validators/column_name_validator.py:52
+msgid "column_name_validator.labels"
+msgstr "{count} sheets had column names that appear to be labels instead of variables. Check the output for details."
+
+#: src/argus/validators/schema_validators/duplicate_sheet_match_validator.py:41
+msgid "duplicate_sheet_match_validator.duplicate_sheets"
+msgstr "{count} sheets were mapped to the same schema sheet. There should be at most a 1-1 mapping for each sheet."
+
+msgid "mandatory_column_validator.optional_columns"
+msgstr "{count} data columns were optional but not found. Check to see if these columns should be included. See output for details."
+
+msgid "mandatory_column_validator.missing_item"
+msgstr "{count} data {item_type} were expected but not found. See output for details."
+
+#: src/argus/validators/schema_validators/missing_sheets_validator.py:56
+msgid "missing_sheets_validator.missing_sheets"
+msgstr "{count} additional sheets were expected but not found. See the output for details."
+
+#: src/argus/validators/schema_validators/missing_sheets_validator.py:69
+msgid "missing_sheets_validator.sampling_info"
+msgstr "A sheet for 'sampling_info' is expected when weights are added to the clean data. Add this sheet if required."
+
+#: src/argus/validators/schema_validators/missing_sheets_validator.py:81
+msgid "missing_sheets_validator.optional_missing_sheets"
+msgstr "{count} optional sheets were not found. Check if these sheets are required or not for this dataset. See the output for details."
+
+#: src/argus/validators/data_validators/cleaning_log_to_clean_validator.py:204
+msgid "cleaning_log_to_clean_validator.multiple_changes"
+msgstr "{count} Ids had multiple changes for the same question. These were not validated. Check the output for details."
+
+msgid "cleaning_log_to_clean_validator.multiple_changes.issue"
+msgstr "Multiple changes for the same '{question_column}' and '{id_column}'."
+
+#: src/argus/validators/data_validators/cleaning_log_to_clean_validator.py:232
+msgid "cleaning_log_to_clean_validator.same_value"
+msgstr "{count} row/s had '{old_value_column}' equal '{new_value_column}'. Check the output for details."
+
+msgid "cleaning_log_to_clean_validator.same_value.issue"
+msgstr "Same value for '{old_value_column}' and '{new_value_column}'."
+
+#: src/argus/validators/data_validators/cleaning_log_to_clean_validator.py:281
+msgid "cleaning_log_to_clean_validator.missing_questions"
+msgstr "There are questions listed in '{cleaning_log_sheet}' that were not found in '{clean_data_sheet}'. See output for details."
+
+msgid "cleaning_log_to_clean_validator.missing_questions.issue"
+msgstr "'{column}' not found in '{sheet}' sheet."
+
+#: src/argus/validators/data_validators/cleaning_log_to_clean_validator.py:459
+msgid "cleaning_log_to_clean_validator.differences"
+msgstr "There were {count} differences found in the '{cleaning_log_sheet}' sheet that were not reflected in the '{clean_data_sheet}' sheet. Check the output for details."
+
+msgid "cleaning_log_to_clean_validator.differences.issue"
+msgstr "Change not reflected in '{sheet}' sheet."
+
+msgid "cleaning_log_to_clean_validator.no_changes"
+msgstr "No changes were found in the '{sheet}' sheet. Check that changes are recorded in the '{column}' column using one of these values: {values}."
+
+#: src/argus/validators/data_validators/column_data_type_validator.py:217
+msgid "column_data_type_validator.numeric_check"
+msgstr "{count} non-numeric values were found in '{sheet}' when numeric values were expected. Check the output for details."
+
+msgid "column_data_type_validator.numeric_check.issue"
+msgstr "Value should be numeric."
+
+#: src/argus/validators/data_validators/column_data_type_validator.py:274
+msgid "column_data_type_validator.temporal_check"
+msgstr "{count} non-temporal values were found in '{sheet}' when temporal values were expected. Check the output for details."
+
+msgid "column_data_type_validator.temporal_check.issue"
+msgstr "Value should be temporal. Eg: a date.."
+
+#: src/argus/validators/data_validators/consent_check_validator.py:155
+msgid "consent_check_validator.consent_check"
+msgstr "There were {count} row/s in '{sheet}'that did not provide consent. Check the output for details."
+
+#: src/argus/validators/data_validators/cross_sheet_id_check_validator.py:130
+msgid "cross_sheet_id_check_validator.id_check_isnotin"
+msgstr "{count} Id values for sheet '{child_sheet}' and column '{child_column}' were not found in sheet '{master_sheet}' column '{master_column}'. Check output for details."
+
+msgid "cross_sheet_id_check_validator.id_check_isin"
+msgstr "{count} Id values for sheet '{child_sheet}' and column '{child_column}' were found in sheet '{master_sheet}' column '{master_column}'. Check output for details."
+
+msgid "cross_sheet_id_check_validator.id_check_isin.issue"
+msgstr "source_sheet uuid should not be in target_sheet."
+
+msgid "cross_sheet_id_check_validator.id_check_isnotin.issue"
+msgstr "uuid found in source_sheet but not in target_sheet."
+
+#: src/argus/validators/data_validators/cross_sheet_row_sum_check_validator.py:150
+msgid "cross_sheet_row_sum_check_validator.row_sum"
+msgstr "Sum of row counts for sheets {child_sheets} does not equal {master_sheet} rows ({count_master}). The difference is {count_diff}."
+
+#: src/argus/validators/data_validators/nan_check_validator.py:147
+msgid "nan_check_validator.nan_values"
+msgstr "There were {count} possible invalid values found. Check the output for details."
+
+#: src/argus/validators/data_validators/pii_validator.py:135
+msgid "pii_validator.pii_data"
+msgstr "The sheet '{sheet}' contains possible pii data. Check the output for details."
+
+#: src/argus/validators/data_validators/pii_validator.py:148
+msgid "pii_validator.pii_columns"
+msgstr "{count} possible Pii columns were found. Check the output for details."
+
+#: src/argus/validators/data_validators/raw_clean_cleaning_log_validator.py:346
+msgid "raw_clean_cleaning_log_validator.cleaning_log_diff"
+msgstr "There were {count} differences found in the '{clean_sheet}' sheet that were not reflected in the '{log_sheet}' sheet. Check the output for details."
+
+msgid "raw_clean_cleaning_log_validator.cleaning_log_diff.issue"
+msgstr "Change not reflected in '{sheet}'."
+
+msgid "cleaning_log.all_values"
+msgstr "{count} '{question_column}' values in the sheet '{sheet}' had a {uuid_column} value of 'all' and were not evaluated. Columns: {columns}."
+
+#: src/argus/validators/data_validators/raw_clean_cleaning_log_validator.py:363
+msgid "raw_clean_cleaning_log_validator.diff_no_cleaning_log"
+msgstr "There were {count} differences found between the '{clean_sheet}' sheet and the '{raw_sheet}' but no cleaning log was found. Check the output for details."
+
+#: src/argus/validators/data_validators/survey_choices_validator.py:368
+msgid "survey_choices_validator.invalid_values"
+msgstr "There were {count} values found that were not reflected in the {choices_sheet} sheet. Check the output for details."
+
+msgid "survey_choices_validator.missing_choices"
+msgstr "There were {count} questions listed in the '{survey_sheet}' sheet as 'select one' or 'select multiple' but had no choices listed in the '{choices_sheet}' sheet. Check the output for details."
+
+msgid "survey_choices_validator.missing_binary_questions"
+msgstr "There were {count} binary questions that were expected but not found. Check the output for details."
+
+msgid "survey_choices_validator.issue.value_has_difference"
+msgstr "Value not in choices sheet"
+
+msgid "survey_choices_validator.issue.binary_value_has_difference"
+msgstr "Mismatch between parent and binary column or invalid binary value"
+
+msgid "survey_choices_validator.missing_choices.issue"
+msgstr "No choices listed in '{sheet}' sheet"
+
+msgid "survey_choices_validator.missing_binary_questions.issue"
+msgstr "Column not found"
+
+#: src/argus/validators/data_validators/unique_column_validator.py:72
+msgid "unique_column_validator.non_unique"
+msgstr "{count} non unique values were found for columns that should contain unique values. Check the output for details."
+
+#: src/argus/validators/schema_helpers.py:64
+msgid "schema_helpers.get_schema_process_value"
+msgstr "process_values were expected for column '{column}' for process '{process}' but were not found."
+
+#: src/argus/validators/schema_helpers.py:132
+msgid "helpers.get_loaded_column"
+msgstr "A column for '{column}' in {sheet_type} sheet '{sheet}' is expected."
+
+#: src/argus/validators/schema_helpers.py:192
+msgid "helpers.get_loaded_sheet"
+msgstr "A {sheet_type} sheet for '{sheet}' is expected."
+
+msgid "schema_helpers.missing_items"
+msgstr "{count} {item_source} {item_type} were expected but not found. Check the output for details."
+
+#: src/argus/validators/data_helpers.py:156
+msgid "helpers.number_unique_columns"
+msgstr "Expected one unique id column for '{sheet}' but {count} were found."
+
+#: src/argus/validators/data_helpers.py:166
+msgid "data_helpers.get_data_sheet_id.count_invalid"
+msgstr "{count} unique columns for schema sheet '{sheet}' and matching excel sheet '{excel_sheet}' was expected."
+
+#: src/argus/validators/data_helpers.py:240
+msgid "data_helpers.get_matching_columns"
+msgstr "Expected 1 linkable ID column for sheets '{source_sheet}' and '{target_sheet}' but {count} were found."
+
+#: src/argus/validators/data_helpers.py:284
+msgid "data_helpers.get_matching_columns_alt"
+msgstr "Expected 1 linkable ID column for sheets '{source_sheet}' and '{target_sheet}' but '{source_sheet}' had {source_count} and '{target_sheet}' had {target_count}."
+
+#: src/argus/validators/data_helpers.py:419
+msgid "data_helpers.get_id_linking_columns.no_columns"
+msgstr "Unable to find possible linkable ID columns for sheet '{source_sheet}' and sheet '{target_sheet}'."
+
+#: src/argus/validators/data_helpers.py:456
+msgid "data_helpers.get_id_linking_columns.linked_columns"
+msgstr "Column '{source_column}' in sheet '{source_sheet}' was linked to column '{target_column}' in sheet '{target_sheet}'."
+
+#: src/argus/validators/data_helpers.py:510
+msgid "data_helpers.check_id_column_overlap"
+msgstr "Too many values in sheet '{source_sheet}' Column '{source_column}' were not found in sheet '{target_sheet}' column '{target_column}' so the coulumns could not be linked. Overlap: {overlap}. Minimum overlap: {min_overlap}."
+#: msgstr "Column '{source_column}' in sheet '{source_sheet}' had an overlap of {overlap} with column '{target_column}' in sheet '{target_sheet}'. A minimum of {min_overlap} is required for these columns to be considered linkable id columns."
+
+#: src/argus/validators/data_helpers.py:543
+msgid "data_helpers.check_data_exists"
+msgstr "The sheet {sheet} contained no data so the validation rule could not be completed. If this sheet legimately has no rows this error can be ignored."
+
+#: src/argus/orchestrator/validation_pipeline.py:131
+msgid "validation_pipeline.calamine_cell_error"
+msgstr "Loading of the excel file '{file}' encountered an error. Check that the excel sheets do not contain empty columns without headers: {error}."
+
+#: src/argus/orchestrator/validation_pipeline.py:184
+msgid "validation_pipeline.passed"
+msgstr "Validator '{name}' passed."
+
+msgid "validation_pipeline.limit_details"
+msgstr "(Details limited to {count} records.)"
+
+#: src/argus/loaders/base_excel_loader.py:64
+msgid "base_excel_loader.match_excel_columns_to_schema.multiple_literal_matches"
+msgstr "The schema sheet '{sheet}' column '{column}' had {count} matches to columns. There should be only 1. Check the schema."
+
+#: src/argus/loaders/base_excel_loader.py:94
+msgid "base_excel_loader.match_excel_columns_to_schema.fuzzy_match"
+msgstr "The schema sheet '{sheet}' column '{column}' was fuzzy matched with an excel column. If this was an accurate match consider renaming this column in the future. See output for details."
+
+#: src/argus/loaders/base_excel_loader.py:111
+msgid "base_excel_loader.match_excel_columns_to_schema.fuzzy_match_miltiple"
+msgstr "The schema sheet '{sheet}' column '{column}' was fuzzy matched with {count} excel columns so was not matched as this would cause validation errors. See output for details."
+
+#: src/argus/loaders/base_excel_loader.py:172
+msgid "base_excel_loader.match_excel_sheet_to_schema.fuzzy_match"
+msgstr "Excel sheet '{excel_sheet}' was fuzzy matched with schema sheet '{schema_sheet}'. If this was an accurate match consider renaming this excel sheet to {schema_sheet} in the future."
+
+#: src/argus/loaders/base_excel_loader.py:189
+msgid "base_excel_loader.match_excel_sheet_to_schema.fuzzy_match_multiple"
+msgstr "Excel sheet '{excel_sheet}' was fuzzy matched with {count} schema sheets so was not matched. This will lead to validation errors about excel sheets not being found. See output for details."
+
+msgid "base_excel_loader.match_excel_sheet_to_schema.matching_term"
+msgstr "Excel sheet '{excel_sheet}' was matched with schema sheet '{schema_sheet}' using the matching term '{matching_term}'."
+
+#: src/argus/loaders/base_excel_loader.py:225
+msgid "base_excel_loader.check_duplicate_columns"
+msgstr "Excel sheet '{excel_sheet}' has {count} duplicate column names and could not be loaded. Check the output for details."
+
+msgid "excel_loader._load_excel_sheet.unnamed_columns"
+msgstr "{count} columns in the excel sheet {sheet} did not have names and were removed. Check if these coulmns should be part of the dataset or not. Check the output for details."
+
+#: src/argus/loaders/excel_loader.py:214
+msgid "excel_loader.load.multiple_matches"
+msgstr "Excel sheet {sheet} was matched with multiple schema sheets. This will lead to validation errors about excel sheets not being found."
+
+#: src/argus/models/dynamic_model.py:601
+msgid "base_dataset.validate_schema.no_parent"
+msgstr "{count} '{sheet_type}' sheets did not match to a parent. There should only be 1 {sheet_type} sheet without a parent. Check the output for details."
+
+msgid "base_dataset.validate_schema.no_parent.issue"
+msgstr "No parent sheet"
+
+msgid "base_dataset.validate_schema.multiple_parents"
+msgstr "'{sheet_type}' sheets matched to {count} different parents. There should only be 1 parent sheet. Parent sheets: {parents}"
+
+msgid "base_dataset.validate_schema.missing_links"
+msgstr "{count} '{sheet_type}' sheets did not link to a '{linked_sheet_type}' sheet so related validation rules could not be created. Check the output for details."
+
+msgid "base_dataset.validate_schema.missing_links.issue"
+msgstr "No linked '{sheet}' sheet"
+
+msgid "jmmi_column_name_validator.items_not_in_dictionary"
+msgstr "{count} columns listed items not in the JMMI goods dictionary. Check your items are named correctly or contact HQ to add new items. Check the output for details."
+
+msgid "jmmi_column_name_validator.items_not_in_dictionary.issue"
+msgstr "Item not in goods dictionary."
+
+msgid "jmmi_column_name_validator.missing_prefix_or_suffix"
+msgstr "{count} country specific variables were missing either a prefix or suffix. Check the output for details."
+
+msgid "jmmi_column_name_validator.missing_prefix_or_suffix.issue"
+msgstr "Missing prefix or suffix."
+
+msgid "jmmi_column_name_validator.variables_not_in_dictionary"
+msgstr "{count} columns contained variables not in the JMMI standard column names dictionary. Check your items are named correctly or contact HQ to add new items. Check the output for details."
+
+msgid "jmmi_column_name_validator.variables_not_in_dictionary.issue"
+msgstr "Variable not in column name dictionary."
+
+msgid "jmmi_column_name_validator.invalid_columns"
+msgstr "{count} columns were found that should not be included in the dataset. Check the output for details."
+
+msgid "jmmi_column_name_validator.invalid_columns.issue"
+msgstr "Column must be removed."
+
+msgid "jmmi_column_name_validator.standardisable_columns"
+msgstr "{count} country specific columns were found that are standardisable. Check the output for details."
+
+msgid "jmmi_column_name_validator.standardisable_columns.issue"
+msgstr "Column contains standardised items and variables."
+
+msgid "jmmi_meb_analysis_validator.suffix_check"
+msgstr "{no_expected} columns in the sheet '{sheet}' were expected to contain columns with the '{expected_suffix}' suffix but only {count} were found."
+
+msgid "jmmi_meb_analysis_validator.numeric_suffix_check"
+msgstr "Numeric columns in the sheet '{sheet}' are expected to contain a suffix but {count} did not. Expected suffixes: {expected_suffixes}. Check output for details."
+
+msgid "jmmi_meb_analysis_validator.numeric_suffix_check_non_numeric_columns"
+msgstr "{count} non-numeric columns in the sheet '{sheet}' had a numeric suffix. Check if these columns should have this suffix or that the data is all numeric. Check output for details."
+
+# msgid "jmmi_meb_analysis_validator.meb_official_columns_missing"
+# msgstr "{count} non-numeric columns in the sheet '{sheet}' had a numeric suffix. Check if these columns should have this suffix or that the data is all numeric. Check output for details."
+
+# msgid "jmmi_meb_analysis_validator.meb_parallel_columns_missing"
+# msgstr "{count} non-numeric columns in the sheet '{sheet}' had a numeric suffix. Check if these columns should have this suffix or that the data is all numeric. Check output for details."
+
+# msgid "jmmi_meb_analysis_validator.no_meb_columns"
+# msgstr "{count} non-numeric columns in the sheet '{sheet}' had a numeric suffix. Check if these columns should have this suffix or that the data is all numeric. Check output for details."
+
+msgid "jmmi_data_validator.data_issues"
+msgstr "{count} column values failed validation. Check output for details."
+
+msgid "jmmi_data_validator.data_issues.invalid_country.issue"
+msgstr "{column} should be 3 uppercase letters."
+
+msgid "jmmi_data_validator.data_issues.invalid_round.issue"
+msgstr "'{main_column}' must start with '{start_column}', contain '{contain_column}' and end with '{end_column}'."
+
+msgid "empty_column_validator.empty_values"
+msgstr "{count} column values were empty when values were expected. Check output for details."
+
+msgid "skip_logic_validator.failed_conversions"
+msgstr "{count} skip logic expressions could not be evaluated. Check output for details."
+
+msgid "skip_logic_validator.invalid_values"
+msgstr "{count} column values did not match the skip logic for the column. Check output for details."
+
+msgid "skip_logic_validator.invalid_values.issue.empty_value"
+msgstr "No value found when required question was not skipped."
+
+msgid "skip_logic_validator.invalid_values.issue.not_empty_value"
+msgstr "Value found when question was skipped."

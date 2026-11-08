@@ -1,0 +1,57 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  changes:
+    name: Detect changed projects
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      projects: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          # Each key = a project to test; the value = paths that should
+          # trigger it.
+          filters: |
+            api:
+              - 'api/**'
+            common/argus:
+              - 'common/argus/**'
+            common/jira:
+              - 'common/jira/**'
+            workers/validator:
+              - 'workers/validator/**'
+              - 'common/argus/**'
+              - 'common/jira/**'
+
+  test:
+    name: Tests (${{ matrix.project }})
+    needs: changes
+    if: ${{ needs.changes.outputs.projects != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.changes.outputs.projects) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.2
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+      - name: Run tests
+        run: uv run pytest src/tests

@@ -1,0 +1,57 @@
+name: Build Translation Files
+on: 
+  push:
+    branches: [main]
+    paths:
+      - 'common/argus/src/argus/locales/**/*.po'
+      - 'common/argus/src/argus/locales/update_files.sh'
+  pull_request:
+    paths:
+      - 'common/argus/src/argus/locales/**/*.po'
+      - 'common/argus/src/argus/locales/update_files.sh'
+  workflow_dispatch:
+
+jobs:
+  build-translations:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  
+    defaults:
+      run:
+        working-directory: ./common/argus
+    
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Gettext
+        run: sudo apt-get install -y gettext
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.2
+      
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+      
+      - name: Make File Executable
+        run: chmod +x ./src/argus/locales/update_files.sh
+      
+      - name: Rebuild Translation Files
+        run: ./src/argus/locales/update_files.sh
+
+      - name: Check for changes on PR (fail if outdated)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "::error::Translation files are out of date. Run ./src/argus/locales/update_files.sh locally and commit the changes."
+            exit 1
+          fi
+
+      - name: Commit translations on main or manual dispatch
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+        uses: EndBug/add-and-commit@v11
+        with:
+          default_author: github_actions
+          committer_name: GitHub Actions
+          committer_email: actions@github.com
+          message: 'rebuild translation files'
+          add: '*.mo'

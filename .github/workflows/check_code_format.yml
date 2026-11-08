@@ -1,0 +1,77 @@
+name: Ruff checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  changes:
+    name: Detect changed projects
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      projects: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api/**/*.py'
+              - 'api/pyproject.toml'
+            common/argus:
+              - 'common/argus/**/*.py'
+              - 'common/argus/pyproject.toml'
+            common/jira:
+              - 'common/jira/**/*.py'
+              - 'common/jira/pyproject.toml'
+            common/jive_logging:
+              - 'common/jive_logging/**/*.py'
+              - 'common/jive_logging/pyproject.toml'
+            workers/validator:
+              - 'workers/validator/**/*.py'
+              - 'workers/validator/pyproject.toml'
+
+  check:
+    name: Ruff (${{ matrix.project }})
+    needs: changes
+    if: ${{ needs.changes.outputs.projects != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.changes.outputs.projects) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+      - name: Check formatting
+        run: uvx ruff format . --check
+      - name: Check linting
+        run: uvx ruff check . --no-fix
+
+      - name: Auto-fix on main branch
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          uvx ruff format .
+          uvx ruff check . --fix
+          uvx ruff format .  # second pass, as you had it
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "fmt: auto-format after build"
+            git push
+          fi
