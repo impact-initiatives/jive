@@ -8,7 +8,7 @@ from jira.proforma_parser import ProformaParser
 
 from .config import get_settings
 from .impact_repo_client import ImpactRepoClient
-from .logging import get_logger
+from .logs import get_logger
 from .models import JiraSubmissionPayload, PipelineResponse
 from .report_formatter import format_comment_adf
 

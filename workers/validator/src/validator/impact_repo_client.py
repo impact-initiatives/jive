@@ -15,7 +15,7 @@ from tenacity import (
 
 from validator.config import get_settings
 
-from .logging import get_logger
+from .logs import get_logger
 
 logger = get_logger("jive.validator.impact_repo_client")
 

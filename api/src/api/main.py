@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import settings
-from .logging import get_logger
+from .logs import get_logger
 from .models import JiraSubmissionPayload
 
 logger = get_logger("jive.api")

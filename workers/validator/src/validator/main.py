@@ -14,7 +14,7 @@ from jira.proforma_parser import ProformaParser
 from .config import get_settings
 from .excel_exporter import export_response_to_excel
 from .impact_repo_client import ImpactRepoClient
-from .logging import get_logger
+from .logs import get_logger
 from .models import JiraSubmissionPayload
 from .worker_utils import (
     check_idempotency,
