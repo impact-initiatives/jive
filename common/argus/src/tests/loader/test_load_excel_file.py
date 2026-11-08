@@ -63,7 +63,7 @@ def mock_fastexcel():
         mock_reader.load_sheet.side_effect = lambda sheet_name, **kwargs: sheets_by_name[sheet_name]
 
         # Build the top-level fastexcel mock
-        with patch("src.argus.loaders.excel_loader.fastexcel") as mock_f:
+        with patch("argus.loaders.excel_loader.fastexcel") as mock_f:
             mock_f.read_excel.return_value = mock_reader
             yield {
                 "fastexcel": mock_f,

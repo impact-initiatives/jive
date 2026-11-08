@@ -3,7 +3,7 @@ from pathlib import Path
 
 from jive_logging.logger import get_logger
 
-from src.argus.orchestrator.validation_pipeline import ValidationPipeline
+from argus.orchestrator.validation_pipeline import ValidationPipeline
 
 logger = get_logger("argus.main")
 

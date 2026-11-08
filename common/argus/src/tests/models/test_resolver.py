@@ -13,7 +13,7 @@ from argus.validators.common_validators.survey_choices_validator import SurveyCh
 @pytest.fixture
 def mock_yaml_loader():
     """Mock fixture for load_file function"""
-    with patch("src.argus.models.resolver.load_file") as mock_load:
+    with patch("argus.models.resolver.load_file") as mock_load:
         # Configure the return value: (raw_data, definitions)
         yield mock_load
 
