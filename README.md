@@ -47,7 +47,7 @@ flowchart TD
 ---
 
 ## Project Structure
-Within this project there several application groups. Each has its own configuration and deployment files. 
+This project is set up as a mono repo and within this project there are several application groups. Each has its own configuration and deployment files. 
 
 ```text
 
