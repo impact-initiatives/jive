@@ -119,7 +119,7 @@ If you encounter any bugs report these on the [project issues page](https://gith
 
 ## Related Projects
 - [Argus schemas](https://github.com/impact-initiatives/argus_schemas): Schemas supported by Argus.
-- [Jive](https://github.com/impact-initiatives/jive): A tool for integration with validating datasets submitted to Jira.
+- [Jive](https://github.com/impact-initiatives/jive): A project for managing integrations including validating datasets submitted to Jira.
 
 ## Development and Debugging
 If testing or debugging, it is possible to run individual validation rules or use specific versions of schemas.

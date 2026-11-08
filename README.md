@@ -20,7 +20,7 @@ Data validation is computationally expensive. Datasets can contain hundreds of t
 
 JIVE solves this by **decoupling ingestion from processing** using Azure Storage Queues and Azure Container Apps:
 - **Ingress**: A lightweight FastAPI gateway immediately returns `HTTP 202 Accepted` to Jira and pushes the payload to the queue.
-- **Worker**: A background python worker asynchronously pulls jobs from the queue. Leveraging **KEDA** (Kubernetes Event-driven Autoscaling), the worker container scales down to 0 when idle (costing nothing) and scales out dynamically based on the queue length.
+- **Validator**: A background python worker asynchronously pulls jobs from the queue. Leveraging **KEDA** (Kubernetes Event-driven Autoscaling), the worker container scales down to 0 when idle (costing nothing) and scales out dynamically based on the queue length.
 
 ---
 
@@ -47,14 +47,14 @@ flowchart TD
 ---
 
 ## Project Structure
-Within this project there are two applications: api and worker. Each has its own configuration and deployment files. 
+Within this project there several application groups. Each has its own configuration and deployment files. 
 
 ```text
 
 ├── api                     FastAPI ingress (webhook endpoint)
-├── infra                   Bicep IaC templates for Azure deployment
-├── local                   Local exploration and local Docker Compose setup
-└── workers                 Queue consumers (orchestrates validation lifecycle)
+├── workers                 Contains individual workers including the validation worker.
+├── common                  Shared components that can be resued by workers. This includes the Argus framework, Jira integration and a shared logging framework. 
+└── local                   Local exploration and local Docker Compose setup
 
 ```
 
@@ -63,7 +63,8 @@ Within this project there are two applications: api and worker. Each has its own
 ## Local Development & Configuration
 To set up a local environment for either of the components see their respective readme files:
 - [API readme](api/README.md)
-- [Worker readme](workers/validator/README.md)
+- [Validator readme](workers/validator/README.md)
+- [Argus readme](common/argus/README.md)
 - [local readme](local/README.md)
 
 ### Running the Services Locally
@@ -75,11 +76,11 @@ docker compose -f local/docker-compose.yml up --build
 ```
 * **JIVE Ingress Gateway**: Accessible at `http://localhost:8000/api/webhook`
 * **Azurite Emulator**: Emulates Azure Storage Queues at `http://localhost:10001`
-* **Background Worker**: Polls Azurite for jobs, executes validation, and interacts with Jira.
+* **Background Validator**: Polls Azurite for jobs, executes validation, and interacts with Jira.
 
 Alternatively, you can run them locally via `uv`. See:
 - [API readme](api/README.md)
-- [Worker readme](workers/validator/README.md)
+- [Validator readme](workers/validator/README.md)
 
 To connect Jira automation components to a locally hosted envrionment an additional service is required to allow Jira to connect to a localhost address. Services like [ngrok](ngrok.com/) can be used for this. 
 

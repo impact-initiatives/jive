@@ -1,20 +1,16 @@
-# Jive Worker
-A background python worker that asynchronously pulls jobs from the queue.
+# Jive Validator
+A background python worker that asynchronously pulls validation jobs from the queue.
 
 ## Components
 ```
 ├── Dockerfile
-├── Dockerfile.local                
 ├── src
 │   ├── tests
 │   └── validator
 │       ├── config.py
 │       ├── excel_exporter.py       Generates multi-sheet Excel validation reports using Polars
 │       ├── impact_repo_client.py   
-│       ├── jira
-│       │   ├── jira_client.py      Jira / JSM REST API client (with Tenacity retries & rate-limit handling)
-│       │   └── models.py
-│       ├── logger.py
+│       ├── logging.py
 │       ├── main.py                 Queue consumer (orchestrates validation lifecycle)
 │       ├── models.py
 │       ├── proforma_parser.py

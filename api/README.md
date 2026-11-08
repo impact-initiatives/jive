@@ -4,7 +4,7 @@
 ## Local Development & Configuration
 
 ### Prerequisites
-* Python 3.12+
+* Python 3.14+
 * [uv](https://docs.astral.sh/uv/) package manager
 * [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) (Local Azure Storage Emulator)
 
