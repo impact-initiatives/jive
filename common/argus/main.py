@@ -1,7 +1,8 @@
 import argparse
 from pathlib import Path
 
-from argus.utils.logging import get_logger
+from jive_logging.logger import get_logger
+
 from src.argus.orchestrator.validation_pipeline import ValidationPipeline
 
 logger = get_logger("argus.main")
