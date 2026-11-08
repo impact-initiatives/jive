@@ -1,6 +1,6 @@
 # JIVE — Jira IMPACT Validation Engine
 
-**JIVE** (Jira IMPACT Validation Engine) is an asynchronous, event-driven microservice that automates Research Quality Assurance (RQA) workflows. It bridges the Jira Service Management (JSM) portal with the [Argus](common/argus) engine to automatically download submitted datasets, execute validation pipelines, generate Excel reports, and post structured Atlassian Document Format (ADF) comments back to Jira tickets.
+**JIVE** (Jira IMPACT Validation Engine) is an asynchronous, event-driven microservice that automates Research Quality Assurance (RQA) workflows and related processes. It bridges the Jira Service Management (JSM) portal with the [Argus](common/argus) engine to automatically download submitted datasets, execute validation pipelines, generate Excel reports, and post structured Atlassian Document Format (ADF) comments back to Jira tickets.
 
 ## Overview
 
@@ -47,7 +47,7 @@ flowchart TD
 ---
 
 ## Project Structure
-This project is set up as a mono repo and within this project there are several application groups. Each has its own configuration and deployment files. 
+This project is set up as a mono repo. Within this project there are several application groups. Each has its own environment configuration and deployment files. 
 
 ```text
 
@@ -83,18 +83,6 @@ Alternatively, you can run them locally via `uv`. See:
 - [Validator readme](workers/validator/README.md)
 
 To connect Jira automation components to a locally hosted envrionment an additional service is required to allow Jira to connect to a localhost address. Services like [ngrok](ngrok.com/) can be used for this. 
-
-See this for additional details: [JIVE-ARGUS Demo](https://app.notion.com/p/JIVE-Demo-372e735be74b80cdb994ff0a9d0fbab4)
-
----
-
-
-## Roadmap
-
-- [ ] Upload validation reports to Azure Blob Storage and include a SAS download link in the Jira comment instead of attaching the file directly (avoids Jira attachment size limits)
-- [ ] Transition the Jira ticket to a target status automatically based on validation results (e.g., move to "Approved" on pass (default: JIRA_TRANSITION_APPROVED), "Needs Revision" on fail (default: JIRA_TRANSITION_REVISION))
-- [ ] Add support for multiple dataset types beyond JMMI (MSNA, ESNFI) with automatic schema detection
-- [ ] Implement Azure Managed Identity for Key Vault secret retrieval at runtime, removing the need for connection strings in environment variables
 
 ---
 
