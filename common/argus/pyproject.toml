@@ -42,7 +42,4 @@ build-backend = "uv_build"
 module-name = "argus"     
 module-root = "src"    
 
-[tool.pytest.ini_options]
-testpaths = ["src/tests"]
-pythonpath = ["."]
-addopts = "--cov=src/argus --cov-report=term-missing"
+
