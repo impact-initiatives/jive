@@ -65,7 +65,7 @@ jobs:
   build_and_push_jive_worker_images:
     needs: create_jive_release
     if: ${{ always() && inputs.deploy_jive_worker && (needs.create_jive_release.result == 'success' || needs.create_jive_release.result == 'skipped')}}
-    uses: impact-initiatives/jive/.github/workflows/push_to_azure_acr.yml@main
+    uses: ./.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
@@ -79,7 +79,7 @@ jobs:
   create_container_app_revision_worker:
     needs: build_and_push_jive_worker_images
     if: ${{ always() &&  inputs.deploy_jive_worker && needs.build_and_push_jive_worker_images.result == 'success' }}
-    uses: impact-initiatives/jive/.github/workflows/push_to_azure_containerapp.yml@main
+    uses: ./.github/workflows/push_to_azure_containerapp.yml
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
@@ -93,7 +93,7 @@ jobs:
   build_and_push_jive_api_images:
     needs: create_jive_release
     if: ${{ always() && inputs.deploy_jive_api && (needs.create_jive_release.result == 'success' || needs.create_jive_release.result == 'skipped')}}
-    uses: impact-initiatives/jive/.github/workflows/push_to_azure_acr.yml@main
+    uses: ./.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
@@ -107,7 +107,7 @@ jobs:
   create_container_app_revision_api:
     needs: build_and_push_jive_api_images
     if: ${{ inputs.deploy_jive_api && always() && needs.build_and_push_jive_api_images.result == 'success' }}
-    uses: impact-initiatives/jive/.github/workflows/push_to_azure_containerapp.yml@main
+    uses: ./.github/workflows/push_to_azure_containerapp.yml
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
