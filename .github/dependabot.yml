@@ -7,8 +7,8 @@ version: 2
 updates:
   - package-ecosystem: "uv" 
     directories: 
-      - "/workers/*/pyproject.toml"
-      - "/common/*/pyproject.toml"
+      - "/workers/*"
+      - "/common/*"
       - "/api"
     schedule:
       interval: "weekly"
@@ -23,8 +23,7 @@ updates:
   # https://github.com/dependabot/dependabot-core/issues/13383
   - package-ecosystem: "docker"
     directories: 
-      - "/workers/*/Dockerfile"
-      - "/common/*/Dockerfile"
+      - "/workers/*"
       - "/api"
     schedule:
       interval: "weekly"
