@@ -19,10 +19,10 @@ updates:
     groups:
       all-dependencies:
         patterns: ["*"]
-      ignore:
-      - dependency-name: "jira"
-      - dependency-name: "argus"
-      - dependency-name: "jive_logging"
+    ignore:
+    - dependency-name: "jira"
+    - dependency-name: "argus"
+    - dependency-name: "jive_logging"
   # Note: there is currently an issue updating the uv build version using dependabot
   # https://github.com/dependabot/dependabot-core/issues/13383
   - package-ecosystem: "docker"
