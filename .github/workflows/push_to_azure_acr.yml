@@ -37,6 +37,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout (initial)
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 
+
       - name: Determine target ref
         id: determine_ref
         run: |
