@@ -1,4 +1,3 @@
-
 from jive_logging.logger import LoggingConfig, configure, get_logger
 
 configure(

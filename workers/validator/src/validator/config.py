@@ -1,15 +1,7 @@
 from functools import lru_cache
-from typing import Annotated
 
-from pydantic import AfterValidator, Field, computed_field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings
-
-
-def _clean_url(v: str) -> str:
-    return v.rstrip("/")
-
-
-BaseUrl = Annotated[str, AfterValidator(_clean_url)]
 
 
 class Settings(BaseSettings):
@@ -38,15 +30,9 @@ class Settings(BaseSettings):
     repository_password: str = Field(alias="REPO_PASSWORD", default="")
     repository_session_ttl: int = Field(alias="REPO_SESSION_TTL_SECONDS", default=43200)
 
-    proforma_repository_label: str = Field(alias="PROFORMA_REPO_LABEL", default="IMPACT Repository")
-    proforma_dataset_type_label: str = Field(
-        alias="PROFORMA_DATASET_TYPE_LABEL", default="Dataset type"
-    )
     jive_documentation: dict[str, dict[str, str]] = Field(
         default_factory=dict, alias="JIVE_DOCUMENTATION"
     )
-
-    retry_status_codes: set[int] = {429, 500, 502, 503, 504}
 
     jive_version_file: str = Field(alias="JIVE_VERSION_FILE", default="/app/jive_version.txt")
 

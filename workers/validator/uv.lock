@@ -40,6 +40,7 @@ source = { editable = "../../common/argus" }
 dependencies = [
     { name = "fastexcel" },
     { name = "httpx2" },
+    { name = "jive-logging" },
     { name = "polars" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
@@ -50,6 +51,7 @@ dependencies = [
 requires-dist = [
     { name = "fastexcel", specifier = ">=0.19.0" },
     { name = "httpx2", specifier = ">=2.16.0" },
+    { name = "jive-logging", editable = "../../common/jive_logging" },
     { name = "polars", specifier = ">=1.44.2" },
     { name = "pydantic-settings", specifier = ">=2.16.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },
@@ -660,6 +662,11 @@ dev = [
 name = "jive-logging"
 version = "0.1.0"
 source = { editable = "../../common/jive_logging" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.17.2" }]
 
 [[package]]
 name = "jupyter-client"
