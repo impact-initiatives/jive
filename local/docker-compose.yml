@@ -15,8 +15,8 @@ services:
   # ──────────────────────────────────────────────────────────────
   jive-ingress:
     build:
-      context: ../../jive/api
-      dockerfile: Dockerfile
+      context: ../../jive
+      dockerfile: api/Dockerfile
     container_name: jive-ingress
     ports:
       - "8000:8000"
