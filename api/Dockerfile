@@ -3,14 +3,14 @@ FROM python:3.14-slim-trixie AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /uvx /bin/
 
 ENV UV_NO_DEV=1
-COPY . /app
+COPY api/ /app/api
 COPY common/jive_logging/ /app/common/jive_logging/
 
 WORKDIR /app
 
-RUN uv sync --locked
+RUN uv sync --locked --directory api
 
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app/api/.venv/bin:$PATH"
 
 RUN mkdir -p /app/logs 
 RUN useradd --create-home --no-log-init jive
