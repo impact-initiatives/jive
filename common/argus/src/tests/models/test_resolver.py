@@ -4,10 +4,10 @@ import pytest
 
 from argus.models.base import SchemaColumnMap, SchemaSheetMap
 from argus.models.base_dataset_schemas import BaseDatasetSchema
-from src.argus.models.resolver import ResolveDataset
-from src.argus.validators.common_validators.missing_sheets_validator import MissingSheetsCheck
-from src.argus.validators.common_validators.nan_check_validator import NaNDataCheck
-from src.argus.validators.common_validators.survey_choices_validator import SurveyChoicesCheck
+from argus.models.resolver import ResolveDataset
+from argus.validators.common_validators.missing_sheets_validator import MissingSheetsCheck
+from argus.validators.common_validators.nan_check_validator import NaNDataCheck
+from argus.validators.common_validators.survey_choices_validator import SurveyChoicesCheck
 
 
 @pytest.fixture

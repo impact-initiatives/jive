@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 import polars as pl
 import pytest
 
+from argus.loaders.excel_loader import ExcelLoader
 from argus.models.base import SchemaColumnMap, SchemaSheetMap
 from argus.models.base_dataset_schemas import BaseDatasetSchema
-from src.argus.loaders.excel_loader import ExcelLoader
 from tests.helpers import error_counter
 
 
