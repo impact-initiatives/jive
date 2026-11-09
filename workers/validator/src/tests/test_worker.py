@@ -188,18 +188,3 @@ class TestWorkerMainLoop:
         mock_process.assert_called_once()
         assert mock_process.call_args[0][0] == msg
         mock_queue.delete_message.assert_not_called()
-
-    @patch("src.validator.main.time.sleep")
-    @patch("src.validator.main.get_queue_client")
-    def test_main_sleeps_when_queue_is_empty(self, mock_get_queue, mock_sleep):
-        """When no messages are available, the worker should sleep before polling again."""
-        mock_queue = MagicMock()
-        mock_get_queue.return_value = mock_queue
-
-        # First call returns empty, sleep is called, second call breaks the loop
-        mock_queue.receive_messages.side_effect = [iter([]), SystemExit]
-
-        with pytest.raises(SystemExit):
-            main()
-
-        mock_sleep.assert_called_with(5)

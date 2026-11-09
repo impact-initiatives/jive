@@ -202,17 +202,19 @@ def main():
 
     logger.info("Worker started", extra={"queue": settings.queue_name})
 
-    while True:
+    has_message = True
+    while has_message:
         try:
             logger.info("Checking for new messages...")
             messages: ItemPaged[QueueMessage] = queue_client.receive_messages(
                 max_messages=1, visibility_timeout=300
             )
 
+            # if there are no messages the process will end after the for loop does nothing
             has_message = False
+
             for msg in messages:
                 has_message = True
-
                 # Parse payload once — used by both dead-letter and processing
                 try:
                     payload_data = json.loads(msg.content)
@@ -251,12 +253,8 @@ def main():
                     )
                     failure_message(payload.issue_key)
 
-            if not has_message:
-                time.sleep(5)
-
         except Exception as e:
             logger.error("Queue polling error", exc_info=e)
-            time.sleep(10)
 
 
 if __name__ == "__main__":

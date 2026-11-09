@@ -69,7 +69,7 @@ jobs:
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
-      image_name: jive-worker
+      image_name: jive-worker-validator
       # release_type: ${{ inputs.release_type }}
       file: ./workers/validator/Dockerfile
     secrets:
@@ -83,9 +83,10 @@ jobs:
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
-      image_name: jive-worker
+      image_name: jive-worker-validator
       # release_type: ${{ inputs.release_type }}
-      container_app_name: jive-worker
+      container_app_name: jive-worker-validator
+      container_app_type: job
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
@@ -114,6 +115,7 @@ jobs:
       image_name: jive-api
       # release_type: ${{ inputs.release_type }}
       container_app_name: jive-ingress
+      container_app_type: app
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
