@@ -25,11 +25,10 @@ on:
         required: true
         type: string
       container_app_type:
-        type: choice
-        description: What type of container
-        options: 
-        - job
-        - app
+        type: str
+        description: What type of container. job or app
+        required: true
+
     secrets:
       AZURE_CREDENTIALS:
         required: true
