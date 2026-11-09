@@ -51,11 +51,8 @@ jobs:
             echo "Target ref found: $TAG"
             echo "target_ref=$TAG" >> $GITHUB_OUTPUT
           else
-            echo "Tag $TAG not found, falling back to latest release"
-            # Get the latest tag from the repo
-            LATEST=$(git ls-remote --tags origin | grep 'refs/tags/' | sed 's/refs\/tags\///' | grep -v '\^{}' | sort -V | tail -n1)
-            echo "Latest tag: $LATEST"
-            echo "target_ref=$LATEST" >> $GITHUB_OUTPUT
+            echo "Tag $TAG not found, falling back to triggering commit (${GITHUB_SHA})"
+            echo "target_ref=$GITHUB_SHA" >> $GITHUB_OUTPUT
           fi
 
       - name: Checkout
