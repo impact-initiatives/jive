@@ -1,5 +1,5 @@
 # Jive API
- A lightweight FastAPI gateway immediately returns `HTTP 202 Accepted` to Jira and pushes the payload to the queue.
+ A lightweight FastAPI gateway used for receiving webhook requests from Jira. Immediately returns `HTTP 202 Accepted` to Jira and pushes the payload to the queue.
 
 ## Local Development & Configuration
 
@@ -15,7 +15,7 @@ uv sync  --all-extras
 ```
 
 ### Environment Variables
-For local deployments using docker a `.env` file is required. Create a `.env` file in the api project root. `.env.example` contains the required environment variables. Change any value of `CHANGE_THIS` to the required value.
+For local deployments using docker a `.env` file is required. Create a `.env` file in the api project root. `.env.example` contains the required environment variables. 
 
 If you want to use this file locally outside of docker then the `config.py` file will need to be updated. Uncomment and configure this code in `config.py` but do not commit the change:
 ```python 
@@ -40,13 +40,6 @@ uv run uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 To run tests:
 ```bash
 uv run pytest -v
-```
-
-### Keeping code clean and formatted
-To automatically format and fix some code issues use:
-```bash
-ruff format
-ruff check --fix
 ```
 
 

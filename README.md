@@ -1,90 +1,36 @@
 # JIVE — Jira IMPACT Validation Engine
 
-**JIVE** (Jira IMPACT Validation Engine) is an asynchronous, event-driven microservice that automates Research Quality Assurance (RQA) workflows and related processes. It bridges the Jira Service Management (JSM) portal with the [Argus](common/argus) engine to automatically download submitted datasets, execute validation pipelines, generate Excel reports, and post structured Atlassian Document Format (ADF) comments back to Jira tickets.
+**JIVE** (Jira IMPACT Validation Engine) is a mono-repository for managing automated workflows that interact with Jira and other impact infrastrcture. It includes a number of shared and re-useable componets that Jive workers can use to perform specific workflows. Each has its own environment configuration and deployment files. 
 
-## Overview
-
-Research data collected through household surveys, market assessments, and key informant interviews undergoes rigorous quality assurance before publication. Historically, this involved manual scripts, downloading files, interpreting output, and back-and-forth communication on Teams or email.
-
-JIVE automates this bottleneck. When a country team member submits a dataset for review via a Jira ticket, JIVE automatically:
-1. Receives the webhook event from Jira.
-2. Extracts dataset context (dataset type, secure links) from Jira ProForma forms.
-3. Downloads the dataset securely.
-4. Executes the full `ARGUS` pipeline.
-5. Generates a multi-sheet Excel report detailing all errors, warnings, and info messages.
-6. Posts a formatted summary comment directly on the Jira ticket and attaches the Excel report.
-
-### The Asynchronous Queue Architecture
-
-Data validation is computationally expensive. Datasets can contain hundreds of thousands of rows across multiple sheets, requiring cross-referencing against cleaning logs and complex schema definitions. If this ran synchronously inside a Jira webhook handler (which requires a response within seconds), the HTTP connection would time out and fail.
-
-JIVE solves this by **decoupling ingestion from processing** using Azure Storage Queues and Azure Container Apps:
-- **Ingress**: A lightweight FastAPI gateway immediately returns `HTTP 202 Accepted` to Jira and pushes the payload to the queue.
-- **Validator**: A background python worker asynchronously pulls jobs from the queue. Leveraging **KEDA** (Kubernetes Event-driven Autoscaling), the worker container scales down to 0 when idle (costing nothing) and scales out dynamically based on the queue length.
-
----
-
-## Architecture
-
-```mermaid
-flowchart TD
-    JSM[Jira Service Management] -->|1. Submit Portal Form| WH(Webhook Trigger)
-    WH -->|2. POST Payload| ING["JIVE Ingress (FastAPI)"]
-    
-    subgraph Azure Container Apps
-        ING -->|3. Enqueue| Q[(Azure Storage Queue)]
-        Q -->|4. Dequeue| WRK["JIVE Worker (Python)"]
-    end
-    
-    WRK <-->|5. Fetch ProForma Context| JSM
-    WRK <-->|6. Download Dataset| SHP[SharePoint / Secure Link]
-    WRK <-->|7. Run Validation| RQA[ARGUS Engine]
-    
-    WRK -->|8. Attach Excel Report| JSM
-    WRK -->|9. Post ADF Comment| JSM
-```
-
----
+See the `readme` in the individual components below for more details.
 
 ## Project Structure
-This project is set up as a mono repo. Within this project there are several application groups. Each has its own environment configuration and deployment files. 
 
 ```text
 
-├── api                     FastAPI ingress (webhook endpoint)
-├── workers                 Contains individual workers including the validation worker.
-├── common                  Shared components that can be resued by workers. This includes the Argus framework, Jira integration and a shared logging framework. 
-└── local                   Local exploration and local Docker Compose setup
+├── api                     
+├── workers                 
+├── common                  
+└── local        Local exploration and local Docker Compose setup
 
 ```
 
----
 
-## Local Development & Configuration
-To set up a local environment for either of the components see their respective readme files:
-- [API readme](api/README.md)
-- [Validator readme](workers/validator/README.md)
-- [Argus readme](common/argus/README.md)
-- [local readme](local/README.md)
+### api
+[api](api) - a FastAPI ingress (webhook endpoint). Used for receiving requests from Jira.
 
-### Running the Services Locally
+### workers
+Individual workers that are deployed as container apps or jobs.
 
-We recommend using the provided `local/docker-compose.yml` to mirror the Azure architecture (FastAPI Gateway + Azurite + Validator). Before running this make sure that `api` and `validator` both have an `.env` file set up. To deploy locally to Docker:
+[validator](workers/validator/) - An asynchronous, event-driven microservice that automates Research Quality Assurance (RQA) data validation workflows.
 
-```bash
-docker compose -f local/docker-compose.yml up --build
-```
-* **JIVE Ingress Gateway**: Accessible at `http://localhost:8000/api/webhook`
-* **Azurite Emulator**: Emulates Azure Storage Queues at `http://localhost:10001`
-* **Background Validator**: Polls Azurite for jobs, executes validation, and interacts with Jira.
+### common
+Shared components that can be resued by workers or other components.
 
-Alternatively, you can run them locally via `uv`. See:
-- [API readme](api/README.md)
-- [Validator readme](workers/validator/README.md)
+[argus](common/argus/) - Framework for validating datasets submitted to RQA.
 
-To connect Jira automation components to a locally hosted envrionment an additional service is required to allow Jira to connect to a localhost address. Services like [ngrok](ngrok.com/) can be used for this. 
+[jira](common/jira/) - Reusable components for interacting with Jira tickets.
 
----
+[jive_logging](common/jive_logging/) - Logging componenets to facilitate standardised logging for all Jive components.
 
-## Related Repositories
-- [`impact-initiatives/argus_schemas`](https://github.com/impact-initiatives/argus_schemas) — Configuration files for Argus datasets.
+

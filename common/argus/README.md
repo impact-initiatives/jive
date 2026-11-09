@@ -7,7 +7,7 @@ Argus is designed to allow for the review and validation of different excel base
 
 **Kobo support**: Many of the validation rules are designed to validate Kobo survey specific components.
 
-**Flexible workflow**: Argus can be run as a standalone tool or incorporated into other workflows like [Jive](https://github.com/impact-initiatives/jive).
+**Flexible workflow**: Argus can be run as a standalone tool or incorporated into other workflows like [Jive workers](../../workers/validator/).
 
 ### Supported Datasets
 To run the process a programme type and dataset type must be specidifed. These are stored as yaml files. The current supported datasets and their schemas are stored in the [Argus schemas](https://github.com/impact-initiatives/argus_schemas) repository.
