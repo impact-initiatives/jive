@@ -25,7 +25,7 @@ on:
         required: true
         type: string
       container_app_type:
-        type: str
+        type: string
         description: What type of container. job or app
         required: true
 
