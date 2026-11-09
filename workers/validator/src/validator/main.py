@@ -211,9 +211,10 @@ def main():
             )
 
             # if there are no messages the process will end after the for loop does nothing
-            has_message = bool(any(messages))
+            has_message = False
 
             for msg in messages:
+                has_message = True
                 # Parse payload once — used by both dead-letter and processing
                 try:
                     payload_data = json.loads(msg.content)
