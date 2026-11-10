@@ -19,6 +19,7 @@ on:
         description: 'Deploy new tag to the validation worker job'
         required: true
         type: boolean
+  pull_request:
 
 permissions:
   contents: read
