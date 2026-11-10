@@ -95,7 +95,7 @@ jobs:
     if: ${{ always() && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
            && !(contains(needs.build_and_push_jive_worker_images.result, 'failure')
              || contains(needs.build_and_push_jive_api_images.result, 'failure')) }}
-    uses: ./.github/workflows/deploy-infrastructure.yml
+    uses: ./.github/workflows/deploy_infrastructure.yml
     with:
       environment: ${{ inputs.release_type }}
       image_tag: ${{ inputs.release_tag }}
