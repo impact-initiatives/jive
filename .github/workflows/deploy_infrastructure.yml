@@ -25,7 +25,7 @@ permissions:
 
 env:
   RESOURCE_GROUP: HQ-dev
-  APP_NAME: jive-ingress
+  APP_NAME: jive-api
   JOB_NAME: jive-worker-validator
   REGISTRY: acrimpact.azurecr.io
 
@@ -57,13 +57,13 @@ jobs:
         run: |
           if [ -z "$IMAGE_TAG_API" ]; then
             IMAGE_TAG_API=$(az containerapp show -n "$APP_NAME" -g "$RESOURCE_GROUP" \
-              --query "template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+              --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
             echo "IMAGE_TAG_API=$IMAGE_TAG_API" >> "$GITHUB_ENV"
             echo "API keeps existing tag: $IMAGE_TAG_API"
           fi
           if [ -z "$IMAGE_TAG_WORKER" ]; then
             IMAGE_TAG_WORKER=$(az containerapp job show -n "$JOB_NAME" -g "$RESOURCE_GROUP" \
-              --query "template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+              --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
             echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
             echo "Worker keeps existing tag: $IMAGE_TAG_WORKER"
           fi

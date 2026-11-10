@@ -9,7 +9,7 @@ param location string = 'switzerlandnorth'
 
 param storageAccountName string
 param managedEnvironmentName string = 'jive-env'
-param containerAppName string = 'jive-ingress'
+param containerAppName string = 'jive-api'
 param queueJobName string = 'jive-worker-validator'
 
 param imageTagApi string
