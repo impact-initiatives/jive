@@ -71,13 +71,13 @@ jobs:
         run: |
           az deployment group what-if \
             --resource-group "$RESOURCE_GROUP" \
-            --template-file main.bicep \
-            --parameters main.${{ inputs.environment }}.bicepparam
+            --template-file infra/main.bicep \
+            --parameters infra/main.${{ inputs.environment }}.bicepparam
 
       - name: Deploy
         run: |
           az deployment group create \
             --name jive-infra-${{ inputs.environment }} \
             --resource-group "$RESOURCE_GROUP" \
-            --template-file main.bicep \
-            --parameters main.${{ inputs.environment }}.bicepparam
+            --template-file infra/main.bicep \
+            --parameters infra/main.${{ inputs.environment }}.bicepparam
