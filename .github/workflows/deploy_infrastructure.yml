@@ -42,6 +42,7 @@ jobs:
       JIVE_DOCUMENTATION: ${{ secrets.JIVE_DOCUMENTATION }}
       ALLOWED_DOMAINS: ${{ secrets.ALLOWED_DOMAINS }}
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
     steps:
       - uses: actions/checkout@v7
 

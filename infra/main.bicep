@@ -22,6 +22,8 @@ param allowedDomains string
 param jiraBaseUrl string
 
 param logAnalyticsCustomerId string
+@secure()
+param logAnalyticsSharedKey string
 param vnetSubnetId string = ''
 
 @secure()
@@ -55,6 +57,7 @@ module environment 'modules/apps_environment.bicep' = {
     managedEnvironmentName: managedEnvironmentName
     location: location
     logAnalyticsCustomerId: logAnalyticsCustomerId
+    logAnalyticsSharedKey: logAnalyticsSharedKey
   }
 }
 
