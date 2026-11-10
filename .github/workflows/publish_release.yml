@@ -64,7 +64,7 @@ jobs:
 
   build_and_push_jive_worker_images:
     needs: create_jive_release
-    if: ${{ always() && inputs.deploy_jive_worker && !(contains(needs.create_jive_release.result, 'failure')}}
+    if: ${{ always() && inputs.deploy_jive_worker && !contains(needs.create_jive_release.result, 'failure')}}
     uses: ./.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
@@ -78,7 +78,7 @@ jobs:
 
   build_and_push_jive_api_images:
     needs: create_jive_release
-    if: ${{ always() && inputs.deploy_jive_api && !(contains(needs.create_jive_release.result, 'failure')}}
+    if: ${{ always() && inputs.deploy_jive_api && !contains(needs.create_jive_release.result, 'failure')}}
     uses: ./.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
@@ -109,7 +109,7 @@ jobs:
   # leave this at the end so that the release is not made if other components fail
   create_argus_schemas_release:
     needs: create_container_app_revision_worker
-    if: ${{ always() &&  inputs.release_argus_schemas && !(contains(needs.deploy_infrastructure.result, 'failure')}}
+    if: ${{ always() &&  inputs.release_argus_schemas && !contains(needs.deploy_infrastructure.result, 'failure')}}
     runs-on: ubuntu-latest
     steps:
       - name: Trigger argus_schemas workflow
