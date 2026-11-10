@@ -101,9 +101,7 @@ jobs:
       image_tag: ${{ inputs.release_tag }}
       deploy_worker: ${{ inputs.deploy_jive_worker }}
       deploy_api: ${{ inputs.deploy_jive_api }}
-    secrets: 
-      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+    secrets: inherit
 
     
   # leave this at the end so that the release is not made if other components fail
