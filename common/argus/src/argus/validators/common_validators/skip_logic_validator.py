@@ -88,6 +88,7 @@ class SkipLogicCheck(BaseValidator):
                 pl.Series("uuid", [], dtype=pl.String),
                 pl.Series("question", [], dtype=pl.String),
                 pl.Series("issue", [], dtype=pl.String),
+                pl.Series("expression", [], dtype=pl.String),
             ]
         )
 
@@ -384,7 +385,7 @@ class SkipLogicCheck(BaseValidator):
                     .sort(["question"])
                 )
 
-                all_issues_df = pl.concat([all_issues_df, issues_df])
+                all_issues_df = pl.concat([all_issues_df, issues_df], how="diagonal_relaxed")
 
         if failed_conversions:
             # might have duplicates but not a big issue

@@ -223,6 +223,24 @@ class CleaningLogToCleanCheck(BaseValidator):
 
         # Compares the cleaning log to clean_data
 
+        # just for ourdering output consistency
+        details_template_df: pl.DataFrame = pl.DataFrame(
+            [
+                pl.Series("cleaning_log sheet", [], dtype=pl.String),
+                pl.Series("clean_data sheet", [], dtype=pl.String),
+                pl.Series("uuid_column_name", [], dtype=pl.String),
+                pl.Series("uuid", [], dtype=pl.String),
+                pl.Series(
+                    data_loaded_columns[self.cleaning_log_question_column].data_column_name,
+                    [],
+                    dtype=pl.String,
+                ),
+                pl.Series("issue", [], dtype=pl.String),
+                pl.Series("cleaning_log_value", [], dtype=pl.String),
+                pl.Series("clean_data_value", [], dtype=pl.String),
+            ]
+        )
+
         # records where the same question was updated more than once for the same id
         multiple_change_mask = modified_rows_df.select(
             cleaning_log_id_columns.data_column_name,
@@ -270,7 +288,9 @@ class CleaningLogToCleanCheck(BaseValidator):
                     ),
                     severity=SeverityLevel.WARNING,
                     sheet_name=self.cleaning_log_sheet,
-                    details=multiple_change_df.to_dict(as_series=False),
+                    details=pl.concat(
+                        [details_template_df.clone(), multiple_change_df], how="diagonal_relaxed"
+                    ).to_dict(as_series=False),
                 )
             )
 
@@ -323,7 +343,9 @@ class CleaningLogToCleanCheck(BaseValidator):
                     ),
                     severity=SeverityLevel.WARNING,
                     sheet_name=self.cleaning_log_sheet,
-                    details=same_value_df.to_dict(as_series=False),
+                    details=pl.concat(
+                        [details_template_df.clone(), same_value_df], how="diagonal_relaxed"
+                    ).to_dict(as_series=False),
                 )
             )
 
@@ -393,7 +415,9 @@ class CleaningLogToCleanCheck(BaseValidator):
                     ),
                     severity=SeverityLevel.WARNING,
                     sheet_name=self.cleaning_log_sheet,
-                    details=missing_quesitons_df.to_dict(as_series=False),
+                    details=pl.concat(
+                        [details_template_df.clone(), missing_quesitons_df], how="diagonal_relaxed"
+                    ).to_dict(as_series=False),
                 )
             )
             questions = filter_list(questions, missing_quesitons)
@@ -588,7 +612,9 @@ class CleaningLogToCleanCheck(BaseValidator):
                         ),
                         severity=SeverityLevel.ERROR,
                         sheet_name=self.cleaning_log_sheet,
-                        details=difference_df.to_dict(as_series=False),
+                        details=pl.concat(
+                            [details_template_df.clone(), difference_df], how="diagonal_relaxed"
+                        ).to_dict(as_series=False),
                     )
                 )
 

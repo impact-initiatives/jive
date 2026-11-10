@@ -84,6 +84,8 @@ docker compose -f local/docker-compose.yml up --build
 
 To connect Jira automation components to a locally hosted envrionment an additional service is required to allow Jira to connect to a localhost address. Services like [ngrok](ngrok.com/) can be used for this. 
 
+**NOTE**: Because the validator is designed to run as an Azure container apps job the deployed container will stop running if there are no jobs. You will need to ensure the queue is populated before starting the validator-worker container again.
+
 ## Validator Local Development & Configuration
 These steps are for setting up and running the validator only. 
 ### Prerequisites

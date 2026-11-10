@@ -59,7 +59,7 @@ class TestMissingSheets:
 
         do_basic_checks(result, 1)
         assert result[0].details is not None
-        assert len(result[0].details["missing_sheets"]) == 1
+        assert len(result[0].details["sheet"]) == 1
 
     def test_optional_sheet(
         self,
@@ -93,7 +93,7 @@ class TestMissingSheets:
 
         do_basic_checks(result, 1)
         assert result[0].details is not None
-        assert len(result[0].details["optional_sheets"]) == 1
+        assert len(result[0].details["sheet"]) == 1
 
     def test_optional_missing_sampling_sheet(
         self,
