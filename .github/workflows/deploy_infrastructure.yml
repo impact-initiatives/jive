@@ -19,6 +19,25 @@ on:
         description: 'Deploy new tag to the validation worker job'
         required: true
         type: boolean
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        type: choice
+        options: [dev]
+        required: true
+      image_tag:
+        description: 'Image tag to deploy'
+        required: true
+        type: string
+      deploy_api:
+        description: 'Deploy API app'
+        type: boolean
+        default: true
+      deploy_worker:
+        description: 'Deploy worker job'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -47,7 +66,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Azure login
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
@@ -55,17 +74,36 @@ jobs:
       # image tag so the Bicep deploy leaves them untouched.
       - name: Resolve current image tags
         run: |
+          set -euo pipefail
+
+          resolve_tag() {
+            local kind="$1" name="$2"
+            # -e suppresses the CLI error so we can inspect it; capture stderr separately
+            if tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
+                  --query "properties.template.containers[0].image" -o tsv 2>&1 | awk -F: '{print $NF}') && \
+              [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
+              echo "Resolved existing tag for $name: $tag"
+              echo "$tag"
+            elif az "$kind" show -n "$name" -g "$RESOURCE_GROUP" -o none 2>/dev/null; then
+              # resource exists but tag came back empty — something is genuinely wrong
+              echo "::error::$name exists but its image tag could not be resolved"
+              exit 1
+            else
+              echo "::notice::$name not found — first deployment, will use new tag '$NEW_TAG'"
+              echo "$NEW_TAG"
+            fi
+          }
+
+          export NEW_TAG="${{ inputs.image_tag }}"
+
           if [ -z "$IMAGE_TAG_API" ]; then
-            IMAGE_TAG_API=$(az containerapp show -n "$APP_NAME" -g "$RESOURCE_GROUP" \
-              --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+            IMAGE_TAG_API=$(resolve_tag containerapp "$APP_NAME")
             echo "IMAGE_TAG_API=$IMAGE_TAG_API" >> "$GITHUB_ENV"
-            echo "API keeps existing tag: $IMAGE_TAG_API"
           fi
+
           if [ -z "$IMAGE_TAG_WORKER" ]; then
-            IMAGE_TAG_WORKER=$(az containerapp job show -n "$JOB_NAME" -g "$RESOURCE_GROUP" \
-              --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+            IMAGE_TAG_WORKER=$(resolve_tag containerappjob "$JOB_NAME")
             echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
-            echo "Worker keeps existing tag: $IMAGE_TAG_WORKER"
           fi
 
       - name: Preview changes
