@@ -19,7 +19,6 @@ on:
         description: 'Deploy new tag to the validation worker job'
         required: true
         type: boolean
-  pull_request:
 
 permissions:
   contents: read
@@ -44,7 +43,7 @@ jobs:
       ALLOWED_DOMAINS: ${{ secrets.ALLOWED_DOMAINS }}
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Azure login
         uses: azure/login@v2
