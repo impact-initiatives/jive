@@ -1,98 +1,101 @@
-// ──────────────────────────────────────────────────────────────
-// JIVE Infrastructure — Main Orchestrator
-// ──────────────────────────────────────────────────────────────
-// Deploys all JIVE resources into a single resource group.
-// Usage:
-//   az deployment group create \
-//     --resource-group rg-impact-etl \
-//     --template-file infra/main.bicep \
-//     --parameters infra/parameters/prod.bicepparam
-// ──────────────────────────────────────────────────────────────
-
-@description('Azure region for all resources')
-param location string = resourceGroup().location
-
-@description('Name of the Storage Account')
-param storageAccountName string
-
-@description('Name of the Container Registry')
-param acrName string
-
-@description('Name of the Key Vault')
-param keyVaultName string
-
-@description('Name of the Container App Environment')
+@description('Logical environment name, used to pick defaults and tagging')
+@allowed([
+  'dev'
+  'prod'
+])
 param environmentName string
 
-@description('Docker image name (without tag)')
-param imageName string
+param location string = 'switzerlandnorth'
 
-@description('Docker image tag')
-param imageTag string = 'latest'
+param storageAccountName string
+param managedEnvironmentName string = 'jive-env'
+param containerAppName string = 'jive-ingress'
+param queueJobName string = 'jive-worker-validator'
 
-// ─── Storage Account + Queue ─────────────────────────────────
-module storage 'modules/storage.bicep' = {
-  name: 'storage-deployment'
+param imageTagApi string
+param imageTagWorker string
+param registryServer string = 'acrimpact.azurecr.io'
+param registryUsername string = 'acrimpact'
+
+param queueName string = 'jive-validation-queue'
+param allowedDomains string
+param jiraBaseUrl string
+
+param logAnalyticsCustomerId string
+param vnetSubnetId string = ''
+
+@secure()
+param registryPassword string
+
+@secure()
+param jiveApiKey string
+
+@secure()
+param jiraApiToken string
+
+@secure()
+param jiraCloudId string
+
+@secure()
+param jiveDocumentation string
+
+module storage 'modules/storage_queue.bicep' = {
+  name: 'storage'
   params: {
-    location: location
     storageAccountName: storageAccountName
+    location: location
+    // validationQueueName: queueName
+    vnetSubnetId: vnetSubnetId
   }
 }
 
-// ─── Container Registry ──────────────────────────────────────
-module acr 'modules/acr.bicep' = {
-  name: 'acr-deployment'
+module environment 'modules/apps_environment.bicep' = {
+  name: 'managed-environment'
   params: {
+    managedEnvironmentName: managedEnvironmentName
     location: location
-    acrName: acrName
+    logAnalyticsCustomerId: logAnalyticsCustomerId
   }
 }
 
-// ─── Container App Environment ───────────────────────────────
-module env 'modules/environment.bicep' = {
-  name: 'environment-deployment'
+module containerApp 'modules/api_container_app.bicep' = {
+  name: 'container-app'
   params: {
+    containerAppName: containerAppName
     location: location
-    environmentName: environmentName
-  }
-}
-
-// ─── Ingress Container App ───────────────────────────────────
-module ingress 'modules/ingress.bicep' = {
-  name: 'ingress-deployment'
-  params: {
-    location: location
-    environmentId: env.outputs.environmentId
-    imageName: '${acr.outputs.loginServer}/${imageName}:${imageTag}'
-    keyVaultUri: kv.outputs.vaultUri
-  }
-}
-
-// ─── Worker Container App ────────────────────────────────────
-module worker 'modules/worker.bicep' = {
-  name: 'worker-deployment'
-  params: {
-    location: location
-    environmentId: env.outputs.environmentId
-    imageName: '${acr.outputs.loginServer}/${imageName}:${imageTag}'
-    keyVaultUri: kv.outputs.vaultUri
-  }
-}
-
-// ─── Key Vault ───────────────────────────────────────────────
-// Both ingress and worker managed identities need Key Vault access.
-module kv 'modules/keyvault.bicep' = {
-  name: 'keyvault-deployment'
-  params: {
-    location: location
-    keyVaultName: keyVaultName
-    ingressPrincipalId: ingress.outputs.principalId
-    workerPrincipalId: worker.outputs.principalId
+    environmentId: environment.outputs.environmentId
+    imageTag: imageTagApi
+    registryServer: registryServer
+    registryUsername: registryUsername
+    registryPassword: registryPassword
     storageConnectionString: storage.outputs.connectionString
+    jiveApiKey: jiveApiKey
+    queueName: queueName
   }
 }
 
-// ─── Outputs ─────────────────────────────────────────────────
-output ingressFqdn string = ingress.outputs.fqdn
-output acrLoginServer string = acr.outputs.loginServer
-output keyVaultUri string = kv.outputs.vaultUri
+module queueJob 'modules/validator_worker.bicep' = {
+  name: 'queue-job'
+  params: {
+    queueJobName: queueJobName
+    location: location
+    environmentId: environment.outputs.environmentId
+    imageTag: imageTagWorker
+    registryServer: registryServer
+    registryUsername: registryUsername
+    registryPassword: registryPassword
+    storageConnectionString: storage.outputs.connectionString
+    storageAccountName: storage.outputs.storageAccountName
+    jiveApiKey: jiveApiKey
+    jiraApiToken: jiraApiToken
+    jiraCloudId: jiraCloudId
+    jiveDocumentation: jiveDocumentation
+    queueName: queueName
+    allowedDomains: allowedDomains
+    jiraBaseUrl: jiraBaseUrl
+  }
+}
+
+output storageAccountName string = storage.outputs.storageAccountName
+output validationQueueName string = queueName
+output ingressFqdn string = containerApp.outputs.fqdn

@@ -1,0 +1,83 @@
+name: Deploy infrastructure
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Target environment (maps to bicepparam file)'
+        required: true
+        type: string
+      image_tag:
+        description: 'New image tag for the components being deployed'
+        required: true
+        type: string
+      deploy_api:
+        description: 'Deploy new tag to the API container app'
+        required: true
+        type: boolean
+      deploy_worker:
+        description: 'Deploy new tag to the validation worker job'
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  RESOURCE_GROUP: HQ-dev
+  APP_NAME: jive-ingress
+  JOB_NAME: jive-worker-validator
+  REGISTRY: acrimpact.azurecr.io
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG_API: ${{ inputs.deploy_api && inputs.image_tag || '' }}
+      IMAGE_TAG_WORKER: ${{ inputs.deploy_worker && inputs.image_tag || '' }}
+      REGISTRY_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_CLOUD_ID: ${{ secrets.JIRA_CLOUD_ID }}
+      JIVE_DOCUMENTATION: ${{ secrets.JIVE_DOCUMENTATION }}
+      ALLOWED_DOMAINS: ${{ secrets.ALLOWED_DOMAINS }}
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # For components NOT being deployed, look up the currently running
+      # image tag so the Bicep deploy leaves them untouched.
+      - name: Resolve current image tags
+        run: |
+          if [ -z "$IMAGE_TAG_API" ]; then
+            IMAGE_TAG_API=$(az containerapp show -n "$APP_NAME" -g "$RESOURCE_GROUP" \
+              --query "template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+            echo "IMAGE_TAG_API=$IMAGE_TAG_API" >> "$GITHUB_ENV"
+            echo "API keeps existing tag: $IMAGE_TAG_API"
+          fi
+          if [ -z "$IMAGE_TAG_WORKER" ]; then
+            IMAGE_TAG_WORKER=$(az containerapp job show -n "$JOB_NAME" -g "$RESOURCE_GROUP" \
+              --query "template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+            echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
+            echo "Worker keeps existing tag: $IMAGE_TAG_WORKER"
+          fi
+
+      - name: Preview changes
+        run: |
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file main.bicep \
+            --parameters main.${{ inputs.environment }}.bicepparam
+
+      - name: Deploy
+        run: |
+          az deployment group create \
+            --name jive-infra-${{ inputs.environment }} \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file main.bicep \
+            --parameters main.${{ inputs.environment }}.bicepparam
