@@ -108,7 +108,7 @@ jobs:
     
   # leave this at the end so that the release is not made if other components fail
   create_argus_schemas_release:
-    needs: create_container_app_revision_worker
+    needs: deploy_infrastructure
     if: ${{ always() &&  inputs.release_argus_schemas && !contains(needs.deploy_infrastructure.result, 'failure')}}
     runs-on: ubuntu-latest
     steps:
