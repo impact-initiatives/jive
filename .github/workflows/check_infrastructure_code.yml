@@ -1,4 +1,4 @@
-name: Check IaC code
+name: Validate IaC code
 
 on:
   push:
@@ -33,4 +33,61 @@ jobs:
 
       - name: Tofu validate
         run: tofu validate 
+
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infra
+    # Only run the credential-holding plan for same-repo PRs / main pushes.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Resolve current image tags
+        env:
+          RESOURCE_GROUP: HQ-dev
+          APP_NAME: jive-api-dev
+          JOB_NAME: jive-worker-validator-dev
+        run: |
+          set -euo pipefail
+          TAG_API=$(az containerapp show -n "$APP_NAME" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+          TAG_WORKER=$(az containerappjob show -n "$JOB_NAME" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+          echo "IMAGE_TAG_API=$TAG_API"     >> "$GITHUB_ENV"
+          echo "IMAGE_TAG_WORKER=$TAG_WORKER" >> "$GITHUB_ENV"
+
+      - uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_version: latest
+
+      - name: Tofu init
+        run: |
+          tofu init -input=false \
+            -backend-config="resource_group_name=${{ vars.AZURE_RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=hqtfstatedev" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=jive/${{ inputs.environment }}.tfstate" \
+            -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+      - name: Tofu plan
+        env:
+          TF_VAR_registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+          TF_VAR_jive_api_key: ${{ secrets.JIVE_API_KEY }}
+          TF_VAR_jira_api_token: ${{ secrets.JIRA_API_TOKEN }}
+          TF_VAR_jira_cloud_id: ${{ secrets.JIRA_CLOUD_ID }}
+          TF_VAR_jive_documentation: ${{ secrets.JIVE_DOCUMENTATION }}
+        run: |
+          tofu plan -input=false -no-color \
+            -var-file=environments/dev.tfvars \
+            -var="image_tag_api=${IMAGE_TAG_API}" \
+            -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
+            -out=tfplan
 
