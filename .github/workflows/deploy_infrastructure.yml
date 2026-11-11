@@ -19,6 +19,7 @@ on:
         description: 'Deploy new tag to the validation worker job'
         required: true
         type: boolean
+      
   workflow_dispatch:
     inputs:
       environment:
@@ -46,7 +47,6 @@ env:
   RESOURCE_GROUP: HQ-dev
   APP_NAME: jive-api
   JOB_NAME: jive-worker-validator
-  REGISTRY: acrimpact.azurecr.io
 
 jobs:
   deploy:
@@ -106,17 +106,34 @@ jobs:
             echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
           fi
 
-      - name: Preview changes
-        run: |
-          az deployment group what-if \
-            --resource-group "$RESOURCE_GROUP" \
-            --template-file infra/main.bicep \
-            --parameters infra/main.${{ inputs.environment }}.bicepparam
+      - uses: opentofu/setup-tofu@v2
+        with:
+          tofu_version: latest
 
-      - name: Deploy
+      - name: Tofu init
+        working-directory: infra
+        run: tofu init -input=false
+
+      - name: Tofu validate
+        working-directory: infra
+        run: tofu validate 
+
+      - name: Tofu plan
+        working-directory: infra
+        env:
+          TF_VAR_registry_password: ${{ env.REGISTRY_PASSWORD }}
+          TF_VAR_jive_api_key: ${{ env.JIVE_API_KEY }}
+          TF_VAR_jira_api_token: ${{ env.JIRA_API_TOKEN }}
+          TF_VAR_jira_cloud_id: ${{ env.JIRA_CLOUD_ID }}
+          TF_VAR_jive_documentation: ${{ env.JIVE_DOCUMENTATION }}
         run: |
-          az deployment group create \
-            --name jive-infra-${{ inputs.environment }} \
-            --resource-group "$RESOURCE_GROUP" \
-            --template-file infra/main.bicep \
-            --parameters infra/main.${{ inputs.environment }}.bicepparam
+          tofu plan \
+            -input=false \
+            -var-file=environments/${{ inputs.environment }}.tfvars \
+            -var="image_tag_api=${IMAGE_TAG_API}" \
+            -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
+            -out=tfplan
+
+      - name: Tofu apply
+        working-directory: infra
+        run: tofu apply -input=false -auto-approve tfplan
