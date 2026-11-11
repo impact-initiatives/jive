@@ -106,7 +106,7 @@ jobs:
             echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
           fi
 
-      - uses: opentofu/setup-tofu@v2
+      - uses: opentofu/setup-opentofu@v2
         with:
           tofu_version: latest
 
