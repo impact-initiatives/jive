@@ -1,16 +1,16 @@
 using 'main.bicep'
 
 param environmentName = 'dev'
-param storageAccountName = 'jivequeuedev'
+param storageAccountName = 'jive-queue-dev'
 param managedEnvironmentName = 'jive-env-dev'
-param containerAppName = 'jive-api'
-param queueJobName = 'jive-worker-validator'
+param containerAppName = 'jive-api-dev'
+param queueJobName = 'jive-worker-validator-dev'
 param queueName = 'jive-validation-queue'
 param allowedDomains = 'repository.impact-initiatives.org,impact-initiatives.atlassian.net,api.atlassian.com'
 param jiraBaseUrl = 'https://api.atlassian.com/ex/jira/'
 param logAnalyticsCustomerId = '0e0f0773-ad07-48a5-ade9-09d171f77e8b'
 
-param vnetName = 'jive-cae-vnet'
+param vnetName = 'jive-vnet-dev'
 param vnetAddressPrefix = '10.20.0.0/22'
 param infrastructureSubnetPrefix = '10.20.0.0/26'
 param debugIpRules = []
