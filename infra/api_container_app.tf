@@ -108,7 +108,7 @@ resource "azurerm_container_app" "api" {
     }
   }
 
-    template {
+  template {
     min_replicas = 1
     max_replicas = 10
     # cooldown_period / polling_interval omitted — see note below
@@ -142,27 +142,27 @@ resource "azurerm_container_app" "api" {
       }
 
       startup_probe {
-        transport         = "TCP"
-        port              = 8000
-        initial_delay     = 1
-        interval_seconds  = 1
-        timeout           = 3
+        transport               = "TCP"
+        port                    = 8000
+        initial_delay           = 1
+        interval_seconds        = 1
+        timeout                 = 3
         failure_count_threshold = 240
       }
 
       liveness_probe {
-        transport         = "TCP"
-        port              = 8000
-        interval_seconds  = 10
-        timeout           = 5
+        transport               = "TCP"
+        port                    = 8000
+        interval_seconds        = 10
+        timeout                 = 5
         failure_count_threshold = 3
       }
 
       readiness_probe {
-        transport         = "TCP"
-        port              = 8000
-        interval_seconds  = 5
-        timeout           = 5
+        transport               = "TCP"
+        port                    = 8000
+        interval_seconds        = 5
+        timeout                 = 5
         failure_count_threshold = 48
       }
     }

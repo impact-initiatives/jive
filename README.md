@@ -10,7 +10,8 @@ See the `readme` in the individual components below for more details.
 
 ├── api                     
 ├── workers                 
-├── common                  
+├── common  
+├── infra                
 └── local        Local exploration and local Docker Compose setup
 
 ```
@@ -34,3 +35,5 @@ Shared components that can be resued by workers or other components.
 [jive_logging](common/jive_logging/) - Logging componenets to facilitate standardised logging for all Jive components.
 
 
+### Infra
+[infra](infra/) - OpenTofu IaC code for managing infrastructure

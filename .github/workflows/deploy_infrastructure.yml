@@ -44,7 +44,6 @@ permissions:
   contents: read
 
 env:
-  RESOURCE_GROUP: HQ-dev
   APP_NAME: jive-api
   JOB_NAME: jive-worker-validator
 
@@ -79,12 +78,12 @@ jobs:
           resolve_tag() {
             local kind="$1" name="$2"
             # -e suppresses the CLI error so we can inspect it; capture stderr separately
-            if tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
+            if tag=$(az "$kind" show -n "$name" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
                   --query "properties.template.containers[0].image" -o tsv 2>&1 | awk -F: '{print $NF}') && \
               [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
               echo "Resolved existing tag for $name: $tag"
               echo "$tag"
-            elif az "$kind" show -n "$name" -g "$RESOURCE_GROUP" -o none 2>/dev/null; then
+            elif az "$kind" show -n "$name" -g ${{ vars.AZURE_RESOURCE_GROUP }} -o none 2>/dev/null; then
               # resource exists but tag came back empty — something is genuinely wrong
               echo "::error::$name exists but its image tag could not be resolved"
               exit 1
@@ -102,7 +101,7 @@ jobs:
           fi
 
           if [ -z "$IMAGE_TAG_WORKER" ]; then
-            IMAGE_TAG_WORKER=$(resolve_tag containerappjob "$JOB_NAME")
+            IMAGE_TAG_WORKER=$(resolve_tag containerapp job "$JOB_NAME")
             echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
           fi
 
@@ -114,7 +113,7 @@ jobs:
         working-directory: infra
         run: |
           tofu init -input=false \
-            -backend-config="resource_group_name=$RESOURCE_GROUP" \
+            -backend-config="resource_group_name=${{ vars.AZURE_RESOURCE_GROUP }}" \
             -backend-config="storage_account_name=hqtfstatedev" \
             -backend-config="container_name=tfstate" \
             -backend-config="key=jive/${{ inputs.environment }}.tfstate" \

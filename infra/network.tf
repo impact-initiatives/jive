@@ -18,13 +18,13 @@ resource "azurerm_subnet" "infrastructure" {
   address_prefixes     = [var.infrastructure_subnet_prefix]
 
   delegation {
-  name = "container-apps-environment"
+    name = "container-apps-environment"
 
-  service_delegation {
-    name    = "Microsoft.App/environments"
-    actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+    service_delegation {
+      name    = "Microsoft.App/environments"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+    }
   }
-}
 
   # Required so the storage account's virtualNetworkRules work
   service_endpoints = ["Microsoft.Storage"]
