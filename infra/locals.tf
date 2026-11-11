@@ -5,5 +5,7 @@ locals {
   tags = {
     environment = var.environment_name
     managed_by  = "opentofu"
+    bl          = "IMPHQ4"
+    state       = "safe-to-delete"
   }
 }

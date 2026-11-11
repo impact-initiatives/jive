@@ -112,7 +112,13 @@ jobs:
 
       - name: Tofu init
         working-directory: infra
-        run: tofu init -input=false
+        run: |
+          tofu init -input=false \
+            -backend-config="resource_group_name=$RESOURCE_GROUP" \
+            -backend-config="storage_account_name=hqtfstatedev" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=jive/${{ inputs.environment }}.tfstate" \
+            -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
       - name: Tofu validate
         working-directory: infra

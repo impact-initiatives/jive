@@ -22,7 +22,3 @@ resource "azurerm_storage_account" "this" {
   }
 }
 
-resource "azurerm_storage_queue" "validation" {
-  name             = var.queue_name
-  storage_account_id = azurerm_storage_account.this.id
-}

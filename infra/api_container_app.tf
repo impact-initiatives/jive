@@ -142,7 +142,7 @@ resource "azurerm_container_app" "api" {
       }
 
       startup_probe {
-        transport         = "Tcp"
+        transport         = "TCP"
         port              = 8000
         initial_delay     = 1
         interval_seconds  = 1
@@ -151,7 +151,7 @@ resource "azurerm_container_app" "api" {
       }
 
       liveness_probe {
-        transport         = "Tcp"
+        transport         = "TCP"
         port              = 8000
         interval_seconds  = 10
         timeout           = 5
@@ -159,7 +159,7 @@ resource "azurerm_container_app" "api" {
       }
 
       readiness_probe {
-        transport         = "Tcp"
+        transport         = "TCP"
         port              = 8000
         interval_seconds  = 5
         timeout           = 5

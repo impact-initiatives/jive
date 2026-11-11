@@ -93,7 +93,7 @@ variable "jira_base_url" {
 
 variable "log_analytics_workspace_name" {
   type    = string
-  default = "jive-log-dev"
+  default = "workspace-devozSg"
 }
 
 variable "debug_ip_rules" {

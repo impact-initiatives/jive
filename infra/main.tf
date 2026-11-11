@@ -11,7 +11,7 @@ terraform {
   # Create a dedicated state storage account (separate from the app one).
   # Supply these via -backend-config in CI or a partial backend config.
   backend "azurerm" {
-    resource_group_name  = "HQ-tfstate"
+    resource_group_name  = var.resource_group_name
     storage_account_name = "hqtfstatedev"
     container_name       = "tfstate"
     key                  = "jive/dev.tfstate"
