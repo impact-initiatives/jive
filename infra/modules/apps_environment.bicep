@@ -8,10 +8,17 @@ param logAnalyticsCustomerId string
 @secure()
 param logAnalyticsSharedKey string
 
+@description('Dedicated subnet for the environment (delegated to Microsoft.App/environments).')
+param infrastructureSubnetId string
+
 resource environment 'Microsoft.App/managedEnvironments@2026-01-01' = {
   name: managedEnvironmentName
   location: location
   properties: {
+    vnetConfiguration: {
+      internal: false
+      infrastructureSubnetId: infrastructureSubnetId
+    }
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {

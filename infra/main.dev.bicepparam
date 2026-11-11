@@ -2,14 +2,18 @@ using 'main.bicep'
 
 param environmentName = 'dev'
 param storageAccountName = 'jivequeuedev'
-param managedEnvironmentName = 'jive-env'
+param managedEnvironmentName = 'jive-env-dev'
 param containerAppName = 'jive-api'
 param queueJobName = 'jive-worker-validator'
 param queueName = 'jive-validation-queue'
 param allowedDomains = 'repository.impact-initiatives.org,impact-initiatives.atlassian.net,api.atlassian.com'
 param jiraBaseUrl = 'https://api.atlassian.com/ex/jira/'
 param logAnalyticsCustomerId = '0e0f0773-ad07-48a5-ade9-09d171f77e8b'
-param vnetSubnetId = '/subscriptions/d23d7e9b-b2f0-4897-81ed-1cb93e8df731/resourceGroups/HQ-dev/providers/Microsoft.Network/virtualNetworks/jivevndev/subnets/default'
+
+param vnetName = 'jive-cae-vnet'
+param vnetAddressPrefix = '10.20.0.0/22'
+param infrastructureSubnetPrefix = '10.20.0.0/26'
+param debugIpRules = []
 
 param imageTagApi = readEnvironmentVariable('IMAGE_TAG_API')
 param imageTagWorker = readEnvironmentVariable('IMAGE_TAG_WORKER')

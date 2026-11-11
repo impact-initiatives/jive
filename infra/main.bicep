@@ -7,6 +7,13 @@ param environmentName string
 
 param location string = 'switzerlandnorth'
 
+param vnetName string = 'jive-cae-vnet'
+@description('VNet address space, e.g. 10.20.0.0/22')
+param vnetAddressPrefix string
+@description('CAE infrastructure subnet prefix, e.g. 10.20.0.0/26')
+param infrastructureSubnetPrefix string
+param debugIpRules array = []
+
 param storageAccountName string
 param managedEnvironmentName string = 'jive-env'
 param containerAppName string = 'jive-api'
@@ -24,7 +31,6 @@ param jiraBaseUrl string
 param logAnalyticsCustomerId string
 @secure()
 param logAnalyticsSharedKey string
-param vnetSubnetId string = ''
 
 @secure()
 param registryPassword string
@@ -41,13 +47,13 @@ param jiraCloudId string
 @secure()
 param jiveDocumentation string
 
-module storage 'modules/storage_queue.bicep' = {
-  name: 'storage'
+module vnet 'modules/vnet.bicep' = {
+  name: 'vnet'
   params: {
-    storageAccountName: storageAccountName
+    vnetName: vnetName
     location: location
-    // validationQueueName: queueName
-    vnetSubnetId: vnetSubnetId
+    vnetAddressPrefix: vnetAddressPrefix
+    infrastructureSubnetPrefix: infrastructureSubnetPrefix
   }
 }
 
@@ -58,6 +64,17 @@ module environment 'modules/apps_environment.bicep' = {
     location: location
     logAnalyticsCustomerId: logAnalyticsCustomerId
     logAnalyticsSharedKey: logAnalyticsSharedKey
+    infrastructureSubnetId: vnet.outputs.infrastructureSubnetId
+  }
+}
+
+module storage 'modules/storage_queue.bicep' = {
+  name: 'storage'
+  params: {
+    storageAccountName: storageAccountName
+    location: location
+    allowedSubnetIds: [vnet.outputs.infrastructureSubnetId]
+    debugIpRules: debugIpRules
   }
 }
 
