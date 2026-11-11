@@ -40,8 +40,8 @@ on:
         type: choice
         options:
           - dev
-          - test
-          - prod
+          # - test
+          # - prod
 
 permissions:
   contents: write
@@ -64,7 +64,7 @@ jobs:
 
   build_and_push_jive_worker_images:
     needs: create_jive_release
-    if: ${{ always() && inputs.deploy_jive_worker && (needs.create_jive_release.result == 'success' || needs.create_jive_release.result == 'skipped')}}
+    if: ${{ always() && inputs.deploy_jive_worker && !contains(needs.create_jive_release.result, 'failure')}}
     uses: ./.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
@@ -76,24 +76,9 @@ jobs:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
 
-  create_container_app_revision_worker:
-    needs: build_and_push_jive_worker_images
-    if: ${{ always() &&  inputs.deploy_jive_worker && needs.build_and_push_jive_worker_images.result == 'success' }}
-    uses: ./.github/workflows/push_to_azure_containerapp.yml
-    with:
-      release_tag: ${{ inputs.release_tag }}
-      acr_name: acrimpact
-      image_name: jive-worker-validator
-      # release_type: ${{ inputs.release_type }}
-      container_app_name: jive-worker-validator
-      container_app_type: job
-    secrets:
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
-
   build_and_push_jive_api_images:
     needs: create_jive_release
-    if: ${{ always() && inputs.deploy_jive_api && (needs.create_jive_release.result == 'success' || needs.create_jive_release.result == 'skipped')}}
+    if: ${{ always() && inputs.deploy_jive_api && !contains(needs.create_jive_release.result, 'failure')}}
     uses: ./.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
@@ -105,25 +90,24 @@ jobs:
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
 
-  create_container_app_revision_api:
-    needs: build_and_push_jive_api_images
-    if: ${{ inputs.deploy_jive_api && always() && needs.build_and_push_jive_api_images.result == 'success' }}
-    uses: ./.github/workflows/push_to_azure_containerapp.yml
+  deploy_infrastructure:
+    needs: [build_and_push_jive_worker_images, build_and_push_jive_api_images]
+    if: ${{ always() && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
+           && !(contains(needs.build_and_push_jive_worker_images.result, 'failure')
+             || contains(needs.build_and_push_jive_api_images.result, 'failure')) }}
+    uses: ./.github/workflows/deploy_infrastructure.yml
     with:
-      release_tag: ${{ inputs.release_tag }}
-      acr_name: acrimpact
-      image_name: jive-api
-      # release_type: ${{ inputs.release_type }}
-      container_app_name: jive-ingress
-      container_app_type: app
-    secrets:
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
+      environment: ${{ inputs.release_type }}
+      image_tag: ${{ inputs.release_tag }}
+      deploy_worker: ${{ inputs.deploy_jive_worker }}
+      deploy_api: ${{ inputs.deploy_jive_api }}
+    secrets: inherit
+
     
   # leave this at the end so that the release is not made if other components fail
   create_argus_schemas_release:
-    needs: create_container_app_revision_worker
-    if: ${{ always() &&  inputs.release_argus_schemas && ( needs.create_container_app_revision_worker.result == 'success' || needs.create_container_app_revision_worker.result == 'skipped')}}
+    needs: deploy_infrastructure
+    if: ${{ always() &&  inputs.release_argus_schemas && !contains(needs.deploy_infrastructure.result, 'failure')}}
     runs-on: ubuntu-latest
     steps:
       - name: Trigger argus_schemas workflow

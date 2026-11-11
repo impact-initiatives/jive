@@ -30,6 +30,8 @@ data/
 *.csv
 *.json
 .DS_Store
+.terraform
+*.hcl
 
 # IDE files
 *.vscode/
