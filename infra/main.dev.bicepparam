@@ -1,7 +1,7 @@
 using 'main.bicep'
 
 param environmentName = 'dev'
-param storageAccountName = 'jive-queue-dev'
+param storageAccountName = 'jivequeuedev'
 param managedEnvironmentName = 'jive-env-dev'
 param containerAppName = 'jive-api-dev'
 param queueJobName = 'jive-worker-validator-dev'
