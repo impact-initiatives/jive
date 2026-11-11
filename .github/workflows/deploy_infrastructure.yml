@@ -101,7 +101,7 @@ jobs:
           fi
 
           if [ -z "$IMAGE_TAG_WORKER" ]; then
-            IMAGE_TAG_WORKER=$(resolve_tag containerappjob "$JOB_NAME")
+            IMAGE_TAG_WORKER=$(resolve_tag containerapp job "$JOB_NAME")
             echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
           fi
 

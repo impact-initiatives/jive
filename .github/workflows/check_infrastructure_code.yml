@@ -59,7 +59,7 @@ jobs:
           set -euo pipefail
           TAG_API=$(az containerapp show -n "$APP_NAME" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
             --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
-          TAG_WORKER=$(az containerappjob show -n "$JOB_NAME" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
+          TAG_WORKER=$(az containerapp job show -n "$JOB_NAME" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
             --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
           echo "IMAGE_TAG_API=$TAG_API"     >> "$GITHUB_ENV"
           echo "IMAGE_TAG_WORKER=$TAG_WORKER" >> "$GITHUB_ENV"
