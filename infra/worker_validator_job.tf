@@ -45,12 +45,12 @@ resource "azurerm_container_app_job" "validator" {
 
 
   event_trigger_config {
-    parallelism             = 1
+    parallelism              = 1
     replica_completion_count = 1
 
     scale {
-      max_executions   = 5
-      min_executions   = 0
+      max_executions              = 5
+      min_executions              = 0
       polling_interval_in_seconds = 20
 
       rules {
@@ -84,7 +84,7 @@ resource "azurerm_container_app_job" "validator" {
       }
 
       env {
-        name  = "JIRA_API_TOKEN"
+        name        = "JIRA_API_TOKEN"
         secret_name = "jira-api-token"
       }
 
@@ -99,17 +99,17 @@ resource "azurerm_container_app_job" "validator" {
       }
 
       env {
-        name  = "AZURE_STORAGE_CONNECTION_STRING"
+        name        = "AZURE_STORAGE_CONNECTION_STRING"
         secret_name = "azure-storage-connection-string"
       }
 
       env {
-        name  = "JIVE_API_KEY"
+        name        = "JIVE_API_KEY"
         secret_name = "jive-api-key"
       }
 
       env {
-        name  = "JIVE_DOCUMENTATION"
+        name        = "JIVE_DOCUMENTATION"
         secret_name = "jive-documentation"
       }
 
@@ -124,7 +124,7 @@ resource "azurerm_container_app_job" "validator" {
       }
 
       env {
-        name  = "JIRA_CLOUD_ID"
+        name        = "JIRA_CLOUD_ID"
         secret_name = "jira-cloud-id"
       }
 
