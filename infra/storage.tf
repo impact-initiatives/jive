@@ -1,7 +1,7 @@
 resource "azurerm_storage_account" "this" {
   name                     = var.storage_account_name
-  location                 = azurerm_resource_group.this.location
-  resource_group_name      = azurerm_resource_group.this.name
+  location                 = data.azurerm_resource_group.this.location
+  resource_group_name      = data.azurerm_resource_group.this.name
   account_tier             = "Standard"
   account_kind             = "StorageV2"
   account_replication_type = "LRS"

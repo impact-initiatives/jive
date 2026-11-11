@@ -1,7 +1,7 @@
 resource "azurerm_container_app" "api" {
   name                         = var.container_app_name
   container_app_environment_id = azurerm_container_app_environment.this.id
-  resource_group_name          = azurerm_resource_group.this.name
+  resource_group_name          = data.azurerm_resource_group.this.name
   revision_mode                = "Single"
 
   secret {

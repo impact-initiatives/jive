@@ -4,8 +4,8 @@ data "azurerm_resource_group" "this" {
 
 resource "azurerm_virtual_network" "this" {
   name                = var.vnet_name
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
+  resource_group_name = data.azurerm_resource_group.this.name
   address_space       = [var.vnet_address_prefix]
   tags                = local.tags
 }
@@ -13,7 +13,7 @@ resource "azurerm_virtual_network" "this" {
 # Dedicated subnet for the Container Apps environment infrastructure
 resource "azurerm_subnet" "infrastructure" {
   name                 = "cae-infrastructure"
-  resource_group_name  = azurerm_resource_group.this.name
+  resource_group_name  = data.azurerm_resource_group.this.name
   virtual_network_name = azurerm_virtual_network.this.name
   address_prefixes     = [var.infrastructure_subnet_prefix]
 

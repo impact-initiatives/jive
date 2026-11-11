@@ -1,7 +1,7 @@
 resource "azurerm_container_app_job" "validator" {
   name                         = var.queue_job_name
-  location                     = azurerm_resource_group.this.location
-  resource_group_name          = azurerm_resource_group.this.name
+  location                     = data.azurerm_resource_group.this.location
+  resource_group_name          = data.azurerm_resource_group.this.name
   container_app_environment_id = azurerm_container_app_environment.this.id
 
   replica_timeout_in_seconds = 1800
