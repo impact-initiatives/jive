@@ -56,10 +56,7 @@ def client():
 
 
 def test_client_initialization_headers_and_auth(client: JiraClient):
-    assert (
-        client.auth._auth_header
-        == BasicAuth("test@example.com", "test-token")._auth_header
-    )
+    assert client.auth._auth_header == BasicAuth("test@example.com", "test-token")._auth_header
     assert isinstance(client.session.auth, BasicAuth)
     assert client.session.headers["Accept"] == "application/json"
     assert client.secure_link_auth == ("secure-user", "secure-pass")
@@ -67,9 +64,7 @@ def test_client_initialization_headers_and_auth(client: JiraClient):
 
 def test_post_comment_success(client: JiraClient, httpx2_mock):
     url = f"{client.base_url}/rest/api/3/issue/RQA-123/comment"
-    httpx2_mock.add_response(
-        method="POST", url=url, json={"id": "1000"}, status_code=201
-    )
+    httpx2_mock.add_response(method="POST", url=url, json={"id": "1000"}, status_code=201)
 
     success = client.post_comment("RQA-123", {"type": "doc", "version": 1})
     assert success is True
@@ -77,9 +72,7 @@ def test_post_comment_success(client: JiraClient, httpx2_mock):
 
 def test_post_comment_failure(client: JiraClient, httpx2_mock):
     url = f"{client.base_url}/rest/api/3/issue/RQA-123/comment"
-    httpx2_mock.add_response(
-        method="POST", url=url, json={"error": "Bad Request"}, status_code=400
-    )
+    httpx2_mock.add_response(method="POST", url=url, json={"error": "Bad Request"}, status_code=400)
 
     success = client.post_comment("RQA-123", {"type": "doc"})
     assert success is False
@@ -106,23 +99,17 @@ def test_get_attachments_failure(client: JiraClient, httpx2_mock):
     assert attachments is None
 
 
-def test_download_proforma_attachment_no_valid_attachments(
-    client: JiraClient, tmp_path: Path
-):
+def test_download_proforma_attachment_no_valid_attachments(client: JiraClient, tmp_path: Path):
     attachments = [
         make_attachment("image.png", id=1),  # Not .xlsx
-        make_attachment(
-            "JIVE_Validation_Report_RQA-123.xlsx", id=2
-        ),  # Excluded by prefix
+        make_attachment("JIVE_Validation_Report_RQA-123.xlsx", id=2),  # Excluded by prefix
     ]
 
     result = client.download_proforma_attachment("RQA-123", tmp_path, attachments)
     assert result is None
 
 
-def test_download_proforma_attachment_success(
-    client: JiraClient, tmp_path: Path, httpx2_mock
-):
+def test_download_proforma_attachment_success(client: JiraClient, tmp_path: Path, httpx2_mock):
 
     attachments = [
         make_attachment(
@@ -152,13 +139,9 @@ def test_download_proforma_attachment_success(
     assert result.read_bytes() == b"mock-data"
 
 
-def test_download_from_secure_link_success(
-    client: JiraClient, tmp_path: Path, httpx2_mock
-):
+def test_download_from_secure_link_success(client: JiraClient, tmp_path: Path, httpx2_mock):
     url = "https://repository.impact-initiatives.org/dataset.xlsx"
-    httpx2_mock.add_response(
-        method="GET", url=url, content=b"secure-data", status_code=200
-    )
+    httpx2_mock.add_response(method="GET", url=url, content=b"secure-data", status_code=200)
 
     result = client.download_from_secure_link(url, tmp_path, "secure.xlsx")
     assert result == tmp_path / "secure.xlsx"
@@ -172,18 +155,14 @@ def test_download_from_secure_link_success(
     assert auth_header is not None
 
 
-def test_download_from_secure_link_ssrf_blocked_domain(
-    client: JiraClient, tmp_path: Path
-):
+def test_download_from_secure_link_ssrf_blocked_domain(client: JiraClient, tmp_path: Path):
     url = "https://malicious.com/dataset.xlsx"
     result = client.download_from_secure_link(url, tmp_path, "secure.xlsx")
     assert result is None
 
 
 # now handled by pydantic settings
-def test_download_from_secure_link_ssrf_empty_allowlist(
-    client: JiraClient, tmp_path, monkeypatch
-):
+def test_download_from_secure_link_ssrf_empty_allowlist(client: JiraClient, tmp_path, monkeypatch):
     reload_settings()
     os.environ.setdefault("ALLOWED_DOMAINS", "")
     get_settings()
@@ -220,9 +199,7 @@ def test_upload_attachment_failure(client: JiraClient, tmp_path: Path, httpx2_mo
     assert success is False
 
 
-def test_upload_public_jsm_attachment_success(
-    client: JiraClient, tmp_path: Path, httpx2_mock
-):
+def test_upload_public_jsm_attachment_success(client: JiraClient, tmp_path: Path, httpx2_mock):
     # 1. get_service_desk_id
     httpx2_mock.add_response(
         method="GET",
@@ -363,9 +340,7 @@ def test_jira_client_download_memory_limit(client: JiraClient, tmp_path, monkeyp
     output_file = tmp_path / "test_download.xlsx"
 
     with patch.object(client.session, "get", return_value=mock_response):
-        success = client._download_file_with_retry(
-            "http://example.com/file.xlsx", output_file
-        )
+        success = client._download_file_with_retry("http://example.com/file.xlsx", output_file)
         assert success is False
         assert not output_file.exists()
         mock_response.close.assert_called_once()

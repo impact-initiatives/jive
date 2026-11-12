@@ -12,9 +12,7 @@ os.environ.setdefault("JIRA_API_BASE_URL", "https://test.atlassian.net")
 os.environ.setdefault("JIRA_AUTH_TYPE", "basic")
 os.environ.setdefault("SECURE_LINK_USERNAME", "secure-user")
 os.environ.setdefault("SECURE_LINK_PASSWORD", "secure-pass")
-os.environ.setdefault(
-    "ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net"
-)
+os.environ.setdefault("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
 
 
 os.environ.setdefault("REPO_USERNAME", "mock-wp-username@example.com")
@@ -33,9 +31,7 @@ def set_default_env_vars(monkeypatch):
     monkeypatch.setenv("JIRA_AUTH_TYPE", "basic")
     monkeypatch.setenv("SECURE_LINK_USERNAME", "secure-user")
     monkeypatch.setenv("SECURE_LINK_PASSWORD", "secure-pass")
-    monkeypatch.setenv(
-        "ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net"
-    )
+    monkeypatch.setenv("ALLOWED_DOMAINS", "repository.impact-initiatives.org,test.atlassian.net")
 
     monkeypatch.setenv("REPO_USERNAME", "mock-wp-username@example.com")
     monkeypatch.setenv("REPO_PASSWORD", "mock-wp-password")

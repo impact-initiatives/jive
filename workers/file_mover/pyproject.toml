@@ -1,0 +1,48 @@
+[project]
+name = "file-mover"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+
+requires-python = ">=3.14"
+dependencies = [
+    "jira",
+    "jive_logging",
+    "worker_base",
+    "pydantic-settings>=2.16.2",
+    "polars>=2.1.0",
+    "fastexcel>=0.21.0",
+    "azure-storage-blob>=12.31.1",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2-pytest>=2.0.0",
+    "ipykernel>=7.3.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.2",
+]
+
+
+[tool.uv.sources]
+jira = { path = "../../common/jira", editable = true  }
+jive_logging = { path = "../../common/jive_logging" , editable = true }
+worker_base = { path = "../../common/worker_base" , editable = true }
+
+
+[project.scripts]
+file-mover = "file_mover:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+exclude = [
+"*.ipynb"
+]
+line-length = 100
+[tool.ruff.lint]
+select = ["UP", "E", "F", "I", "B", "SIM"]

@@ -13,9 +13,7 @@ BaseUrl = Annotated[str, AfterValidator(_clean_url)]
 
 
 class Settings(BaseSettings):
-    jira_auth_type: Literal["basic", "token"] = Field(
-        alias="JIRA_AUTH_TYPE", default="basic"
-    )
+    jira_auth_type: Literal["basic", "token"] = Field(alias="JIRA_AUTH_TYPE", default="basic")
     jira_cloud_id: str = Field(alias="JIRA_CLOUD_ID")
     jira_api_email: str = Field(alias="JIRA_API_EMAIL", default="")
     jira_api_token: str = Field(alias="JIRA_API_TOKEN")
@@ -26,9 +24,7 @@ class Settings(BaseSettings):
     max_attachment_size: int = Field(alias="JIVE_MAX_ATTACHMENT_MB", default=250)
     max_retries: int = Field(alias="JIVE_MAX_RETRIES", default=3)
     allowed_domains: str | frozenset[str] = Field(alias="ALLOWED_DOMAINS", default="")
-    proforma_repository_label: str = Field(
-        alias="PROFORMA_REPO_LABEL", default="IMPACT Repository"
-    )
+    proforma_repository_label: str = Field(alias="PROFORMA_REPO_LABEL", default="IMPACT Repository")
 
 
 @lru_cache(maxsize=1)

@@ -55,3 +55,18 @@ If deploying to a development environment then a plan with valid values will be 
 ```bash
 tofu apply
 ```
+
+You can also only plan/apply selected changes by specifying a resource
+```bash
+tofu plan -target=azurerm_storage_container.validated-files -var-file=environments/dev.tfvars \
+  -var="image_tag_api=..." -var="image_tag_worker=..." \
+  -var="registry_password=..." -var="jive_api_key=..." \
+  -var="jira_api_token=..." -var="jira_cloud_id=..." \
+  -var="jive_documentation=..."
+
+tofu apply -target=azurerm_storage_container.validated-files -var-file=environments/dev.tfvars \
+  -var="image_tag_api=..." -var="image_tag_worker=..." \
+  -var="registry_password=..." -var="jive_api_key=..." \
+  -var="jira_api_token=..." -var="jira_cloud_id=..." \
+  -var="jive_documentation=..."
+```

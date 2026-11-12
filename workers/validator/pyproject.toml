@@ -5,7 +5,6 @@ description = "Azure Container App Worker for JIVE"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "azure-storage-queue>=12.17.0",
     "polars>=1.44.2",
     "pydantic>=2.13.4",
     "tenacity>=9.1.4",
@@ -13,7 +12,8 @@ dependencies = [
     "httpx2>=2.13.1",
     "argus",
     "jira",
-    "jive_logging"
+    "jive_logging",
+    "worker_base"
 ]
 
 [dependency-groups]
@@ -30,6 +30,7 @@ dev = [
 argus = { path = "../../common/argus" , editable = true }
 jira = { path = "../../common/jira", editable = true  }
 jive_logging = { path = "../../common/jive_logging" , editable = true }
+worker_base = { path = "../../common/worker_base" , editable = true }
 
 
 

@@ -10,10 +10,7 @@ class Settings(BaseSettings):
     # )
 
     queue_connection_string: str = Field(alias="AZURE_STORAGE_CONNECTION_STRING")
-    queue_name: str = Field(
-        default="jive-validation-queue",
-        alias="JIVE_QUEUE_NAME",
-    )
+
     api_key: str = Field(
         alias="JIVE_API_KEY",
     )

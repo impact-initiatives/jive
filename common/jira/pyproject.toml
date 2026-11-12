@@ -38,3 +38,11 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-name = "jira"     
 module-root = "src"   
+
+[tool.ruff]
+exclude = [
+"*.ipynb"
+]
+line-length = 100
+[tool.ruff.lint]
+select = ["UP", "E", "F", "I", "B", "SIM"]

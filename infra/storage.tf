@@ -20,5 +20,26 @@ resource "azurerm_storage_account" "this" {
     ip_rules                   = var.debug_ip_rules
     virtual_network_subnet_ids = [azurerm_subnet.infrastructure.id]
   }
+
 }
 
+resource "azurerm_storage_container" "files" {
+  name                  = "validated-files"
+  storage_account_id    = azurerm_storage_account.this.id
+  container_access_type = "private"
+}
+
+locals {
+  storage_queues = [
+    "jive-validation-queue",
+    "jive-validation-queue-poison",
+    "jive-file-mover-queue",
+    "jive-file-mover-queue-poison",
+  ]
+}
+
+resource "azurerm_storage_queue" "queues" {
+  for_each           = toset(local.storage_queues)
+  name               = each.value
+  storage_account_id = azurerm_storage_account.this.id
+}
