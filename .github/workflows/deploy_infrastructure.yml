@@ -61,6 +61,7 @@ jobs:
       ALLOWED_DOMAINS: ${{ secrets.ALLOWED_DOMAINS }}
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
       LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
