@@ -22,3 +22,13 @@ repos:
   hooks:
     - id: tofu_fmt
     - id: tofu_validate
+
+- repo: local
+  hooks:
+    - id: actions-lock-verify-local
+      name: actions.lock coverage check
+      entry: gh actions-lock --verify-local
+      language: system
+      pass_filenames: false
+      files: >-
+        ^(\.github/workflows/.*\.ya?ml|\.github/workflows/actions\.lock)$
