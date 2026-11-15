@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
 
-jobs:
+jobs: 
   check-code:
     runs-on: ubuntu-latest
     defaults:
@@ -20,6 +20,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: opentofu/setup-opentofu@v2.0.2
         with:
@@ -44,6 +46,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Azure login
         uses: azure/login@v3.1.0
@@ -52,14 +56,14 @@ jobs:
 
       - name: Resolve current image tags
         env:
-          RESOURCE_GROUP: HQ-dev
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
           APP_NAME: jive-api-dev
           JOB_NAME: jive-worker-validator-dev
         run: |
           set -euo pipefail
-          TAG_API=$(az containerapp show -n "$APP_NAME" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
+          TAG_API=$(az containerapp show -n "$APP_NAME" -g "$RESOURCE_GROUP" \
             --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
-          TAG_WORKER=$(az containerapp job show -n "$JOB_NAME" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
+          TAG_WORKER=$(az containerapp job show -n "$JOB_NAME" -g "$RESOURCE_GROUP" \
             --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
           echo "IMAGE_TAG_API=$TAG_API"     >> "$GITHUB_ENV"
           echo "IMAGE_TAG_WORKER=$TAG_WORKER" >> "$GITHUB_ENV"
@@ -69,12 +73,15 @@ jobs:
           tofu_version: latest
 
       - name: Tofu init
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           tofu init -input=false \
-            -backend-config="resource_group_name=${{ vars.AZURE_RESOURCE_GROUP }}" \
+            -backend-config="resource_group_name="$RESOURCE_GROUP" \
             -backend-config="storage_account_name=hqtfstatedev" \
             -backend-config="container_name=tfstate" \
-            -backend-config="key=jive/${{ inputs.environment }}.tfstate" \
+            -backend-config="key=jive/"$ENVIRONMENT".tfstate" \
             -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
       - name: Tofu plan

@@ -63,6 +63,8 @@ jobs:
       LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Azure login
         uses: azure/login@v3.1.0
@@ -72,18 +74,21 @@ jobs:
       # For components NOT being deployed, look up the currently running
       # image tag so the Bicep deploy leaves them untouched.
       - name: Resolve current image tags
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
           set -euo pipefail
 
           resolve_tag() {
             local kind="$1" name="$2"
             # -e suppresses the CLI error so we can inspect it; capture stderr separately
-            if tag=$(az "$kind" show -n "$name" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
+            if tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
                   --query "properties.template.containers[0].image" -o tsv 2>&1 | awk -F: '{print $NF}') && \
               [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
               echo "Resolved existing tag for $name: $tag"
               echo "$tag"
-            elif az "$kind" show -n "$name" -g ${{ vars.AZURE_RESOURCE_GROUP }} -o none 2>/dev/null; then
+            elif az "$kind" show -n "$name" -g "$RESOURCE_GROUP" -o none 2>/dev/null; then
               # resource exists but tag came back empty — something is genuinely wrong
               echo "::error::$name exists but its image tag could not be resolved"
               exit 1
@@ -93,7 +98,7 @@ jobs:
             fi
           }
 
-          export NEW_TAG="${{ inputs.image_tag }}"
+          export NEW_TAG="$IMAGE_TAG"
 
           if [ -z "$IMAGE_TAG_API" ]; then
             IMAGE_TAG_API=$(resolve_tag containerapp "$APP_NAME")
@@ -108,15 +113,18 @@ jobs:
       - uses: opentofu/setup-opentofu@v2.0.2
         with:
           tofu_version: latest
-
+ 
       - name: Tofu init
         working-directory: infra
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           tofu init -input=false \
-            -backend-config="resource_group_name=${{ vars.AZURE_RESOURCE_GROUP }}" \
+            -backend-config="resource_group_name="$RESOURCE_GROUP" \
             -backend-config="storage_account_name=hqtfstatedev" \
             -backend-config="container_name=tfstate" \
-            -backend-config="key=jive/${{ inputs.environment }}.tfstate" \
+            -backend-config="key=jive/"$ENVIRONMENT".tfstate" \
             -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
       - name: Tofu validate
@@ -131,10 +139,11 @@ jobs:
           TF_VAR_jira_api_token: ${{ env.JIRA_API_TOKEN }}
           TF_VAR_jira_cloud_id: ${{ env.JIRA_CLOUD_ID }}
           TF_VAR_jive_documentation: ${{ env.JIVE_DOCUMENTATION }}
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           tofu plan \
             -input=false \
-            -var-file=environments/${{ inputs.environment }}.tfvars \
+            -var-file=environments/"$ENVIRONMENT".tfvars \
             -var="image_tag_api=${IMAGE_TAG_API}" \
             -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
             -out=tfplan
