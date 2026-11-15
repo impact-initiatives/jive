@@ -53,7 +53,7 @@ jobs:
     env:
       IMAGE_TAG_API: ${{ inputs.deploy_api && inputs.image_tag || '' }}
       IMAGE_TAG_WORKER: ${{ inputs.deploy_worker && inputs.image_tag || '' }}
-      REGISTRY_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
       JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
       JIRA_CLOUD_ID: ${{ secrets.JIRA_CLOUD_ID }}
@@ -62,6 +62,7 @@ jobs:
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
       LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
