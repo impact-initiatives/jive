@@ -1,5 +1,5 @@
 #Step1: Builder Stage
-FROM python:3.14-slim-trixie AS builder 
+FROM python:3.15-slim-trixie AS builder 
 
 RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
@@ -12,7 +12,7 @@ RUN TAG=$(curl -fsSL https://api.github.com/repos/impact-initiatives/jive/releas
     echo "JIVE tag: $TAG" && \
     echo "$TAG" > /jive_version.txt 
 
-FROM python:3.14-slim-trixie AS runner
+FROM python:3.15-slim-trixie AS runner
 COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /uvx /bin/
 
 ENV UV_NO_DEV=1
