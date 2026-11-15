@@ -39,6 +39,27 @@ on:
         description: 'Deploy worker job'
         type: boolean
         default: true
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+      ACR_PASSWORD:
+        required: true
+      JIVE_API_KEY:
+        required: true
+      JIRA_API_TOKEN:
+        required: true
+      JIRA_CLOUD_ID:
+        required: true
+      JIVE_DOCUMENTATION:
+        required: true
+      ALLOWED_DOMAINS:
+        required: true
+      JIRA_BASE_URL:
+        required: true
+      LOG_ANALYTICS_SHARED_KEY:
+        required: true
 
 permissions:
   contents: read
@@ -137,7 +158,7 @@ jobs:
       - name: Tofu plan
         working-directory: infra
         env:
-          TF_VAR_registry_password: ${{ env.REGISTRY_PASSWORD }}
+          TF_VAR_registry_password: ${{ env.ACR_PASSWORD }}
           TF_VAR_jive_api_key: ${{ env.JIVE_API_KEY }}
           TF_VAR_jira_api_token: ${{ env.JIRA_API_TOKEN }}
           TF_VAR_jira_cloud_id: ${{ env.JIRA_CLOUD_ID }}
