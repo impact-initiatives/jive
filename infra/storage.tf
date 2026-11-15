@@ -33,8 +33,8 @@ locals {
   storage_queues = [
     "jive-validation-queue",
     "jive-validation-queue-poison",
-    "jive-file-mover-queue",
-    "jive-file-mover-queue-poison",
+    # "jive-file-mover-queue",
+    # "jive-file-mover-queue-poison",
   ]
 }
 
