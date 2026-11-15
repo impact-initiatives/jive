@@ -75,13 +75,12 @@ jobs:
       - name: Tofu init
         env:
           RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
-          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           tofu init -input=false \
             -backend-config="resource_group_name="$RESOURCE_GROUP" \
             -backend-config="storage_account_name=hqtfstatedev" \
             -backend-config="container_name=tfstate" \
-            -backend-config="key=jive/"$ENVIRONMENT".tfstate" \
+            -backend-config="key=jive/dev.tfstate" \
             -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
       - name: Tofu plan
