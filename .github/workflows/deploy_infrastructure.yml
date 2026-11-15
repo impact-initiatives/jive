@@ -19,26 +19,6 @@ on:
         description: 'Deploy new tag to the validation worker job'
         required: true
         type: boolean
-      
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        type: choice
-        options: [dev]
-        required: true
-      image_tag:
-        description: 'Image tag to deploy'
-        required: true
-        type: string
-      deploy_api:
-        description: 'Deploy API app'
-        type: boolean
-        default: true
-      deploy_worker:
-        description: 'Deploy worker job'
-        type: boolean
-        default: true
     secrets:
       AZURE_CREDENTIALS:
         required: true
@@ -60,6 +40,27 @@ on:
         required: true
       LOG_ANALYTICS_SHARED_KEY:
         required: true
+      
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        type: choice
+        options: [dev]
+        required: true
+      image_tag:
+        description: 'Image tag to deploy'
+        required: true
+        type: string
+      deploy_api:
+        description: 'Deploy API app'
+        type: boolean
+        default: true
+      deploy_worker:
+        description: 'Deploy worker job'
+        type: boolean
+        default: true
+    
 
 permissions:
   contents: read
