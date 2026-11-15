@@ -107,6 +107,17 @@ jobs:
       image_tag: ${{ inputs.release_tag }}
       deploy_worker: ${{ inputs.deploy_jive_worker }}
       deploy_api: ${{ inputs.deploy_jive_api }}
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_CLOUD_ID: ${{ secrets.JIRA_CLOUD_ID }}
+      JIVE_DOCUMENTATION: ${{ secrets.JIVE_DOCUMENTATION }}
+      ALLOWED_DOMAINS: ${{ secrets.ALLOWED_DOMAINS }}
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
 
     
   # leave this at the end so that the release is not made if other components fail
