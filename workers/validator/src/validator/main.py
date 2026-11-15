@@ -11,13 +11,13 @@ from worker_base.models import JiraSubmissionPayload
 
 from .config import get_settings
 from .excel_exporter import export_response_to_excel
+from .logs import get_logger
 from .worker_utils import (
     check_idempotency,
     publish_results,
     resolve_context,
     run_validation,
 )
-from .logs import get_logger
 
 settings = get_settings()
 logger = get_logger("jive.validator")

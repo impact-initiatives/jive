@@ -1,7 +1,7 @@
 import json
 from datetime import UTC, datetime
 
-from azure.core.exceptions import ResourceNotFoundError
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 from azure.core.paging import ItemPaged
 from azure.storage.queue import QueueClient, QueueMessage
 from jira.jira_client import JiraClient
@@ -125,12 +125,11 @@ class BaseWorker:
     ):
         self.logger.info("Getting queue client...")
         queue_client = self.get_queue_client(self.queue_name)
+
         try:
-            self.logger.info("Getting queue properties...")
-            _ = queue_client.get_queue_properties()
-        except ResourceNotFoundError:
-            self.logger.info("Queue not found, creating it...", extra={"queue": self.queue_name})
             queue_client.create_queue()
+        except ResourceExistsError:
+            self.logger.info("Queue already exists, continuing.")
 
         self.logger.info("Worker started", extra={"queue": self.queue_name})
 

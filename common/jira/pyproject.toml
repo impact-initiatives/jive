@@ -22,6 +22,7 @@ jive_logging = { path = "../../common/jive_logging" , editable = true }
 dev = [
     "httpx2-pytest>=2.0.0",
     "ipykernel>=7.3.0",
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",

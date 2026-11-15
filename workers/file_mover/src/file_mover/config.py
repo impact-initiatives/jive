@@ -17,6 +17,7 @@ class Settings(BaseSettings):
         default="validated-files",
         alias="JIVE_STORAGE_CONTAINER_NAME",
     )
+    base_upload_directory: str = "unprocessed"
 
     max_attachment_size: int = Field(alias="JIVE_MAX_ATTACHMENT_MB", default=250)
     max_retries: int = Field(alias="JIVE_MAX_RETRIES", default=3)
