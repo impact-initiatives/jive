@@ -6,7 +6,6 @@ workflows:
     '.github/workflows/build_translation_files.yml':
         - 'actions/checkout@v7.0.1'
         - 'astral-sh/setup-uv@v10.3.3'
-        - 'endbug/add-and-commit@v11.1.1'
     '.github/workflows/check_code_format.yml':
         - 'actions/checkout@v7.0.1'
         - 'astral-sh/setup-uv@v10.3.3'
@@ -22,7 +21,6 @@ workflows:
     '.github/workflows/publish_release.yml':
         - 'actions/checkout@v7.0.1'
         - 'peter-evans/repository-dispatch@v4.0.1'
-        - 'softprops/action-gh-release@v3.0.4'
     '.github/workflows/push_to_azure_acr.yml':
         - 'actions/checkout@v7.0.1'
         - 'docker/build-push-action@v7.4.0'
@@ -74,11 +72,6 @@ dependencies:
         commit: 'sha1-ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d'
         owner_id: 1588572
         repo_id: 265601040
-    'endbug/add-and-commit@v11.1.1':
-        ref: 'v11.1.1'
-        commit: 'sha1-cc9c08ba6c8df3b93a8f2db63e89b98368ae2ae8'
-        owner_id: 26386270
-        repo_id: 209101661
     'opentofu/setup-opentofu@v2.0.2':
         ref: 'v2.0.2'
         commit: 'sha1-a1320f892987e89d278cc92dc5adc984fb93aca4'
@@ -89,8 +82,3 @@ dependencies:
         commit: 'sha1-28959ce8df70de7be546dd1250a005dd32156697'
         owner_id: 18365890
         repo_id: 220359305
-    'softprops/action-gh-release@v3.0.4':
-        ref: 'v3.0.4'
-        commit: 'sha1-8a0cd651e5b2365bd640854a3fa5dfc70e4875f3'
-        owner_id: 2242
-        repo_id: 204253808
