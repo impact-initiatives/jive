@@ -32,6 +32,8 @@ Shared components that can be resued by workers or other components.
 
 [jira](common/jira/) - Reusable components for interacting with Jira tickets.
 
+[worker_base](common/worker_base/) - Base worker components for interacting with the queue and Jira.
+
 [jive_logging](common/jive_logging/) - Logging componenets to facilitate standardised logging for all Jive components.
 
 
