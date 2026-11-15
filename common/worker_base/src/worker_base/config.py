@@ -26,3 +26,8 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Load settings once per process; subsequent calls return the same object."""
     return Settings()
+
+
+def reload_settings() -> None:
+    """Reset cached settings (for testing)."""
+    get_settings.cache_clear()

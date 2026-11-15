@@ -3,17 +3,29 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from ..validator.main import process_message
-from ..validator.models import JiraSubmissionPayload
+import pytest
+from worker_base.models import JiraSubmissionPayload
+
+from ..validator.main import Validator
+
+
+@pytest.fixture
+def get_base_worker() -> Validator:
+    return Validator(
+        logger_name="test_logger",
+        description="worker description",
+        queue_name="jive-validation-queue",
+    )
+
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.append(str(project_root.parent / "argus"))
 
 
-@patch("src.validator.main.JiraClient")
+@patch("worker_base.base.JiraClient")
 @patch("src.validator.main.ProformaParser")
-@patch("src.validator.main.ImpactRepoClient")
+@patch("worker_base.dataset_utils.ImpactRepoClient")
 @patch("src.validator.main.download_dataset")
 @patch("src.validator.worker_utils.ValidationPipeline")
 @patch("src.validator.main.export_response_to_excel")
@@ -24,10 +36,12 @@ def test_worker_process_message_with_secure_link(
     mock_impact_repo_cls,
     mock_proforma_cls,
     mock_jira_client_cls,
+    get_base_worker: Validator,
 ):
     """Test that the worker correctly delegates to download_from_secure_link."""
     # Setup mocks
     mock_jira = MagicMock()
+    get_base_worker.jira_client = mock_jira
     mock_jira_client_cls.return_value = mock_jira
 
     # Check guard: no existing report on the ticket
@@ -82,7 +96,7 @@ def test_worker_process_message_with_secure_link(
         mock_tmp_path.__truediv__ = lambda self, other: mock_excel_path
         mock_path_cls.return_value = mock_tmp_path
 
-        process_message(mock_msg, payload)
+        get_base_worker.process_message(mock_msg, payload)
 
     mock_jira.get_attachments.assert_called_once()
     mock_download_dataset.assert_called_once()

@@ -4,18 +4,17 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from worker_base.models import JiraSubmissionPayload
 
 from validator.config import get_settings, reload_settings
 
 from ..validator.models import (  # noqa: E402
-    JiraSubmissionPayload,
     MetadataModel,
     PipelineResponse,
     SummaryModel,
 )
 from ..validator.worker_utils import (  # noqa: E402
     check_idempotency,
-    download_dataset,
     publish_results,
     resolve_context,
     run_validation,
@@ -111,54 +110,6 @@ def test_check_idempotency_external_link_prevent_loop(payload: JiraSubmissionPay
     ]
     # No datasets found but report exists => skip to prevent loop
     assert check_idempotency(payload, attachments) is True
-
-
-def test_download_dataset_success(
-    mock_jira_client: MagicMock,
-    mock_proforma: MagicMock,
-    mock_impact_repo: MagicMock,
-    payload: JiraSubmissionPayload,
-    tmp_path: Path,
-):
-    with patch("src.validator.worker_utils.resolve_dataset") as mock_resolve:
-        mock_resolve.return_value = tmp_path / "test.xlsx"
-        result = download_dataset(
-            mock_jira_client,
-            mock_proforma,
-            mock_impact_repo,
-            payload,
-            tmp_path,
-            "1000",
-            [],
-            {},
-        )
-        assert result == tmp_path / "test.xlsx"
-        mock_jira_client.post_comment.assert_not_called()
-
-
-def test_download_dataset_failure(
-    mock_jira_client: MagicMock,
-    mock_proforma: MagicMock,
-    mock_impact_repo: MagicMock,
-    payload: JiraSubmissionPayload,
-    tmp_path: Path,
-):
-    from ..validator.worker_utils import DatasetResolutionError
-
-    with patch("src.validator.worker_utils.resolve_dataset") as mock_resolve:
-        mock_resolve.return_value = None
-        with pytest.raises(DatasetResolutionError):
-            _ = download_dataset(
-                mock_jira_client,
-                mock_proforma,
-                mock_impact_repo,
-                payload,
-                tmp_path,
-                "1000",
-                [],
-                {},
-            )
-        mock_jira_client.post_comment.assert_called_once()
 
 
 def test_resolve_context_default(mock_proforma: MagicMock, payload: JiraSubmissionPayload):

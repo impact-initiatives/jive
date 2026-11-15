@@ -6,8 +6,8 @@ from httpx2 import Client
 from jira.jira_client import JiraClient  # noqa: E402
 from jira.proforma_parser import ProformaParser  # noqa: E402
 
-from ..validator.impact_repo_client import ImpactRepoClient  # noqa: E402
-from ..validator.worker_utils import resolve_dataset  # noqa: E402
+from worker_base.dataset_utils import resolve_dataset  # noqa: E402
+from worker_base.impact_repo_client import ImpactRepoClient  # noqa: E402
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
@@ -74,9 +74,9 @@ def test_scrape_excel_url(httpx2_mock):
     assert len(requests) == 1
 
 
-@patch("src.validator.worker_utils.JiraClient.download_proforma_attachment")
-@patch("src.validator.worker_utils.ImpactRepoClient.scrape_excel_url")
-@patch("src.validator.worker_utils.ImpactRepoClient.download_excel")
+@patch("worker_base.dataset_utils.JiraClient.download_proforma_attachment")
+@patch("worker_base.dataset_utils.ImpactRepoClient.scrape_excel_url")
+@patch("worker_base.dataset_utils.ImpactRepoClient.download_excel")
 def test_resolve_dataset_workflow(mock_download_excel, mock_scrape_url, mock_download_att):
     """Test unified fallback priority resolver strategy."""
     jira = JiraClient()
