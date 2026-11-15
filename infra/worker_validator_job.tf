@@ -94,11 +94,6 @@ resource "azurerm_container_app_job" "validator" {
       }
 
       env {
-        name  = "JIVE_QUEUE_NAME"
-        value = var.queue_name
-      }
-
-      env {
         name        = "AZURE_STORAGE_CONNECTION_STRING"
         secret_name = "azure-storage-connection-string"
       }

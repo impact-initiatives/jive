@@ -81,7 +81,8 @@ class SkipLogicCheck(BaseValidator):
         results: list[ValidationResult] = []
         failed_conversions: list[dict[str, str]] = []
 
-        all_issues_df: pl.DataFrame = pl.DataFrame(
+        # used as a template
+        all_issues_base_df: pl.DataFrame = pl.DataFrame(
             [
                 pl.Series("sheet", [], dtype=pl.String),
                 pl.Series("uuid_column", [], dtype=pl.String),
@@ -91,6 +92,7 @@ class SkipLogicCheck(BaseValidator):
                 pl.Series("expression", [], dtype=pl.String),
             ]
         )
+        all_issues_df = all_issues_base_df.clone()
 
         # check all the sheets exist
         check_sheets = [self.parent_sheet]
@@ -397,7 +399,10 @@ class SkipLogicCheck(BaseValidator):
                         count=len(failed_conversions),
                     ),
                     severity=SeverityLevel.WARNING,
-                    details=pl.DataFrame(failed_conversions).to_dict(as_series=False),
+                    details=pl.concat(
+                        [all_issues_base_df.clone(), pl.DataFrame(failed_conversions)],
+                        how="diagonal_relaxed",
+                    ).to_dict(as_series=False),
                 )
             )
 

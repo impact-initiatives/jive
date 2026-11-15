@@ -5,6 +5,7 @@ import urllib.parse
 from pathlib import Path
 
 from httpx2 import Client, ConnectError, Timeout, TimeoutException
+from jive_logging.logger import get_logger
 from tenacity import (
     before_sleep_log,
     retry,
@@ -13,11 +14,9 @@ from tenacity import (
     wait_exponential,
 )
 
-from validator.config import get_settings
+from .config import get_settings
 
-from .logs import get_logger
-
-logger = get_logger("jive.validator.impact_repo_client")
+logger = get_logger("jive.impact_repo_client")
 
 
 def _sanitize_url(url: str) -> str:
@@ -117,11 +116,16 @@ class ImpactRepoClient:
     )
     def scrape_excel_url(self, page_url: str) -> str | None:
         """Scrape a repository page to find the direct .xlsx download link."""
-        logger.info("Scraping IMPACT Repository page for Excel link", extra={"page_url": page_url})
+        logger.info(
+            "Scraping IMPACT Repository page for Excel link",
+            extra={"page_url": page_url},
+        )
         try:
             session = self.get_authenticated_session()
             response = session.get(
-                page_url, timeout=Timeout(None, connect=3.05, read=30.0), follow_redirects=True
+                page_url,
+                timeout=Timeout(None, connect=3.05, read=30.0),
+                follow_redirects=True,
             )
             response.raise_for_status()
 
@@ -132,12 +136,14 @@ class ImpactRepoClient:
             if match:
                 excel_url = match.group(1)
                 logger.info(
-                    "Excel download link found on repository page", extra={"excel_url": excel_url}
+                    "Excel download link found on repository page",
+                    extra={"excel_url": excel_url},
                 )
                 return excel_url
 
             logger.warning(
-                "No .xlsx or .xls link found on repository page", extra={"page_url": page_url}
+                "No .xlsx or .xls link found on repository page",
+                extra={"page_url": page_url},
             )
             return None
         except ConnectError, TimeoutException:

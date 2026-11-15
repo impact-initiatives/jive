@@ -12,23 +12,12 @@ class Settings(BaseSettings):
     # )
 
     queue_connection_string: str = Field(alias="AZURE_STORAGE_CONNECTION_STRING")
-    queue_name: str = Field(
-        default="jive-validation-queue",
-        alias="JIVE_QUEUE_NAME",
-    )
-    api_key: str = Field(alias="JIVE_API_KEY")
-
+    queue_name: str = "jive-validation-queue"
     max_attachment_size: int = Field(alias="JIVE_MAX_ATTACHMENT_MB", default=250)
     max_retries: int = Field(alias="JIVE_MAX_RETRIES", default=3)
     force_validation: bool = Field(alias="JIVE_FORCE_VALIDATION", default=False)
 
     max_excel_errors: int = Field(alias="MAX_EXCEL_ERRORS", default=50000)
-
-    allowed_domains: str | frozenset[str] = Field(alias="ALLOWED_DOMAINS", default="")
-
-    repository_username: str = Field(alias="REPO_USERNAME", default="")
-    repository_password: str = Field(alias="REPO_PASSWORD", default="")
-    repository_session_ttl: int = Field(alias="REPO_SESSION_TTL_SECONDS", default=43200)
 
     jive_documentation: dict[str, dict[str, str]] = Field(
         default_factory=dict, alias="JIVE_DOCUMENTATION"

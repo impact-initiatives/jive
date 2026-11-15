@@ -44,28 +44,34 @@ on:
           # - prod
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:  
 
   create_jive_release:
     if: ${{ inputs.release_jive &&  always() }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7  
+        uses: actions/checkout@v7.0.1  
+        with:
+          persist-credentials: false
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ inputs.release_tag }}
-          name: ${{ inputs.release_tag }}
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --generate-notes
 
   build_and_push_jive_worker_images:
     needs: create_jive_release
     if: ${{ always() && inputs.deploy_jive_worker && !contains(needs.create_jive_release.result, 'failure')}}
-    uses: ./.github/workflows/push_to_azure_acr.yml
+    uses: $/.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
@@ -79,7 +85,7 @@ jobs:
   build_and_push_jive_api_images:
     needs: create_jive_release
     if: ${{ always() && inputs.deploy_jive_api && !contains(needs.create_jive_release.result, 'failure')}}
-    uses: ./.github/workflows/push_to_azure_acr.yml
+    uses: $/.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
       acr_name: acrimpact
@@ -95,13 +101,23 @@ jobs:
     if: ${{ always() && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
            && !(contains(needs.build_and_push_jive_worker_images.result, 'failure')
              || contains(needs.build_and_push_jive_api_images.result, 'failure')) }}
-    uses: ./.github/workflows/deploy_infrastructure.yml
-    with:
+    uses: $/.github/workflows/deploy_infrastructure.yml
+    with: 
       environment: ${{ inputs.release_type }}
       image_tag: ${{ inputs.release_tag }}
       deploy_worker: ${{ inputs.deploy_jive_worker }}
       deploy_api: ${{ inputs.deploy_jive_api }}
-    secrets: inherit
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_CLOUD_ID: ${{ secrets.JIRA_CLOUD_ID }}
+      JIVE_DOCUMENTATION: ${{ secrets.JIVE_DOCUMENTATION }}
+      ALLOWED_DOMAINS: ${{ secrets.ALLOWED_DOMAINS }}
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
 
     
   # leave this at the end so that the release is not made if other components fail
@@ -111,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger argus_schemas workflow
-        uses: peter-evans/repository-dispatch@v4
+        uses: peter-evans/repository-dispatch@v4.0.1
         with:
           token: ${{ secrets.REPO_DISPATCH_TOKEN }}  
           repository: impact-initiatives/argus_schemas

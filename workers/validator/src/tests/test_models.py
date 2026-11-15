@@ -1,6 +1,5 @@
 import pytest
-
-from ..validator.models import JiraSubmissionPayload
+from worker_base.models import JiraSubmissionPayload
 
 
 @pytest.fixture(autouse=True)

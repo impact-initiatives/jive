@@ -40,9 +40,7 @@ class JiraAPIError(Exception):
 def check_retryable(response: Response):
     """Raises JiraAPIError if the response has a retryable status code."""
     if response.status_code in get_settings().retry_status_codes:
-        raise JiraAPIError(
-            f"Jira returned {response.status_code}: {response.text[:200]}"
-        )
+        raise JiraAPIError(f"Jira returned {response.status_code}: {response.text[:200]}")
 
 
 class JiraClient:
@@ -61,9 +59,7 @@ class JiraClient:
             self.base_url = self.settings.jira_api_base_url
         else:
             self.headers["Authorization"] = f"Bearer {self.token}"
-            self.base_url = (
-                f"{self.settings.jira_api_base_url}/{self.settings.jira_cloud_id}"
-            )
+            self.base_url = f"{self.settings.jira_api_base_url}/{self.settings.jira_cloud_id}"
 
         self.secure_link_user: str = self.settings.secure_link_username
         self.secure_link_pass: str = self.settings.secure_link_password
@@ -227,7 +223,9 @@ class JiraClient:
             return False
 
         # 2. Upload temporary file
-        upload_url = f"{self.base_url}/rest/servicedeskapi/servicedesk/{service_desk_id}/attachTemporaryFile"
+        upload_url = (
+            f"{self.base_url}/rest/servicedeskapi/servicedesk/{service_desk_id}/attachTemporaryFile"
+        )
         headers = {
             "X-Atlassian-Token": "no-check",
         }
@@ -264,9 +262,7 @@ class JiraClient:
                     )
                     return False
 
-                response_data = TemporaryAttachmentsResponse.model_validate(
-                    response.json()
-                )
+                response_data = TemporaryAttachmentsResponse.model_validate(response.json())
                 if not response_data.temporaryAttachments:
                     logger.error(
                         "Temporary JSM attachment response contained no attachments",
@@ -274,9 +270,7 @@ class JiraClient:
                     )
                     return False
 
-                temp_attachment_id = response_data.temporaryAttachments[
-                    0
-                ].temporaryAttachmentId
+                temp_attachment_id = response_data.temporaryAttachments[0].temporaryAttachmentId
                 logger.info(
                     "Temporary JSM attachment uploaded successfully",
                     extra={"issue_key": issue_key, "temp_id": temp_attachment_id},
@@ -290,9 +284,7 @@ class JiraClient:
             return False
 
         # 3. Attach temporary file to request publicly
-        attach_url = (
-            f"{self.base_url}/rest/servicedeskapi/request/{issue_key}/attachment"
-        )
+        attach_url = f"{self.base_url}/rest/servicedeskapi/request/{issue_key}/attachment"
         attach_headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -427,9 +419,7 @@ class JiraClient:
             ]
 
             if not xlsx_attachments:
-                logger.warning(
-                    "No Excel attachments found", extra={"issue_key": issue_key}
-                )
+                logger.warning("No Excel attachments found", extra={"issue_key": issue_key})
                 return None
         else:
             logger.warning("No attachments found", extra={"issue_key": issue_key})
@@ -541,10 +531,7 @@ class JiraClient:
 
         parsed_url = urllib.parse.urlparse(url)
 
-        if (
-            parsed_url.scheme != "https"
-            or parsed_url.netloc not in self.settings.allowed_domains
-        ):
+        if parsed_url.scheme != "https" or parsed_url.netloc not in self.settings.allowed_domains:
             logger.error(
                 "SSRF Protection: URL domain not in allowed list",
                 extra={
@@ -556,9 +543,7 @@ class JiraClient:
             return None
 
         output_path = output_dir / filename
-        success = self._download_file_with_retry(
-            url, output_path, auth=self.secure_link_auth
-        )
+        success = self._download_file_with_retry(url, output_path, auth=self.secure_link_auth)
         if success:
             return output_path
         return None

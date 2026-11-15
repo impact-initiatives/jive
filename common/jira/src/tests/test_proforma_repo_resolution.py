@@ -82,10 +82,7 @@ def test_get_proforma_answers(httpx2_mock, jira_client: JiraClient):
         answers["IMPACT Repository"]
         == "https://repository.impact-initiatives.org/resources/test-dataset"
     )
-    assert (
-        answers["repo_url"]
-        == "https://repository.impact-initiatives.org/resources/test-dataset"
-    )
+    assert answers["repo_url"] == "https://repository.impact-initiatives.org/resources/test-dataset"
     assert answers["Dataset type"] == "JMMI Factsheet"
     assert answers["ds_type"] == "JMMI Factsheet"
     requests = httpx2_mock.get_requests()

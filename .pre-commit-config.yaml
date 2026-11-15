@@ -1,0 +1,34 @@
+exclude: ^local/
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.17.5
+  hooks:
+    # Run the linter.
+    - id: ruff-check
+      types_or: [ python, pyi, pyproject ]
+      args: [ --fix ]
+    # Run the formatter.
+    - id: ruff-format
+
+- repo: https://github.com/zizmorcore/zizmor-pre-commit
+  rev: v1.32.0
+  hooks:
+    - id: zizmor
+      args: [--no-progress, --fix]
+
+- repo: https://github.com/tofuutils/pre-commit-opentofu
+  rev: v2.4.2
+  hooks:
+    - id: tofu_fmt
+    - id: tofu_validate
+
+- repo: local
+  hooks:
+    - id: actions-lock-verify-local
+      name: actions.lock coverage check
+      entry: gh actions-lock --verify-local
+      language: system
+      pass_filenames: false
+      files: >-
+        ^(\.github/workflows/.*\.ya?ml|\.github/workflows/actions\.lock)$

@@ -32,8 +32,21 @@ Shared components that can be resued by workers or other components.
 
 [jira](common/jira/) - Reusable components for interacting with Jira tickets.
 
+[worker_base](common/worker_base/) - Base worker components for interacting with the queue and Jira.
+
 [jive_logging](common/jive_logging/) - Logging componenets to facilitate standardised logging for all Jive components.
 
 
 ### Infra
 [infra](infra/) - OpenTofu IaC code for managing infrastructure
+
+
+
+## Development Setup
+While some of the individual projects will have more project specific requirements and instructions for setting up a development environment, these are the common tools that are required across projects:
+- [uv](https://docs.astral.sh/uv/) package manager
+- [github cli](https://cli.github.com/)
+- [azure cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
+- [pre-commit](https://pre-commit.com/#install)
+- [OpenTofu] (https://opentofu.org/docs/intro/install/)
+

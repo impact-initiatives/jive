@@ -22,6 +22,7 @@ COPY workers/validator/ /app/workers/validator/
 COPY common/argus/ /app/common/argus/
 COPY common/jira/ /app/common/jira/
 COPY common/jive_logging/ /app/common/jive_logging/
+COPY common/worker_base/ /app/common/worker_base/
 
 WORKDIR /app
 

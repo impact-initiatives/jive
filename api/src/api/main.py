@@ -17,6 +17,11 @@ logger = get_logger("jive.api")
 
 app = FastAPI(title="JIVE api Webhook")
 
+QUEUE_ROUTES = {
+    "validation": "jive-validation-queue",
+    "move_file": "jive-file-mover-queue",
+}
+
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
@@ -69,10 +74,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 @lru_cache(maxsize=1)
-def get_queue_client() -> QueueClient:
+def get_queue_client(queue_name: str) -> QueueClient:
     return QueueClient.from_connection_string(
         conn_str=settings.queue_connection_string,
-        queue_name=settings.queue_name,
+        queue_name=queue_name,
     )
 
 
@@ -86,6 +91,7 @@ async def health_check():
 def handle_jira_webhook(
     payload: JiraSubmissionPayload,
     x_functions_key: str = Header(None),
+    x_queue_target: str = Header(None),
 ):
     """
     Ingress endpoint for Jira Automation.
@@ -102,15 +108,19 @@ def handle_jira_webhook(
         )
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
+    queue_name = QUEUE_ROUTES.get(x_queue_target)
+    if x_queue_target and queue_name is None:
+        raise HTTPException(status_code=400, detail="Unknown queue target")
+
     # Push message to Azure Storage Queue
     try:
-        queue_client = get_queue_client()
+        queue_client = get_queue_client(queue_name)
         message_body = payload.model_dump_json()
         try:
             _ = queue_client.send_message(message_body)
         except ResourceNotFoundError:
             # Auto-create queue if it genuinely doesn't exist (common in local Azurite testing)
-            logger.info("Queue not found, creating it...", extra={"queue": settings.queue_name})
+            logger.info("Queue not found, creating it...", extra={"queue": queue_name})
             queue_client.create_queue()
             _ = queue_client.send_message(message_body)
     except Exception as e:

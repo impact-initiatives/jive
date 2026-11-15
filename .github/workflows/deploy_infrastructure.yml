@@ -19,6 +19,27 @@ on:
         description: 'Deploy new tag to the validation worker job'
         required: true
         type: boolean
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+      ACR_PASSWORD:
+        required: true
+      JIVE_API_KEY:
+        required: true
+      JIRA_API_TOKEN:
+        required: true
+      JIRA_CLOUD_ID:
+        required: true
+      JIVE_DOCUMENTATION:
+        required: true
+      ALLOWED_DOMAINS:
+        required: true
+      JIRA_BASE_URL:
+        required: true
+      LOG_ANALYTICS_SHARED_KEY:
+        required: true
       
   workflow_dispatch:
     inputs:
@@ -39,6 +60,7 @@ on:
         description: 'Deploy worker job'
         type: boolean
         default: true
+    
 
 permissions:
   contents: read
@@ -53,7 +75,7 @@ jobs:
     env:
       IMAGE_TAG_API: ${{ inputs.deploy_api && inputs.image_tag || '' }}
       IMAGE_TAG_WORKER: ${{ inputs.deploy_worker && inputs.image_tag || '' }}
-      REGISTRY_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
       JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
       JIRA_CLOUD_ID: ${{ secrets.JIRA_CLOUD_ID }}
@@ -61,29 +83,36 @@ jobs:
       ALLOWED_DOMAINS: ${{ secrets.ALLOWED_DOMAINS }}
       JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
       LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Azure login
-        uses: azure/login@v3
+        uses: azure/login@v3.1.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # For components NOT being deployed, look up the currently running
       # image tag so the Bicep deploy leaves them untouched.
       - name: Resolve current image tags
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
           set -euo pipefail
 
           resolve_tag() {
             local kind="$1" name="$2"
             # -e suppresses the CLI error so we can inspect it; capture stderr separately
-            if tag=$(az "$kind" show -n "$name" -g ${{ vars.AZURE_RESOURCE_GROUP }} \
+            if tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
                   --query "properties.template.containers[0].image" -o tsv 2>&1 | awk -F: '{print $NF}') && \
               [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
               echo "Resolved existing tag for $name: $tag"
               echo "$tag"
-            elif az "$kind" show -n "$name" -g ${{ vars.AZURE_RESOURCE_GROUP }} -o none 2>/dev/null; then
+            elif az "$kind" show -n "$name" -g "$RESOURCE_GROUP" -o none 2>/dev/null; then
               # resource exists but tag came back empty — something is genuinely wrong
               echo "::error::$name exists but its image tag could not be resolved"
               exit 1
@@ -93,7 +122,7 @@ jobs:
             fi
           }
 
-          export NEW_TAG="${{ inputs.image_tag }}"
+          export NEW_TAG="$IMAGE_TAG"
 
           if [ -z "$IMAGE_TAG_API" ]; then
             IMAGE_TAG_API=$(resolve_tag containerapp "$APP_NAME")
@@ -105,19 +134,23 @@ jobs:
             echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
           fi
 
-      - uses: opentofu/setup-opentofu@v2
+      - uses: opentofu/setup-opentofu@v2.0.2
         with:
           tofu_version: latest
-
+ 
       - name: Tofu init
         working-directory: infra
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           tofu init -input=false \
-            -backend-config="resource_group_name=${{ vars.AZURE_RESOURCE_GROUP }}" \
+            -backend-config="resource_group_name=$RESOURCE_GROUP" \
             -backend-config="storage_account_name=hqtfstatedev" \
             -backend-config="container_name=tfstate" \
-            -backend-config="key=jive/${{ inputs.environment }}.tfstate" \
-            -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+            -backend-config="key=jive/"$ENVIRONMENT".tfstate" \
+            -backend-config="subscription_id=$SUBSCRIPTION_ID"
 
       - name: Tofu validate
         working-directory: infra
@@ -126,15 +159,16 @@ jobs:
       - name: Tofu plan
         working-directory: infra
         env:
-          TF_VAR_registry_password: ${{ env.REGISTRY_PASSWORD }}
+          TF_VAR_registry_password: ${{ env.ACR_PASSWORD }}
           TF_VAR_jive_api_key: ${{ env.JIVE_API_KEY }}
           TF_VAR_jira_api_token: ${{ env.JIRA_API_TOKEN }}
           TF_VAR_jira_cloud_id: ${{ env.JIRA_CLOUD_ID }}
           TF_VAR_jive_documentation: ${{ env.JIVE_DOCUMENTATION }}
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           tofu plan \
             -input=false \
-            -var-file=environments/${{ inputs.environment }}.tfvars \
+            -var-file=environments/"$ENVIRONMENT".tfvars \
             -var="image_tag_api=${IMAGE_TAG_API}" \
             -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
             -out=tfplan
