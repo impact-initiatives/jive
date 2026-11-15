@@ -33,9 +33,15 @@ jobs:
             common/jive_logging:
               - 'common/jive_logging/**/*.py'
               - 'common/jive_logging/pyproject.toml'
+            common/worker_base:
+              - 'common/worker_base/**/*.py' 
+              - 'common/worker_base/**/pyproject.toml'' 
             workers/validator:
               - 'workers/validator/**/*.py'
               - 'workers/validator/pyproject.toml'
+            workers/file_mover:
+              - 'workers/file_mover/**/*.py'
+              - 'workers/file_mover/pyproject.toml'
 
   check:
     name: Ruff (${{ matrix.project }})

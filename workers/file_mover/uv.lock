@@ -717,6 +717,7 @@ requires-dist = [
 dev = [
     { name = "httpx2-pytest", specifier = ">=2.0.0" },
     { name = "ipykernel", specifier = ">=7.3.0" },
+    { name = "pre-commit", specifier = ">=4.7.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
@@ -731,7 +732,10 @@ source = { editable = "../../common/jive_logging" }
 [package.metadata]
 
 [package.metadata.requires-dev]
-dev = [{ name = "ruff", specifier = ">=0.17.2" }]
+dev = [
+    { name = "pre-commit", specifier = ">=4.7.0" },
+    { name = "ruff", specifier = ">=0.17.2" },
+]
 
 [[package]]
 name = "jupyter-client"
@@ -1446,4 +1450,9 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "ruff", specifier = ">=0.17.4" }]
+dev = [
+    { name = "httpx2-pytest", specifier = ">=2.0.0" },
+    { name = "pre-commit", specifier = ">=4.7.0" },
+    { name = "pytest", specifier = ">=9.2.0" },
+    { name = "ruff", specifier = ">=0.17.4" },
+]
