@@ -23,8 +23,7 @@ updates:
     - dependency-name: "jira"
     - dependency-name: "argus"
     - dependency-name: "jive_logging"
-  # Note: there is currently an issue updating the uv build version using dependabot
-  # https://github.com/dependabot/dependabot-core/issues/13383
+
   - package-ecosystem: "docker"
     directories: 
       - "/workers/*"
@@ -38,6 +37,12 @@ updates:
     groups:
       all-docker-files:
         patterns: [ "*" ]
+    ignore:
+    # to keep the uv python version the same as the docker python version. 
+    # must be manually updated.
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-minor"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
