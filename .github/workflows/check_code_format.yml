@@ -98,7 +98,7 @@ jobs:
       - run: gh actions-lock --verify
 
   zizmor:
-    name: Run zizmor 🌈
+    name: Run zizmor
     runs-on: ubuntu-latest
     permissions:
       security-events: write # Required for upload-sarif (used by zizmor-action) to upload SARIF files.
@@ -108,5 +108,5 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run zizmor 🌈
-        uses: zizmorcore/zizmor-action@v0.8.0 
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@v0.8.1 
