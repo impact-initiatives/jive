@@ -99,11 +99,6 @@ resource "azurerm_container_app_job" "validator" {
       }
 
       env {
-        name        = "JIVE_API_KEY"
-        secret_name = "jive-api-key"
-      }
-
-      env {
         name        = "JIVE_DOCUMENTATION"
         secret_name = "jive-documentation"
       }
