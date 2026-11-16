@@ -21,7 +21,7 @@ settings = get_settings()
 logger = get_logger("jive-file-mover.log")
 
 
-class Validator(BaseWorker):
+class FileMover(BaseWorker):
     def __init__(self, logger_name: str, description: str, queue_name: str) -> None:
         super().__init__(logger_name, description, queue_name)
 
@@ -193,7 +193,7 @@ class Validator(BaseWorker):
 
 
 def main():
-    worker = Validator("file_mover", "File mover", settings.queue_name)
+    worker = FileMover("file_mover", "File mover", settings.queue_name)
     worker.work()
 
 
