@@ -121,6 +121,21 @@ source .venv/bin/activate
 uv run -m validator.main
 ```
 
+### Debug locally
+Add this to a `launch.json` file in the project root folder.
+```json
+{
+    "name": "file validator",
+    "type": "debugpy",
+    "request": "launch",
+    "module": "validator.main",
+    "cwd": "${workspaceFolder}/workers/validator",
+    "python": "${workspaceFolder}/workers/validator/.venv/bin/python",
+    "envFile": "${workspaceFolder}/.env",
+    "justMyCode": false
+}
+```
+
 ### Running Tests
 To run tests:
 ```bash

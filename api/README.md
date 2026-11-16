@@ -36,6 +36,29 @@ source .venv/bin/activate
 uv run uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
+### Debug locally
+Add this to a `launch.json` file in the project root folder.
+```json
+{
+    "name": "api",
+    "type": "debugpy",
+    "request": "launch",
+    "module": "uvicorn",
+    "cwd": "${workspaceFolder}/api",
+    "python": "${workspaceFolder}/api/.venv/bin/python",
+    "envFile": "${workspaceFolder}/.env",
+    "justMyCode": false,
+    "args": [
+                "api.main:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8000",
+                "--reload"
+            ]
+}
+```
+
 ### Running Tests
 To run tests:
 ```bash

@@ -50,3 +50,10 @@ While some of the individual projects will have more project specific requiremen
 - [pre-commit](https://pre-commit.com/#install)
 - [OpenTofu](https://opentofu.org/docs/intro/install/)
 
+To sync all the projects run from the jive directory
+```bash
+chmod u+x ./local/sync_projects.sh
+./local/sync_projects.sh
+```
+
+This will run `uv sync --locked` for all the projects in the repository (excelp `local`).
