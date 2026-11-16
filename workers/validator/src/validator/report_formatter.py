@@ -138,20 +138,23 @@ def format_comment_adf(
     )
 
     # 3. Validation Summary Table (for actionable issues)
-    actionable_issues: list[tuple[str, str, str, int]] = []
+    actionable_issues: list[tuple[str, str, str, tuple[int, int]]] = []
 
     def extract_issues(items: list[ResultItemModel], severity: str, icon: str):
         if not items:
             return
-        rule_counts: dict[str, int] = {}
+        rule_counts: dict[str, tuple[int, int]] = {}
         for item in items:
-            rule_counts[item.rule] = rule_counts.get(item.rule, 0) + 1
+            rule_counts[item.rule] = (
+                rule_counts.get(item.rule, (0, 0))[0] + 1,
+                rule_counts.get(item.rule, (0, 0))[1] + item.get_details_length(),
+            )
 
         for rule, count in rule_counts.items():
             actionable_issues.append((rule, severity, icon, count))
 
     extract_issues(response.errors, "Error", "❌")
-    extract_issues(response.admin_errors, "Error", "❌")
+    extract_issues(response.admin_errors, "Jive Error", "🔥")
     extract_issues(response.warnings, "Warning", "⚠️")
 
     if actionable_issues:
@@ -183,6 +186,21 @@ def format_comment_adf(
                                     {
                                         "type": "text",
                                         "text": "Severity",
+                                        "marks": [{"type": "strong"}],
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "type": "tableHeader",
+                        "content": [
+                            {
+                                "type": "paragraph",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "Failed Checks",
                                         "marks": [{"type": "strong"}],
                                     }
                                 ],
@@ -236,7 +254,16 @@ def format_comment_adf(
                             "content": [
                                 {
                                     "type": "paragraph",
-                                    "content": [{"type": "text", "text": str(count)}],
+                                    "content": [{"type": "text", "text": str(count[0])}],
+                                }
+                            ],
+                        },
+                        {
+                            "type": "tableCell",
+                            "content": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [{"type": "text", "text": str(count[1])}],
                                 }
                             ],
                         },

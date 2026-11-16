@@ -11,6 +11,12 @@ class ResultItemModel(BaseModel):
     column_name: str | None = None
     details: dict[str, Any] | None = None
 
+    def get_details_length(self, default_return_value: int = 1):
+        "Returns default_return_value = 1 as in there is only one issue and its the message."
+        if self.details is None:
+            return default_return_value
+        return len(next(iter(self.details.values())))
+
 
 class SummaryModel(BaseModel):
     passed: int
