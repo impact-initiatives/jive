@@ -38,15 +38,15 @@ Shared components that can be resued by workers or other components.
 
 
 ### Infra
-[infra](infra/) - OpenTofu IaC code for managing infrastructure
+[infra](infra/) - OpenTofu IaC code for managing infrastructure.
 
 
 
 ## Development Setup
 While some of the individual projects will have more project specific requirements and instructions for setting up a development environment, these are the common tools that are required across projects:
-- [uv](https://docs.astral.sh/uv/) package manager
-- [github cli](https://cli.github.com/)
-- [azure cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
+- [UV package manager](https://docs.astral.sh/uv/) 
+- [Github cli](https://cli.github.com/)
+- [Azure cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
 - [pre-commit](https://pre-commit.com/#install)
-- [OpenTofu] (https://opentofu.org/docs/intro/install/)
+- [OpenTofu](https://opentofu.org/docs/intro/install/)
 
