@@ -13,11 +13,6 @@ resource "azurerm_container_app_job" "validator" {
   }
 
   secret {
-    name  = "jive-api-key"
-    value = var.jive_api_key
-  }
-
-  secret {
     name  = "jira-api-token"
     value = var.jira_api_token
   }
