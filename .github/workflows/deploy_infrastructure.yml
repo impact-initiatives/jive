@@ -106,18 +106,18 @@ jobs:
 
           resolve_tag() {
             local kind="$1" name="$2"
-            # -e suppresses the CLI error so we can inspect it; capture stderr separately
-            if tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
-                  --query "properties.template.containers[0].image" -o tsv 2>&1 | awk -F: '{print $NF}') && \
-              [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
-              echo "Resolved existing tag for $name: $tag"
+            local tag
+            tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
+                  --query "properties.template.containers[0].image" -o tsv 2>/dev/null | awk -F: '{print $NF}')
+
+            if [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
+              echo "Resolved existing tag for $name: $tag" >&2   
               echo "$tag"
             elif az "$kind" show -n "$name" -g "$RESOURCE_GROUP" -o none 2>/dev/null; then
-              # resource exists but tag came back empty — something is genuinely wrong
               echo "::error::$name exists but its image tag could not be resolved"
               exit 1
             else
-              echo "::notice::$name not found — first deployment, will use new tag '$NEW_TAG'"
+              echo "::notice::$name not found — first deployment, will use new tag '$NEW_TAG'" >&2
               echo "$NEW_TAG"
             fi
           }
