@@ -38,3 +38,8 @@ repos:
   hooks:
     - id: terraform-docs-go
       args: ["--output-file", "Infrastructure.md", "./infra"]
+
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0  # Use the ref you want to point at
+    hooks:
+    -   id: check-yaml

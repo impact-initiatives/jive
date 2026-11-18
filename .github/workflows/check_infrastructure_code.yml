@@ -39,7 +39,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     permissions:
-          pull-requests: write 
+        pull-requests: write 
     defaults:
       run:
         working-directory: ./infra
