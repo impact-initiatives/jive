@@ -105,6 +105,7 @@ jobs:
             -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
             -out=tfplan 2>&1 | tee plan.log
 
+          # error output
           {
             echo "stdout<<EOF_PLAN"
             cat plan.log
