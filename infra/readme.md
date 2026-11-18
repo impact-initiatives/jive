@@ -2,6 +2,8 @@
 
 Infratructure is managed though [OpenTofu](https://opentofu.org/docs/intro/), a drop-in replacement for Terraform.
 
+See [infrastructure](/infra/Infrastructure.md) for the components being managed.
+
 ## Managing Changes
 When creating a pull request a series of checks are performed to validate the changes. These include:
 - checking code format
