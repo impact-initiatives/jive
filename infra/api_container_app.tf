@@ -1,5 +1,5 @@
 resource "azurerm_container_app" "api" {
-  name                         = var.container_app_name
+  name                         = var.api_container_app_name
   container_app_environment_id = azurerm_container_app_environment.this.id
   resource_group_name          = data.azurerm_resource_group.this.name
   revision_mode                = "Single"
@@ -16,12 +16,12 @@ resource "azurerm_container_app" "api" {
 
   secret {
     name  = "reg-pswd"
-    value = var.registry_password
+    value = var.container_registry_password
   }
 
   registry {
-    server               = var.registry_server
-    username             = var.registry_username
+    server               = "${var.container_registry_username}.azurecr.io"
+    username             = var.container_registry_username
     password_secret_name = "reg-pswd"
   }
 
@@ -129,11 +129,6 @@ resource "azurerm_container_app" "api" {
       env {
         name        = "AZURE_STORAGE_CONNECTION_STRING"
         secret_name = "azure-storage-connection-string"
-      }
-
-      env {
-        name  = "JIVE_QUEUE_NAME"
-        value = var.queue_name
       }
 
       env {

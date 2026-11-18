@@ -1,5 +1,5 @@
 resource "azurerm_container_app_job" "validator" {
-  name                         = var.queue_job_name
+  name                         = var.validator_container_app_job_name
   location                     = data.azurerm_resource_group.this.location
   resource_group_name          = data.azurerm_resource_group.this.name
   container_app_environment_id = azurerm_container_app_environment.this.id
@@ -29,12 +29,12 @@ resource "azurerm_container_app_job" "validator" {
 
   secret {
     name  = "reg-pswd"
-    value = var.registry_password
+    value = var.container_registry_password
   }
 
   registry {
-    server               = var.registry_server
-    username             = var.registry_username
+    server               = "${var.container_registry_username}.azurecr.io"
+    username             = var.container_registry_username
     password_secret_name = "reg-pswd"
   }
 
@@ -54,7 +54,7 @@ resource "azurerm_container_app_job" "validator" {
 
         metadata = {
           accountName = azurerm_storage_account.this.name
-          queueName   = var.queue_name
+          queueName   = var.validator_queue_name
           queueLength = "1"
         }
 
@@ -68,7 +68,7 @@ resource "azurerm_container_app_job" "validator" {
 
   template {
     container {
-      name   = var.queue_job_name
+      name   = var.validator_container_app_job_name
       image  = local.worker_image
       cpu    = 4
       memory = "8Gi"

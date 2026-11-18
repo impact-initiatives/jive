@@ -108,8 +108,10 @@ jobs:
       deploy_worker: ${{ inputs.deploy_jive_worker }}
       deploy_api: ${{ inputs.deploy_jive_api }}
     secrets:
+      ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
       JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}

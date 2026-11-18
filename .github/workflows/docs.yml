@@ -1,0 +1,26 @@
+name: Generate terraform docs
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+
+jobs:
+  docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+        contents: write
+    steps:
+    - uses: actions/checkout@v7.0.1 # zizmor: ignore[artipacked]
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+
+    - name: Render terraform docs and push changes back to PR
+      uses: terraform-docs/gh-actions@v1.4.1
+      with:
+        working-dir: ./infra
+        output-file: Infrastructure.md
+        output-method: inject
+        git-push: "true"
+        git-commit-message: "docs: update terraform docs"
+

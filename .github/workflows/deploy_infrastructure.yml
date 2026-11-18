@@ -24,6 +24,10 @@ on:
         required: true
       AZURE_SUBSCRIPTION_ID:
         required: true
+      ACR_RESOURCE_GROUP:
+        required: true
+      ACR_USERNAME:
+        required: true
       ACR_PASSWORD:
         required: true
       JIVE_API_KEY:
@@ -73,9 +77,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
+      ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
       IMAGE_TAG_API: ${{ inputs.deploy_api && inputs.image_tag || '' }}
       IMAGE_TAG_WORKER: ${{ inputs.deploy_worker && inputs.image_tag || '' }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
       JIRA_CLOUD_ID: ${{ secrets.JIRA_CLOUD_ID }}
@@ -99,7 +105,7 @@ jobs:
       # image tag so the Bicep deploy leaves them untouched.
       - name: Resolve current image tags
         env:
-          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          RESOURCE_GROUP: ${{ env.ACR_RESOURCE_GROUP }}
           IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
           set -euo pipefail
@@ -141,7 +147,7 @@ jobs:
       - name: Tofu init
         working-directory: infra
         env:
-          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          RESOURCE_GROUP: ${{ env.ACR_RESOURCE_GROUP }}
           ENVIRONMENT: ${{ inputs.environment }}
           SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
@@ -159,7 +165,9 @@ jobs:
       - name: Tofu plan
         working-directory: infra
         env:
-          TF_VAR_registry_password: ${{ env.ACR_PASSWORD }}
+          TF_VAR_resource_group_name: ${{ env.ACR_RESOURCE_GROUP }}
+          TF_VAR_container_registry_username: ${{ env.ACR_USERNAME }}
+          TF_VAR_container_registry_password: ${{ env.ACR_PASSWORD }}
           TF_VAR_jive_api_key: ${{ env.JIVE_API_KEY }}
           TF_VAR_jira_api_token: ${{ env.JIRA_API_TOKEN }}
           TF_VAR_jira_cloud_id: ${{ env.JIRA_CLOUD_ID }}
