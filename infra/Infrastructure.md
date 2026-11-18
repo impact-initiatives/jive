@@ -2,15 +2,15 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.8 |
 | <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | ~> 4.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.81.0 |
+|------|---------|
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | ~> 4.0 |
 
 ## Modules
 
@@ -19,7 +19,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [azurerm_container_app.api](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_app) | resource |
 | [azurerm_container_app_environment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_app_environment) | resource |
 | [azurerm_container_app_job.validator](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_app_job) | resource |
@@ -34,7 +34,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_allowed_domains"></a> [allowed\_domains](#input\_allowed\_domains) | External domains Jive is allowed to reach. | `string` | n/a | yes |
 | <a name="input_api_container_app_name"></a> [api\_container\_app\_name](#input\_api\_container\_app\_name) | Container app name for Jive Api. | `string` | `"jive-api-dev"` | no |
 | <a name="input_container_registry_password"></a> [container\_registry\_password](#input\_container\_registry\_password) | Password for the Azure container registry. | `string` | n/a | yes |
@@ -64,8 +64,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_ingress_fqdn"></a> [ingress\_fqdn](#output\_ingress\_fqdn) | n/a |
-| <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name) | n/a |
 | <a name="output_storage_account_name"></a> [storage\_account\_name](#output\_storage\_account\_name) | n/a |
 <!-- END_TF_DOCS -->
