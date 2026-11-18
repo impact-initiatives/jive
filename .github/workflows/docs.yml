@@ -14,9 +14,26 @@ jobs:
         persist-credentials: false
 
     - name: Render terraform docs and push changes back to PR
-      uses: terraform-docs/gh-actions@main
+      uses: terraform-docs/gh-actions@v1.4.1
       with:
         working-dir: ./infra
         output-file: Infrastructure.md
         output-method: inject
-        git-push: "true"
+        git-push: "false"
+
+    - name: Commit and push docs
+      env:
+        GH_TOKEN: ${{ github.token }}
+        HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        REPO: ${{ github.repository }}
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add ./infra/Infrastructure.md
+        if git diff --cached --quiet; then
+          echo "No doc changes to commit"
+        else
+          git commit -m "docs: update terraform docs [skip ci]"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" \
+            HEAD:"${HEAD_REF}"
+        fi
