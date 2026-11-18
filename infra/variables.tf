@@ -1,6 +1,7 @@
 variable "environment_name" {
-  type    = string
-  default = "dev"
+  description = "Deploymnet enviornment. dev, test, prod"
+  type        = string
+  default     = "dev"
 }
 
 variable "location" {
@@ -8,15 +9,13 @@ variable "location" {
   default = "switzerlandnorth"
 }
 
-variable "resource_group_name" {
-  type    = string
-  default = "HQ-dev"
-}
+
 
 # --- Network ---
 variable "vnet_name" {
-  type    = string
-  default = "jive-vnet-dev"
+  description = "Virtual network for Jive container apps environment."
+  type        = string
+  default     = "jive-vnet-dev"
 }
 
 variable "vnet_address_prefix" {
@@ -34,61 +33,63 @@ variable "storage_account_name" {
 }
 
 variable "managed_environment_name" {
-  type    = string
-  default = "jive-env-dev"
+  description = "Name of Jive container apps environment."
+  type        = string
+  default     = "jive-env-dev"
 }
 
-variable "container_app_name" {
-  type    = string
-  default = "jive-api-dev"
+variable "api_container_app_name" {
+  description = "Container app name for Jive Api."
+  type        = string
+  default     = "jive-api-dev"
 }
 
-variable "queue_job_name" {
-  type    = string
-  default = "jive-worker-validator-dev"
+variable "validator_container_app_job_name" {
+  description = "Container job app name for Jive validation worker."
+  type        = string
+  default     = "jive-worker-validator-dev"
 }
 
-variable "queue_name" {
-  type    = string
-  default = "jive-validation-queue"
+variable "validator_queue_name" {
+  description = "Queue that triggers the validation worker."
+  type        = string
+  default     = "jive-validation-queue"
 }
 
 # --- Images / registry ---
 variable "image_repository_api" {
-  type    = string
-  default = "jive-api"
+  description = "Image name for Api images in the Azure container registry.."
+  type        = string
+  default     = "jive-api"
 }
 
 variable "image_repository_worker" {
-  type    = string
-  default = "jive-worker-validator"
+  description = "Image name for worker-validator images in the Azure container registry."
+  type        = string
+  default     = "jive-worker-validator"
 }
 
 variable "image_tag_api" {
-  type = string
+  description = "Tag for the Api image."
+  type        = string
 }
 
 variable "image_tag_worker" {
-  type = string
+  description = "Tag for the worker-validator image."
+  type        = string
 }
 
-variable "registry_server" {
-  type    = string
-  default = "acrimpact.azurecr.io"
-}
 
-variable "registry_username" {
-  type    = string
-  default = "acrimpact"
-}
 
 # --- App config ---
 variable "allowed_domains" {
-  type = string
+  description = "External domains Jive is allowed to reach."
+  type        = string
 }
 
 variable "jira_base_url" {
-  type = string
+  description = "Base Url used by Jira Api's"
+  type        = string
 }
 
 variable "log_analytics_workspace_name" {
@@ -103,27 +104,44 @@ variable "debug_ip_rules" {
 }
 
 # --- Secrets (passed via TF_VAR_* environment variables) ---
-variable "registry_password" {
-  type      = string
-  sensitive = true
+variable "resource_group_name" {
+  description = "Azure resource group name"
+  type        = string
+  sensitive   = true
+}
+
+variable "container_registry_username" {
+  description = "Username for Azure container registry."
+  type        = string
+  sensitive   = true
+}
+
+variable "container_registry_password" {
+  description = "Password for the Azure container registry."
+  type        = string
+  sensitive   = true
 }
 
 variable "jive_api_key" {
-  type      = string
-  sensitive = true
+  description = "Jive Api key used by Jira webhooks."
+  type        = string
+  sensitive   = true
 }
 
 variable "jira_api_token" {
-  type      = string
-  sensitive = true
+  description = "Jira Api token used for authentication with the Jira Api's."
+  type        = string
+  sensitive   = true
 }
 
 variable "jira_cloud_id" {
-  type      = string
-  sensitive = true
+  description = "Cloud Id for the Jira account."
+  type        = string
+  sensitive   = true
 }
 
 variable "jive_documentation" {
-  type      = string
-  sensitive = true
+  description = "Jive documentation Urls."
+  type        = string
+  sensitive   = true
 }

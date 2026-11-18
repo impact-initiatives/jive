@@ -56,7 +56,7 @@ jobs:
 
       - name: Resolve current image tags
         env:
-          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
           APP_NAME: jive-api-dev
           JOB_NAME: jive-worker-validator-dev
         run: |
@@ -74,7 +74,7 @@ jobs:
 
       - name: Tofu init
         env:
-          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
           SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           tofu init -input=false \
@@ -86,7 +86,9 @@ jobs:
 
       - name: Tofu plan
         env:
-          TF_VAR_registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+          TF_VAR_resource_group_name: ${{ secrets.ACR_RESOURCE_GROUP }}
+          TF_VAR_container_registry_username: ${{ secrets.ACR_USERNAME }}
+          TF_VAR_container_registry_password: ${{ secrets.ACR_PASSWORD }}
           TF_VAR_jive_api_key: ${{ secrets.JIVE_API_KEY }}
           TF_VAR_jira_api_token: ${{ secrets.JIRA_API_TOKEN }}
           TF_VAR_jira_cloud_id: ${{ secrets.JIRA_CLOUD_ID }}

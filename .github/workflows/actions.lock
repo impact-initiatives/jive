@@ -19,6 +19,9 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'azure/login@v3.1.0'
         - 'opentofu/setup-opentofu@v2.0.2'
+    '.github/workflows/docs.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'terraform-docs/gh-actions@main'
     '.github/workflows/publish_release.yml':
         - 'actions/checkout@v7.0.1'
         - 'peter-evans/repository-dispatch@v4.0.1'
@@ -88,6 +91,11 @@ dependencies:
         commit: 'sha1-28959ce8df70de7be546dd1250a005dd32156697'
         owner_id: 18365890
         repo_id: 220359305
+    'terraform-docs/gh-actions@main':
+        ref: 'main'
+        commit: 'sha1-6de6da0cefcc6b4b7a5cbea4d79d97060733093c'
+        owner_id: 63984590
+        repo_id: 260824510
     'zizmorcore/zizmor-action@v0.8.1':
         ref: 'v0.8.1'
         commit: 'sha1-45d7276c9ca790aabd705e31ca99c6185c3e76dd'

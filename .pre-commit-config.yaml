@@ -32,3 +32,9 @@ repos:
       pass_filenames: false
       files: >-
         ^(\.github/workflows/.*\.ya?ml|\.github/workflows/actions\.lock)$
+
+- repo: https://github.com/terraform-docs/terraform-docs
+  rev: "v0.25.1"             
+  hooks:
+    - id: terraform-docs-go
+      args: ["--output-file", "Infrastructure.md", "./infra"]
