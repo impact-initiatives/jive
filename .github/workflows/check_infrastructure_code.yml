@@ -39,7 +39,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     permissions:
-        pull-requests: write 
+      pull-requests: write 
     defaults:
       run:
         working-directory: ./infra
@@ -114,19 +114,22 @@ jobs:
         
         with:
           script: |
-            // (3) Marker used to find this workflow's comment on repeat runs
             const MARKER = '<!-- plan-comment-dev -->';
+
+            const status = process.env.PLAN_OUTCOME === 'success'
+              ? '✅ Plan succeeded'
+              : '❌ Plan failed';
+
             const body = [
               MARKER,
               '#### Tofu plan (dev)',
-              `${{ steps.plan.outcome == 'success' ? '✅ Plan succeeded' : '❌ Plan failed' }}`,
+              status,
               '',
               '<details><summary>Show plan output</summary>',
               '',
               '```hcl',
               process.env.PLAN,
               '```',
-              '',
               '</details>'
             ].join('\n');
 
