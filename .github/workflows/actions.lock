@@ -20,6 +20,7 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'azure/login@v3.1.0'
         - 'opentofu/setup-opentofu@v2.0.2'
+        - 'trstringer/manual-approval@v1.13.1'
     '.github/workflows/docs.yml':
         - 'actions/checkout@v7.0.1'
         - 'terraform-docs/gh-actions@v1.4.1'
@@ -102,6 +103,11 @@ dependencies:
         commit: 'sha1-6de6da0cefcc6b4b7a5cbea4d79d97060733093c'
         owner_id: 63984590
         repo_id: 260824510
+    'trstringer/manual-approval@v1.13.1':
+        ref: 'v1.13.1'
+        commit: 'sha1-fa642940caf8412403569b28b2db4a1df08a83a3'
+        owner_id: 1445483
+        repo_id: 473819360
     'zizmorcore/zizmor-action@v0.8.1':
         ref: 'v0.8.1'
         commit: 'sha1-45d7276c9ca790aabd705e31ca99c6185c3e76dd'

@@ -7,7 +7,6 @@ name: Jive build and deploy
 
 on:
   workflow_dispatch:
-    types: [manual-trigger]
     inputs:
       release_tag:
         description: '"Jive" release tag in format "YYYYMMDDXX" .'
@@ -33,15 +32,6 @@ on:
         description: 'Create Jive api image and container app revision.'
         required: true
         type: boolean  
-      release_type:
-        description: 'Type of release.'
-        required: true
-        # type: environment need admin to create these
-        type: choice
-        options:
-          - dev
-          # - test
-          # - prod
 
 permissions:
   contents: read
@@ -98,15 +88,24 @@ jobs:
 
   deploy_infrastructure:
     needs: [build_and_push_jive_worker_images, build_and_push_jive_api_images]
-    if: ${{ always() && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
-           && !(contains(needs.build_and_push_jive_worker_images.result, 'failure')
-             || contains(needs.build_and_push_jive_api_images.result, 'failure')) }}
+    if: >
+      always()
+      && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
+      && !(contains(needs.build_and_push_jive_worker_images.result, 'failure')
+        || contains(needs.build_and_push_jive_api_images.result, 'failure'))
+    strategy:
+      fail-fast: true
+      max-parallel: 1                      
+      matrix:
+        environment: [dev, test]
     uses: $/.github/workflows/deploy_infrastructure.yml
     with: 
-      environment: ${{ inputs.release_type }}
+      environment: ${{ matrix.environment }}
       image_tag: ${{ inputs.release_tag }}
       deploy_worker: ${{ inputs.deploy_jive_worker }}
       deploy_api: ${{ inputs.deploy_jive_api }}
+      require_approval: ${{ matrix.environment != 'dev' }}
+      approvers: 'impact-initiatives/gdt'
     secrets:
       ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}

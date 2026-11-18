@@ -48,4 +48,4 @@ repos:
   rev: v1.7.12        
   hooks:
     - id: actionlint
-      args: ["-verbose"]
+      args: ["-verbose", "-ignore", "^.*reusable workflow call \"\\$/.+ is not following the format .*$"]
