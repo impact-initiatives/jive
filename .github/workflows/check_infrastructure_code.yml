@@ -98,11 +98,18 @@ jobs:
           TF_VAR_jira_cloud_id: ${{ secrets.JIRA_CLOUD_ID }}
           TF_VAR_jive_documentation: ${{ secrets.JIVE_DOCUMENTATION }}
         run: |
+          set -euo pipefail
           tofu plan -input=false -no-color \
             -var-file=environments/dev.tfvars \
             -var="image_tag_api=${IMAGE_TAG_API}" \
             -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
-            -out=tfplan
+            -out=tfplan 2>&1 | tee plan.log
+
+          {
+            echo "stdout<<EOF_PLAN"
+            cat plan.log
+            echo "EOF_PLAN"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Render plan to job summary
         if: steps.plan.outcome == 'success'
