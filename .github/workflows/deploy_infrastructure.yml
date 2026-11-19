@@ -11,7 +11,7 @@ on:
         required: true
         type: string
       image_tag:
-        description: 'New image tag for the components being deployed'
+        description: 'Existing image tag for the components being deployed'
         required: true
         type: string
       argus_schemas_release_tag:
@@ -56,16 +56,16 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment.'
+        description: 'Target environment (maps to opentofu file).'
         type: choice
         options: [dev, test]
         required: true
       image_tag:
-        description: 'Image tag to deploy'
+        description: 'Existing Image tag for the components being deployed.'
         required: true
         type: string
       argus_schemas_release_tag:
-        description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
+        description: '"Argus Schemas" release tag in format "YYYYMMDDXX" or "latest".'
         required: true
         type: string
         default: latest
@@ -181,13 +181,11 @@ jobs:
 
           for spec in "${specs[@]}"; do
             kind="${spec%%:*}"; name="${spec#*:}"
-            echo "::notice::Verifying '$name' in '$prev_env' is running tag '$IMAGE_TAG'"
-            if ! az containerapp show -n "$name" -g "$RESOURCE_GROUP" -o none >/dev/null 2>&1; then
+            if ! image=$(get_image_tag "$kind" "$name" 2>/dev/null) || [ -z "$image" ]; then
               echo "::error::$name not found in '$prev_env' — deploy release $IMAGE_TAG to $prev_env first"
               exit 1
             fi
-            tag=$(get_image_tag "$kind" "$name")
-            tag="${tag##*:}"
+            tag="${image##*:}"
             if [ "$tag" != "$IMAGE_TAG" ]; then
               echo "::error::$name in '$prev_env' is on '$tag', not '$IMAGE_TAG'. Deploy to $prev_env first."
               exit 1
