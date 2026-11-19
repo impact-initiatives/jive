@@ -45,14 +45,14 @@ services:
     depends_on:
       - azurite
 
-  jive-file-mover:
-    build:
-      context: ../../jive
-      dockerfile: workers/file_mover/Dockerfile
-    container_name: jive-file_mover
-    env_file:
-      - ../.env
-    environment:
-      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;
-    depends_on:
-      - azurite
+  # jive-file-mover:
+  #   build:
+  #     context: ../../jive
+  #     dockerfile: workers/file_mover/Dockerfile
+  #   container_name: jive-file_mover
+  #   env_file:
+  #     - ../.env
+  #   environment:
+  #     - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+  #   depends_on:
+  #     - azurite
