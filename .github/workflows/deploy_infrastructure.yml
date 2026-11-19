@@ -59,7 +59,7 @@ on:
       environment:
         description: 'Target environment'
         type: choice
-        options: [dev, test]
+        options: [dev]
         required: true
       image_tag:
         description: 'Image tag to deploy'
@@ -79,8 +79,8 @@ permissions:
   contents: read
 
 env:
-  APP_NAME: jive-api
-  JOB_NAME: jive-worker-validator
+  API_APP_NAME: jive-api
+  VALIDATOR_JOB_NAME: jive-worker-validator
 
 concurrency:
   group: deploy-jive-${{ inputs.environment }}
@@ -121,17 +121,32 @@ jobs:
         env:
           RESOURCE_GROUP: ${{ env.ACR_RESOURCE_GROUP }}
           IMAGE_TAG: ${{ inputs.image_tag }}
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           set -euo pipefail
-          prev_env="dev"
-          # check both components in the previous environment are on this tag
-          for spec in "containerapp:$APP_NAME" "containerapp job:$JOB_NAME"; do
-            kind="${spec%%:*}"; name="${spec#*:}"
-            image=$(az $kind show -n "$name" -g "$RESOURCE_GROUP" \
+
+          # which environment should already be running this tag?
+          case "$ENVIRONMENT" in
+            test) prev_env="dev" ;;
+            prod) prev_env="test" ;;
+            *) echo "::error::Unknown environment '$ENVIRONMENT'"; exit 1 ;;
+          esac
+
+          # build the previous environment's prefixed names —
+          # keep in sync with your tfvars naming convention
+          prev_app="${API_APP_NAME}-${prev_env}"  
+          prev_job="${VALIDATOR_JOB_NAME}-${prev_env}"  
+
+          for name in "$prev_app" "$prev_job"; do
+            if ! az containerapp show -n "$name" -g "$RESOURCE_GROUP" -o none >/dev/null 2>&1; then
+              echo "::notice::$name not found — $prev_env never deployed, promotion check skipped"
+              continue
+            fi
+            image=$(az containerapp show -n "$name" -g "$RESOURCE_GROUP" \
               --query "properties.template.containers[0].image" -o tsv)
             tag="${image##*:}"
             if [ "$tag" != "$IMAGE_TAG" ]; then
-              echo "::error::$name in '$prev_env' is on '$tag', not '$IMAGE_TAG'. Deploy to dev first."
+              echo "::error::$name in '$prev_env' is on '$tag', not '$IMAGE_TAG'. Deploy to $prev_env first."
               exit 1
             fi
           done
@@ -176,12 +191,12 @@ jobs:
           export NEW_TAG="$IMAGE_TAG"
 
           if [ -z "$IMAGE_TAG_API" ]; then
-            IMAGE_TAG_API=$(resolve_tag containerapp "$APP_NAME")
+            IMAGE_TAG_API=$(resolve_tag containerapp "$API_APP_NAME")
             echo "IMAGE_TAG_API=$IMAGE_TAG_API" >> "$GITHUB_ENV"
           fi
 
           if [ -z "$IMAGE_TAG_WORKER" ]; then
-            IMAGE_TAG_WORKER=$(resolve_tag containerapp job "$JOB_NAME")
+            IMAGE_TAG_WORKER=$(resolve_tag containerapp job "$VALIDATOR_JOB_NAME")
             echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
           fi
 
