@@ -84,7 +84,10 @@ variable "argus_schemas_version" {
   type        = string
 }
 
-
+variable "jive_worker_validator_version" {
+  description = "Version of Jive worker modules running."
+  type        = string
+}
 
 # --- App config ---
 variable "allowed_domains" {

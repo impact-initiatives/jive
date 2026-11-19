@@ -105,6 +105,7 @@ jobs:
           TF_VAR_jira_cloud_id: ${{ secrets.JIRA_CLOUD_ID }}
           TF_VAR_jive_documentation: ${{ secrets.JIVE_DOCUMENTATION }}
           TF_VAR_argus_schemas_version: ${{ env.ARGUS_SCHEMAS_VERSION }}
+          TF_VAR_jive_worker_validator_version: ${{ env.IMAGE_TAG_WORKER_VALIDATOR }}
         run: |
           set -euo pipefail
           tofu plan -input=false -no-color \

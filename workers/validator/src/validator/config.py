@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field, computed_field
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -23,16 +23,7 @@ class Settings(BaseSettings):
         default_factory=dict, alias="JIVE_DOCUMENTATION"
     )
 
-    jive_version_file: str = Field(alias="JIVE_VERSION_FILE", default="/app/jive_version.txt")
-
-    @computed_field
-    @property
-    def jive_version(self) -> str:
-        try:
-            with open(self.jive_version_file) as f:
-                return f.read().strip()
-        except Exception:
-            return "unknown"
+    jive_version: str = Field(alias="JIVE_VERSION", default="Not Specified")
 
 
 @lru_cache(maxsize=1)

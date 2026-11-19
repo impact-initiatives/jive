@@ -310,6 +310,7 @@ jobs:
           TF_VAR_jira_cloud_id: ${{ env.JIRA_CLOUD_ID }}
           TF_VAR_jive_documentation: ${{ env.JIVE_DOCUMENTATION }}
           TF_VAR_argus_schemas_version: ${{ env.ARGUS_SCHEMAS_VERSION }}
+          TF_VAR_jive_worker_validator_version: ${{ env.IMAGE_TAG_WORKER_VALIDATOR }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           tofu plan \
