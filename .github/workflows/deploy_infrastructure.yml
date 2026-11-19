@@ -66,11 +66,11 @@ on:
       deploy_api:
         description: 'Deploy API app'
         type: boolean
-        default: true
+        default: false
       deploy_worker_validator:
         description: 'Deploy validation worker job'
         type: boolean
-        default: true
+        default: false
     
 
 permissions:
@@ -199,7 +199,23 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           set -euo pipefail
-          # ... resolve_tag() unchanged ...
+          resolve_tag() {
+            local kind="$1" name="$2"
+            local tag
+            tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
+                  --query "properties.template.containers[0].image" -o tsv 2>/dev/null | awk -F: '{print $NF}')
+
+            if [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
+              echo "Resolved existing tag for $name: $tag" >&2   
+              echo "$tag"
+            elif az "$kind" show -n "$name" -g "$RESOURCE_GROUP" -o none 2>/dev/null; then
+              echo "::error::$name exists but its image tag could not be resolved"
+              exit 1
+            else
+              echo "::notice::$name not found — first deployment, will use new tag '$NEW_TAG'" >&2
+              echo "$NEW_TAG"
+            fi
+          }
 
           export NEW_TAG="$IMAGE_TAG"
 
