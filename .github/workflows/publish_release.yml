@@ -1,6 +1,6 @@
 name: Jive build and deploy images
 
-# Jive and argus are deployed together so can share the same release tag.
+# Builds Jive images and deploys them to the dev envrionment.
 
 on:
   workflow_dispatch:
@@ -10,16 +10,20 @@ on:
         required: true
         type: string
       argus_schemas_release_tag:
-        description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
+        description: '"Argus Schemas" release tag in format "YYYYMMDDXX" or "latest".'
+        required: true
         type: string
+        default: latest
       deploy_jive_worker:
         description: 'Create Jive worker image and container app revision.'
         required: true
-        type: boolean      
+        type: boolean  
+        default: false    
       deploy_jive_api:
         description: 'Create Jive api image and container app revision.'
         required: true
         type: boolean  
+        default: false
 
 permissions:
   contents: read
@@ -58,8 +62,8 @@ jobs:
     if: >
       always()
       && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
-      && !(contains(needs.build_and_push_jive_worker_images.result, 'failure')
-        || contains(needs.build_and_push_jive_api_images.result, 'failure'))
+      && !(contains(fromJSON('["failure", "cancelled"]'), needs.build_and_push_jive_worker_images.result)
+        || contains(fromJSON('["failure", "cancelled"]'), needs.build_and_push_jive_api_images.result))
     uses: $/.github/workflows/deploy_infrastructure.yml
     with:
       environment: dev

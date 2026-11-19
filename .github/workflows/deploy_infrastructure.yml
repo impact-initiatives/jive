@@ -1,5 +1,8 @@
 name: Deploy infrastructure
 
+# Deplpoys images and other infrastructure changes to the relevant Azure environment.
+
+
 on:
   workflow_call:
     inputs:
@@ -12,8 +15,9 @@ on:
         required: true
         type: string
       argus_schemas_release_tag:
-        description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
-        type: string
+        description: '"Argus Schemas" release tag in format "YYYYMMDDXX" or "latest".'
+        required: true
+        type: string        
       deploy_api:
         description: 'Deploy new tag to the API container app'
         required: true
@@ -62,7 +66,9 @@ on:
         type: string
       argus_schemas_release_tag:
         description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
+        required: true
         type: string
+        default: latest
       deploy_api:
         description: 'Deploy API app'
         type: boolean
@@ -202,8 +208,13 @@ jobs:
           resolve_tag() {
             local kind="$1" name="$2"
             local tag
-            tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
-                  --query "properties.template.containers[0].image" -o tsv 2>/dev/null | awk -F: '{print $NF}')
+            if [ "$kind" = "job" ]; then
+              tag=$(az containerapp job show -n "$name" -g "$RESOURCE_GROUP" \
+                --query "properties.template.containers[0].image" -o tsv 2>/dev/null | awk -F: '{print $NF}')
+            else
+              tag=$(az containerapp show -n "$name" -g "$RESOURCE_GROUP" \
+                --query "properties.template.containers[0].image" -o tsv 2>/dev/null | awk -F: '{print $NF}')
+            fi
 
             if [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
               echo "Resolved existing tag for $name: $tag" >&2   
@@ -220,12 +231,12 @@ jobs:
           export NEW_TAG="$IMAGE_TAG"
 
           if [ -z "$IMAGE_TAG_API" ]; then
-            IMAGE_TAG_API=$(resolve_tag containerapp "${API_APP_NAME}-${ENVIRONMENT}")
+            IMAGE_TAG_API=$(resolve_tag app "${API_APP_NAME}-${ENVIRONMENT}")
             echo "IMAGE_TAG_API=$IMAGE_TAG_API" >> "$GITHUB_ENV"
           fi
 
           if [ -z "$IMAGE_TAG_WORKER_VALIDATOR" ]; then
-            IMAGE_TAG_WORKER_VALIDATOR=$(resolve_tag containerapp job "${VALIDATOR_JOB_NAME}-${ENVIRONMENT}")
+            IMAGE_TAG_WORKER_VALIDATOR=$(resolve_tag job "${VALIDATOR_JOB_NAME}-${ENVIRONMENT}")
             echo "IMAGE_TAG_WORKER_VALIDATOR=$IMAGE_TAG_WORKER_VALIDATOR" >> "$GITHUB_ENV"
           fi
 

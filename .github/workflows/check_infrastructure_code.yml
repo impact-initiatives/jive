@@ -1,5 +1,9 @@
 name: Validate IaC code
 
+# Checks the infrastructure code is valid and outputs a plan for manual review.
+# Note: This should be updated to compare the pull request with prod since 
+# comparing to dev will likely be useless if the code was already deployed there.
+
 on:
   push:
     branches: [main]
