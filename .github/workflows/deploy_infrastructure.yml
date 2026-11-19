@@ -217,6 +217,7 @@ jobs:
         env:
           ARGUS_SCHEMAS_REPO: impact-initiatives/argus_schemas
           PROVIDED_TAG: ${{ inputs.argus_schemas_release_tag || 'latest' }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
