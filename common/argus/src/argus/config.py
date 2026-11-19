@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import computed_field
 from pydantic_settings import BaseSettings
 
 
@@ -84,10 +85,19 @@ class Settings(BaseSettings):
     # eg Path.cwd() / "dataset_config" / "v2026.06.25.01"
     DATASET_CONFIG_LOCAL_DIR: Path = Path.cwd() / "dataset_config"
     # DATASET_CONFIG_LOCAL_DIR: Path = Path("/home/g-impact/Documents/dev/argus_schemas")
+
+    ARGUS_SCHEMAS_VERSION: str = "latest"
+
     DATASET_CONFIG_DIR: Path = Path.cwd() / "dataset_config"
-    DATASET_CONFIG_URL: str = (
-        "https://api.github.com/repos/impact-initiatives/argus_schemas/releases/latest"
-    )
+
+    @computed_field
+    @property
+    def config_url(self) -> str:
+        if self.ARGUS_SCHEMAS_VERSION.lower() == "latest":
+            return "https://api.github.com/repos/impact-initiatives/argus_schemas/releases/latest"
+        else:
+            return f"https://api.github.com/repos/impact-initiatives/argus_schemas/releases/tags/{self.ARGUS_SCHEMAS_VERSION}"
+
     Path(DATASET_CONFIG_DIR).mkdir(parents=True, exist_ok=True)
 
     FALLBACK_PROGRAMME: str = "other"

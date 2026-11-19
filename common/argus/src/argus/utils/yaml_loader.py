@@ -20,11 +20,13 @@ def download_config(download_dir: str | Path = "dataset_config"):
     base_path.mkdir(parents=True, exist_ok=True)
 
     try:
-        response: Response = httpx2.get(settings.DATASET_CONFIG_URL)
+        response: Response = httpx2.get(settings.config_url)
         response.raise_for_status()
         release_data = response.json()
     except Exception as e:
-        raise RuntimeError(f"Error getting latest dataset config release: {e}") from None
+        raise RuntimeError(
+            f"Error getting dataset config release from {settings.config_url}: {e}"
+        ) from None
 
     tag_name = release_data["tag_name"]
 

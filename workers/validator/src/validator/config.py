@@ -34,11 +34,6 @@ class Settings(BaseSettings):
         except Exception:
             return "unknown"
 
-    @property
-    def parsed_allowed_domains(self) -> frozenset[str]:
-        """Return domains as frozenset."""
-        return frozenset(filter(None, self.allowed_domains.split(",")))
-
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     repository_session_ttl: int = Field(alias="REPO_SESSION_TTL_SECONDS", default=43200)
     allowed_domains: str | frozenset[str] = Field(alias="ALLOWED_DOMAINS", default="")
 
+    @property
+    def parsed_allowed_domains(self) -> frozenset[str]:
+        """Return domains as frozenset."""
+        return frozenset(filter(None, self.allowed_domains.split(",")))
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

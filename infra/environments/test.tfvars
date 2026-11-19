@@ -1,0 +1,11 @@
+environment_name                 = "test"
+storage_account_name             = "jivequeuetest"
+managed_environment_name         = "jive-env-test"
+api_container_app_name           = "jive-api-test"
+validator_container_app_job_name = "jive-worker-validator-test"
+allowed_domains                  = "repository.impact-initiatives.org,impact-initiatives.atlassian.net,api.atlassian.com"
+jira_base_url                    = "https://api.atlassian.com/ex/jira/"
+vnet_name                        = "jive-vnet-test"
+vnet_address_prefix              = "10.20.0.0/22"
+infrastructure_subnet_prefix     = "10.20.0.0/26"
+debug_ip_rules                   = []
