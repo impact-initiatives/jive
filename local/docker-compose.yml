@@ -35,14 +35,13 @@ services:
     build:
       context: ../../jive
       dockerfile: workers/validator/Dockerfile
-      args:
-        RELEASE_TAG: 2026071900
     container_name: jive-validator
     env_file:
       - ../.env
     environment:
       - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;QueueEndpoint=http://azurite:10001/devstoreaccount1;BlobEndpoint=http://azurite:10000/devstoreaccount1;
       - MAX_EXCEL_ERRORS=500000
+      - ARGUS_SCHEMAS_VERSION=latest
     depends_on:
       - azurite
 
@@ -50,8 +49,6 @@ services:
     build:
       context: ../../jive
       dockerfile: workers/file_mover/Dockerfile
-      args:
-        RELEASE_TAG: 2026071900
     container_name: jive-file_mover
     env_file:
       - ../.env

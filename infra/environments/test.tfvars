@@ -9,4 +9,3 @@ vnet_name                        = "jive-vnet-test"
 vnet_address_prefix              = "10.20.0.0/22"
 infrastructure_subnet_prefix     = "10.20.0.0/26"
 debug_ip_rules                   = []
-argus_schemas_version            = "latest"
