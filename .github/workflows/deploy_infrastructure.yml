@@ -229,6 +229,7 @@ jobs:
 
       - name: Render plan to job summary
         if: steps.plan.outcome == 'success'
+        working-directory: infra  
         run: |
           tofu show tfplan -no-color >> "$GITHUB_STEP_SUMMARY"
 
