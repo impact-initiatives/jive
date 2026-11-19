@@ -137,7 +137,7 @@ jobs:
           done
 
       - name: Promotion approval
-        if: ${{ inputs.require_approval }}
+        if: ${{ inputs.require_approval && inputs.environment != 'dev' }}
         uses: trstringer/manual-approval@v1.13.1
         with:
           minimum-approvals: 1
@@ -208,6 +208,7 @@ jobs:
         run: tofu validate 
 
       - name: Tofu plan
+        id: plan 
         working-directory: infra
         env:
           TF_VAR_resource_group_name: ${{ env.ACR_RESOURCE_GROUP }}
@@ -225,6 +226,11 @@ jobs:
             -var="image_tag_api=${IMAGE_TAG_API}" \
             -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
             -out=tfplan
+
+      - name: Render plan to job summary
+        if: steps.plan.outcome == 'success'
+        run: |
+          tofu show tfplan -no-color >> "$GITHUB_STEP_SUMMARY"
 
       - name: Tofu apply
         working-directory: infra
