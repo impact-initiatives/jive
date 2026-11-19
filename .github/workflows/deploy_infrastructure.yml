@@ -242,19 +242,34 @@ jobs:
         env:
           ARGUS_SCHEMAS_REPO: impact-initiatives/argus_schemas
           PROVIDED_TAG: ${{ inputs.argus_schemas_release_tag || 'latest' }}
+          ENVIRONMENT: ${{ inputs.environment }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
           if [ "$PROVIDED_TAG" != "latest" ]; then
-            if ! gh release view "$PROVIDED_TAG" --repo "$ARGUS_SCHEMAS_REPO" \
-                 --json tagName --jq '.tagName' >/dev/null 2>&1; then
+            release_json=$(gh release view "$PROVIDED_TAG" --repo "$ARGUS_SCHEMAS_REPO" \
+                             --json tagName,isDraft,isPrerelease 2>/dev/null) || {
               echo "::error::No release '$PROVIDED_TAG' in $ARGUS_SCHEMAS_REPO. Publish it before deploying."
               exit 1
+            }
+            resolved=$(echo "$release_json" | jq -r '.tagName')
+
+            if [ "$ENVIRONMENT" = "prod" ]; then
+              draft=$(echo "$release_json" | jq -r '.isDraft')
+              prerelease=$(echo "$release_json" | jq -r '.isPrerelease')
+              if [ "$draft" = "true" ]; then
+                echo "::error::Argus schemas release '$PROVIDED_TAG' is a draft. Publish it before deploying to prod."
+                exit 1
+              fi
+              if [ "$prerelease" = "true" ]; then
+                echo "::error::Argus schemas release '$PROVIDED_TAG' is a prerelease. Publish a full release before deploying to prod."
+                exit 1
+              fi
             fi
-            resolved="$PROVIDED_TAG"
           else
-            # GitHub's /releases/latest returns the newest non-draft, non-prerelease release
+            # GitHub's /releases/latest returns the newest non-draft, non-prerelease release,
+            # so the resolved version is inherently published — safe for prod as-is.
             resolved=$(gh api "repos/${ARGUS_SCHEMAS_REPO}/releases/latest" --jq '.tag_name')
             echo "::notice::No Argus schemas tag provided — resolved to latest release '$resolved'"
           fi
