@@ -37,6 +37,7 @@ No modules.
 |------|-------------|------|---------|:--------:|
 | <a name="input_allowed_domains"></a> [allowed\_domains](#input\_allowed\_domains) | External domains Jive is allowed to reach. | `string` | n/a | yes |
 | <a name="input_api_container_app_name"></a> [api\_container\_app\_name](#input\_api\_container\_app\_name) | Container app name for Jive Api. | `string` | `"jive-api-dev"` | no |
+| <a name="input_argus_schemas_version"></a> [argus\_schemas\_version](#input\_argus\_schemas\_version) | Argus schemas version used by argus in the validator worker. | `string` | n/a | yes |
 | <a name="input_container_registry_password"></a> [container\_registry\_password](#input\_container\_registry\_password) | Password for the Azure container registry. | `string` | n/a | yes |
 | <a name="input_container_registry_username"></a> [container\_registry\_username](#input\_container\_registry\_username) | Username for Azure container registry. | `string` | n/a | yes |
 | <a name="input_debug_ip_rules"></a> [debug\_ip\_rules](#input\_debug\_ip\_rules) | Temporary public IPs allowed to reach storage. Remove after use. | `list(string)` | `[]` | no |
@@ -44,7 +45,7 @@ No modules.
 | <a name="input_image_repository_api"></a> [image\_repository\_api](#input\_image\_repository\_api) | Image name for Api images in the Azure container registry.. | `string` | `"jive-api"` | no |
 | <a name="input_image_repository_worker"></a> [image\_repository\_worker](#input\_image\_repository\_worker) | Image name for worker-validator images in the Azure container registry. | `string` | `"jive-worker-validator"` | no |
 | <a name="input_image_tag_api"></a> [image\_tag\_api](#input\_image\_tag\_api) | Tag for the Api image. | `string` | n/a | yes |
-| <a name="input_image_tag_worker"></a> [image\_tag\_worker](#input\_image\_tag\_worker) | Tag for the worker-validator image. | `string` | n/a | yes |
+| <a name="input_image_tag_worker_validator"></a> [image\_tag\_worker\_validator](#input\_image\_tag\_worker\_validator) | Tag for the worker-validator image. | `string` | n/a | yes |
 | <a name="input_infrastructure_subnet_prefix"></a> [infrastructure\_subnet\_prefix](#input\_infrastructure\_subnet\_prefix) | n/a | `string` | n/a | yes |
 | <a name="input_jira_api_token"></a> [jira\_api\_token](#input\_jira\_api\_token) | Jira Api token used for authentication with the Jira Api's. | `string` | n/a | yes |
 | <a name="input_jira_base_url"></a> [jira\_base\_url](#input\_jira\_base\_url) | Base Url used by Jira Api's | `string` | n/a | yes |
