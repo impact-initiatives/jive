@@ -1,9 +1,6 @@
-name: Jive build and deploy
+name: Jive build and deploy images
 
 # Jive and argus are deployed together so can share the same release tag.
-# argus schemas can be released independently so can possibly have
-# its own different release tag (likely only if it released twice
-# in one day)
 
 on:
   workflow_dispatch:
@@ -12,17 +9,8 @@ on:
         description: '"Jive" release tag in format "YYYYMMDDXX" .'
         required: true
         type: string
-      release_jive:
-        description: 'Publish a "Jive" release.'
-        required: true
-        type: boolean
-      release_argus_schemas:
-        description: 'Publish an "Arugs Schemas" release.'
-        required: true
-        type: boolean
       argus_schemas_release_tag:
         description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
-        required: true
         type: string
       deploy_jive_worker:
         description: 'Create Jive worker image and container app revision.'
@@ -38,29 +26,9 @@ permissions:
 
 jobs:  
 
-  create_jive_release:
-    if: ${{ inputs.release_jive &&  always() }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7.0.1  
-        with:
-          persist-credentials: false
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.release_tag }}
-        run: |
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --generate-notes
 
   build_and_push_jive_worker_images:
-    needs: create_jive_release
-    if: ${{ always() && inputs.deploy_jive_worker && !contains(needs.create_jive_release.result, 'failure')}}
+    if: ${{ always() && inputs.deploy_jive_worker}}
     uses: $/.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
@@ -73,8 +41,7 @@ jobs:
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
 
   build_and_push_jive_api_images:
-    needs: create_jive_release
-    if: ${{ always() && inputs.deploy_jive_api && !contains(needs.create_jive_release.result, 'failure')}}
+    if: ${{ always() && inputs.deploy_jive_api }}
     uses: $/.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.release_tag }}
@@ -93,20 +60,13 @@ jobs:
       && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
       && !(contains(needs.build_and_push_jive_worker_images.result, 'failure')
         || contains(needs.build_and_push_jive_api_images.result, 'failure'))
-
-    strategy:
-      fail-fast: true
-      max-parallel: 1                      
-      matrix:
-        environment: [dev, test]
     uses: $/.github/workflows/deploy_infrastructure.yml
-    with: 
-      environment: ${{ matrix.environment }}
+    with:
+      environment: dev
       image_tag: ${{ inputs.release_tag }}
-      deploy_worker: ${{ inputs.deploy_jive_worker }}
+      deploy_worker_validator: ${{ inputs.deploy_jive_worker }}
       deploy_api: ${{ inputs.deploy_jive_api }}
-      require_approval: ${{ matrix.environment != 'dev' }}
-      approvers: 'impact-initiatives/gdt'
+      argus_schemas_release_tag: ${{ inputs.argus_schemas_release_tag }}
     secrets:
       ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
@@ -122,16 +82,3 @@ jobs:
       LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
 
     
-  # leave this at the end so that the release is not made if other components fail
-  create_argus_schemas_release:
-    needs: deploy_infrastructure
-    if: ${{ always() &&  inputs.release_argus_schemas && !contains(needs.deploy_infrastructure.result, 'failure')}}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger argus_schemas workflow
-        uses: peter-evans/repository-dispatch@v4.0.1
-        with:
-          token: ${{ secrets.REPO_DISPATCH_TOKEN }}  
-          repository: impact-initiatives/argus_schemas
-          event-type: manual-release
-          client-payload: '{"release_tag": "${{ inputs.argus_schemas_release_tag }}"}'

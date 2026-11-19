@@ -65,10 +65,13 @@ jobs:
           set -euo pipefail
           TAG_API=$(az containerapp show -n "$APP_NAME" -g "$RESOURCE_GROUP" \
             --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
-          TAG_WORKER=$(az containerapp job show -n "$JOB_NAME" -g "$RESOURCE_GROUP" \
+          TAG_WORKER_VALIDATOR=$(az containerapp job show -n "$JOB_NAME" -g "$RESOURCE_GROUP" \
             --query "properties.template.containers[0].image" -o tsv | awk -F: '{print $NF}')
+          TAG_SCHEMA=$(az containerapp job show -n "$JOB_NAME" -g "$RESOURCE_GROUP" \
+            --query "properties.template.containers[0].env[?name=='ARGUS_SCHEMAS_VERSION'].value" -o tsv)
           echo "IMAGE_TAG_API=$TAG_API"     >> "$GITHUB_ENV"
-          echo "IMAGE_TAG_WORKER=$TAG_WORKER" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG_WORKER_VALIDATOR=$TAG_WORKER_VALIDATOR" >> "$GITHUB_ENV"
+          echo "ARGUS_SCHEMAS_VERSION=$TAG_SCHEMA" >> "$GITHUB_ENV"
 
       - uses: opentofu/setup-opentofu@v2.0.2
         with:
@@ -97,12 +100,13 @@ jobs:
           TF_VAR_jira_api_token: ${{ secrets.JIRA_API_TOKEN }}
           TF_VAR_jira_cloud_id: ${{ secrets.JIRA_CLOUD_ID }}
           TF_VAR_jive_documentation: ${{ secrets.JIVE_DOCUMENTATION }}
+          TF_VAR_argus_schemas_version: ${{ env.ARGUS_SCHEMAS_VERSION }}
         run: |
           set -euo pipefail
           tofu plan -input=false -no-color \
             -var-file=environments/dev.tfvars \
             -var="image_tag_api=${IMAGE_TAG_API}" \
-            -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
+            -var="image_tag_worker_validator=${IMAGE_TAG_WORKER_VALIDATOR}" \
             -out=tfplan 2>&1 | tee plan.log
 
           # error output

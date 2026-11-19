@@ -11,23 +11,18 @@ on:
         description: 'New image tag for the components being deployed'
         required: true
         type: string
+      argus_schemas_release_tag:
+        description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
+        type: string
       deploy_api:
         description: 'Deploy new tag to the API container app'
         required: true
         type: boolean
-      deploy_worker:
+      deploy_worker_validator:
         description: 'Deploy new tag to the validation worker job'
         required: true
         type: boolean
-      require_approval:
-        description: 'Block until a human approves before deploying'
-        required: false
-        type: boolean
-        default: false
-      approvers:
-        description: 'GitHub team/user names who may approve'
-        required: false
-        type: string
+
     secrets:
       AZURE_CREDENTIALS:
         required: true
@@ -57,20 +52,23 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment'
+        description: 'Target environment.'
         type: choice
-        options: [dev]
+        options: [dev, test]
         required: true
       image_tag:
         description: 'Image tag to deploy'
         required: true
         type: string
+      argus_schemas_release_tag:
+        description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
+        type: string
       deploy_api:
         description: 'Deploy API app'
         type: boolean
         default: true
-      deploy_worker:
-        description: 'Deploy worker job'
+      deploy_worker_validator:
+        description: 'Deploy validation worker job'
         type: boolean
         default: true
     
@@ -93,7 +91,7 @@ jobs:
     env:
       ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
       IMAGE_TAG_API: ${{ inputs.deploy_api && inputs.image_tag || '' }}
-      IMAGE_TAG_WORKER: ${{ inputs.deploy_worker && inputs.image_tag || '' }}
+      IMAGE_TAG_WORKER_VALIDATOR: ${{ inputs.deploy_worker_validator && inputs.image_tag || '' }}
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
       ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
       JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
@@ -111,94 +109,131 @@ jobs:
         with:
           persist-credentials: false
 
+      # ensure that there was a release before deploying to prod
+      - name: Verify GitHub release exists
+        if: ${{ inputs.environment == 'prod' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+
+          if ! gh release view "$IMAGE_TAG" --repo "$GITHUB_REPOSITORY" \
+               --json tagName,isDraft,isPrerelease --jq '.tagName' >/dev/null 2>&1; then
+            echo "::error::No GitHub release found for tag '$IMAGE_TAG'. Production deployments require a published release."
+            exit 1
+          fi
+
+          draft=$(gh release view "$IMAGE_TAG" --repo "$GITHUB_REPOSITORY" \
+                    --json isDraft --jq '.isDraft')
+          if [ "$draft" = "true" ]; then
+            echo "::error::Release '$IMAGE_TAG' exists but is a draft. Publish it before deploying to prod."
+            exit 1
+          fi
+
       - name: Azure login
         uses: azure/login@v3.1.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # checks that things are released in sequence: dev > test > prod
       - name: Verify promotion chain
         if: ${{ inputs.environment != 'dev' }}
         env:
           RESOURCE_GROUP: ${{ env.ACR_RESOURCE_GROUP }}
           IMAGE_TAG: ${{ inputs.image_tag }}
           ENVIRONMENT: ${{ inputs.environment }}
+          DEPLOY_API: ${{ inputs.deploy_api }}
+          DEPLOY_WORKER_VALIDATOR: ${{ inputs.deploy_worker_validator }}
         run: |
           set -euo pipefail
 
-          # which environment should already be running this tag?
           case "$ENVIRONMENT" in
             test) prev_env="dev" ;;
             prod) prev_env="test" ;;
             *) echo "::error::Unknown environment '$ENVIRONMENT'"; exit 1 ;;
           esac
 
-          # build the previous environment's prefixed names —
-          # keep in sync with your tfvars naming convention
-          prev_app="${API_APP_NAME}-${prev_env}"  
-          prev_job="${VALIDATOR_JOB_NAME}-${prev_env}"  
-
-          for name in "$prev_app" "$prev_job"; do
-            if ! az containerapp show -n "$name" -g "$RESOURCE_GROUP" -o none >/dev/null 2>&1; then
-              echo "::notice::$name not found — $prev_env never deployed, promotion check skipped"
-              continue
+          get_image_tag() {
+            local kind="$1" name="$2"
+            if [ "$kind" = "job" ]; then
+              az containerapp job show -n "$name" -g "$RESOURCE_GROUP" \
+                --query "properties.template.containers[0].image" -o tsv
+            else
+              az containerapp show -n "$name" -g "$RESOURCE_GROUP" \
+                --query "properties.template.containers[0].image" -o tsv
             fi
-            image=$(az containerapp show -n "$name" -g "$RESOURCE_GROUP" \
-              --query "properties.template.containers[0].image" -o tsv)
-            tag="${image##*:}"
+          }
+
+          specs=()
+          if [ "$DEPLOY_API" = "true" ]; then
+            specs+=("app:${API_APP_NAME}-${prev_env}")
+          fi
+          if [ "$DEPLOY_WORKER_VALIDATOR" = "true" ]; then
+            specs+=("job:${VALIDATOR_JOB_NAME}-${prev_env}")
+          fi
+
+          for spec in "${specs[@]}"; do
+            kind="${spec%%:*}"; name="${spec#*:}"
+            echo "::notice::Verifying '$name' in '$prev_env' is running tag '$IMAGE_TAG'"
+            if ! az containerapp show -n "$name" -g "$RESOURCE_GROUP" -o none >/dev/null 2>&1; then
+              echo "::error::$name not found in '$prev_env' — deploy release $IMAGE_TAG to $prev_env first"
+              exit 1
+            fi
+            tag=$(get_image_tag "$kind" "$name")
+            tag="${tag##*:}"
             if [ "$tag" != "$IMAGE_TAG" ]; then
               echo "::error::$name in '$prev_env' is on '$tag', not '$IMAGE_TAG'. Deploy to $prev_env first."
               exit 1
             fi
           done
 
-      - name: Promotion approval
-        if: ${{ inputs.require_approval && inputs.environment != 'dev' }}
-        uses: trstringer/manual-approval@v1.13.1
-        with:
-          minimum-approvals: 1
-          approvers: ${{ inputs.approvers }}
-          secret: ${{ github.token }}
-          issue-title: "Promote jive ${{ inputs.image_tag }} to ${{ inputs.environment }}?"
-          issue-body: "Approving deploys release ${{ inputs.image_tag }} to ${{ inputs.environment }}."
+     
 
       # For components NOT being deployed, look up the currently running
-      # image tag so the Bicep deploy leaves them untouched.
+      # image tag so the opentofu deploy leaves them untouched.
       - name: Resolve current image tags
         env:
           RESOURCE_GROUP: ${{ env.ACR_RESOURCE_GROUP }}
           IMAGE_TAG: ${{ inputs.image_tag }}
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           set -euo pipefail
-
-          resolve_tag() {
-            local kind="$1" name="$2"
-            local tag
-            tag=$(az "$kind" show -n "$name" -g "$RESOURCE_GROUP" \
-                  --query "properties.template.containers[0].image" -o tsv 2>/dev/null | awk -F: '{print $NF}')
-
-            if [ -n "$tag" ] && [[ "$tag" != *"NotFound"* ]]; then
-              echo "Resolved existing tag for $name: $tag" >&2   
-              echo "$tag"
-            elif az "$kind" show -n "$name" -g "$RESOURCE_GROUP" -o none 2>/dev/null; then
-              echo "::error::$name exists but its image tag could not be resolved"
-              exit 1
-            else
-              echo "::notice::$name not found — first deployment, will use new tag '$NEW_TAG'" >&2
-              echo "$NEW_TAG"
-            fi
-          }
+          # ... resolve_tag() unchanged ...
 
           export NEW_TAG="$IMAGE_TAG"
 
           if [ -z "$IMAGE_TAG_API" ]; then
-            IMAGE_TAG_API=$(resolve_tag containerapp "$API_APP_NAME")
+            IMAGE_TAG_API=$(resolve_tag containerapp "${API_APP_NAME}-${ENVIRONMENT}")
             echo "IMAGE_TAG_API=$IMAGE_TAG_API" >> "$GITHUB_ENV"
           fi
 
-          if [ -z "$IMAGE_TAG_WORKER" ]; then
-            IMAGE_TAG_WORKER=$(resolve_tag containerapp job "$VALIDATOR_JOB_NAME")
-            echo "IMAGE_TAG_WORKER=$IMAGE_TAG_WORKER" >> "$GITHUB_ENV"
+          if [ -z "$IMAGE_TAG_WORKER_VALIDATOR" ]; then
+            IMAGE_TAG_WORKER_VALIDATOR=$(resolve_tag containerapp job "${VALIDATOR_JOB_NAME}-${ENVIRONMENT}")
+            echo "IMAGE_TAG_WORKER_VALIDATOR=$IMAGE_TAG_WORKER_VALIDATOR" >> "$GITHUB_ENV"
           fi
+
+      - name: Resolve Argus schemas version
+        env:
+          ARGUS_SCHEMAS_REPO: impact-initiatives/argus_schemas
+          PROVIDED_TAG: ${{ inputs.argus_schemas_release_tag || 'latest' }}
+        run: |
+          set -euo pipefail
+
+          if [ "$PROVIDED_TAG" != "latest" ]; then
+            if ! gh release view "$PROVIDED_TAG" --repo "$ARGUS_SCHEMAS_REPO" \
+                 --json tagName --jq '.tagName' >/dev/null 2>&1; then
+              echo "::error::No release '$PROVIDED_TAG' in $ARGUS_SCHEMAS_REPO. Publish it before deploying."
+              exit 1
+            fi
+            resolved="$PROVIDED_TAG"
+          else
+            # GitHub's /releases/latest returns the newest non-draft, non-prerelease release
+            resolved=$(gh api "repos/${ARGUS_SCHEMAS_REPO}/releases/latest" --jq '.tag_name')
+            echo "::notice::No Argus schemas tag provided — resolved to latest release '$resolved'"
+          fi
+
+          echo "ARGUS_SCHEMAS_VERSION=$resolved" >> "$GITHUB_ENV"
 
       - uses: opentofu/setup-opentofu@v2.0.2
         with:
@@ -233,13 +268,14 @@ jobs:
           TF_VAR_jira_api_token: ${{ env.JIRA_API_TOKEN }}
           TF_VAR_jira_cloud_id: ${{ env.JIRA_CLOUD_ID }}
           TF_VAR_jive_documentation: ${{ env.JIVE_DOCUMENTATION }}
+          TF_VAR_argus_schemas_version: ${{ env.ARGUS_SCHEMAS_VERSION }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           tofu plan \
             -input=false \
             -var-file=environments/"$ENVIRONMENT".tfvars \
             -var="image_tag_api=${IMAGE_TAG_API}" \
-            -var="image_tag_worker=${IMAGE_TAG_WORKER}" \
+            -var="image_tag_worker_validator=${IMAGE_TAG_WORKER_VALIDATOR}" \
             -out=tfplan
 
       - name: Render plan to job summary

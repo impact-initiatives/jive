@@ -89,6 +89,11 @@ resource "azurerm_container_app_job" "validator" {
       }
 
       env {
+        name  = "ARGUS_SCHEMAS_VERSION"
+        value = var.argus_schemas_version
+      }
+
+      env {
         name        = "AZURE_STORAGE_CONNECTION_STRING"
         secret_name = "azure-storage-connection-string"
       }

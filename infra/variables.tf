@@ -74,8 +74,13 @@ variable "image_tag_api" {
   type        = string
 }
 
-variable "image_tag_worker" {
+variable "image_tag_worker_validator" {
   description = "Tag for the worker-validator image."
+  type        = string
+}
+
+variable "argus_schemas_version" {
+  description = "Argus schemas version used by argus in the validator worker."
   type        = string
 }
 
