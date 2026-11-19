@@ -93,8 +93,7 @@ jobs:
       && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
       && !(contains(needs.build_and_push_jive_worker_images.result, 'failure')
         || contains(needs.build_and_push_jive_api_images.result, 'failure'))
-    permissions:
-      issues: write
+
     strategy:
       fail-fast: true
       max-parallel: 1                      
