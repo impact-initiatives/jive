@@ -52,6 +52,7 @@ No modules.
 | <a name="input_jira_cloud_id"></a> [jira\_cloud\_id](#input\_jira\_cloud\_id) | Cloud Id for the Jira account. | `string` | n/a | yes |
 | <a name="input_jive_api_key"></a> [jive\_api\_key](#input\_jive\_api\_key) | Jive Api key used by Jira webhooks. | `string` | n/a | yes |
 | <a name="input_jive_documentation"></a> [jive\_documentation](#input\_jive\_documentation) | Jive documentation Urls. | `string` | n/a | yes |
+| <a name="input_jive_worker_validator_version"></a> [jive\_worker\_validator\_version](#input\_jive\_worker\_validator\_version) | Version of Jive worker modules running. | `string` | n/a | yes |
 | <a name="input_location"></a> [location](#input\_location) | n/a | `string` | `"switzerlandnorth"` | no |
 | <a name="input_log_analytics_workspace_name"></a> [log\_analytics\_workspace\_name](#input\_log\_analytics\_workspace\_name) | n/a | `string` | `"workspace-devozSg"` | no |
 | <a name="input_managed_environment_name"></a> [managed\_environment\_name](#input\_managed\_environment\_name) | Name of Jive container apps environment. | `string` | `"jive-env-dev"` | no |
