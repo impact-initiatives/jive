@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # )
 
     queue_connection_string: str = Field(alias="AZURE_STORAGE_CONNECTION_STRING")
-    queue_name: str = "jive-validation-queue"
+    queue_name: str = Field(alias="QUEUE_NAME", default="jive-validation-queue")
     max_attachment_size: int = Field(alias="JIVE_MAX_ATTACHMENT_MB", default=250)
     max_retries: int = Field(alias="JIVE_MAX_RETRIES", default=3)
     force_validation: bool = Field(alias="JIVE_FORCE_VALIDATION", default=False)

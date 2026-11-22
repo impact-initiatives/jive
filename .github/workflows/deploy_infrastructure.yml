@@ -1,58 +1,7 @@
 name: Deploy infrastructure
 
 # Deplpoys images and other infrastructure changes to the relevant Azure environment.
-
-
-on:
-  workflow_call:
-    inputs:
-      environment:
-        description: 'Target environment (maps to opentofu file)'
-        required: true
-        type: string
-      image_tag:
-        description: 'Existing image tag for the components being deployed'
-        required: true
-        type: string
-      argus_schemas_release_tag:
-        description: '"Argus Schemas" release tag in format "YYYYMMDDXX" or "latest".'
-        required: true
-        type: string        
-      deploy_api:
-        description: 'Deploy new tag to the API container app'
-        required: true
-        type: boolean
-      deploy_worker_validator:
-        description: 'Deploy new tag to the validation worker job'
-        required: true
-        type: boolean
-
-    secrets:
-      AZURE_CREDENTIALS:
-        required: true
-      AZURE_SUBSCRIPTION_ID:
-        required: true
-      ACR_RESOURCE_GROUP:
-        required: true
-      ACR_USERNAME:
-        required: true
-      ACR_PASSWORD:
-        required: true
-      JIVE_API_KEY:
-        required: true
-      JIRA_API_TOKEN:
-        required: true
-      JIRA_CLOUD_ID:
-        required: true
-      JIVE_DOCUMENTATION:
-        required: true
-      ALLOWED_DOMAINS:
-        required: true
-      JIRA_BASE_URL:
-        required: true
-      LOG_ANALYTICS_SHARED_KEY:
-        required: true
-      
+on:      
   workflow_dispatch:
     inputs:
       environment:
@@ -61,7 +10,7 @@ on:
         options: [dev, test]
         required: true
       image_tag:
-        description: 'Existing Image tag for the components being deployed.'
+        description: 'Image tag for the components being deployed.'
         required: true
         type: string
       argus_schemas_release_tag:
@@ -83,6 +32,7 @@ permissions:
   contents: read
 
 env:
+  # these are also hardcoded in the build image job below as env is not available
   API_APP_NAME: jive-api
   VALIDATOR_JOB_NAME: jive-worker-validator
 
@@ -91,8 +41,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:   
+  # build docker images and push them to azure container registry
+  # must target dev environment
+  build_api_image:
+    if: ${{ inputs.environment == 'dev' && inputs.deploy_api }}
+    uses: $/.github/workflows/push_to_azure_acr.yml
+    with:
+      release_tag: ${{ inputs.image_tag }}
+      acr_name: acrimpact
+      image_name: jive-api
+      file: ./api/Dockerfile
+    secrets:
+      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
 
+  build_worker_validator_image:
+    if: ${{ inputs.environment == 'dev' && inputs.deploy_worker_validator }}
+    uses: $/.github/workflows/push_to_azure_acr.yml
+    with:
+      release_tag: ${{ inputs.image_tag }}
+      acr_name: acrimpact
+      image_name: jive-worker-validator
+      file: ./workers/validator/Dockerfile
+    secrets:
+      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+
+  # deploys images and infrastructure updates/changes 
+  # ensures the release chain is followed (dev > test > prod)
+  # if deploying to prod there must be a coresponding published github release
   deploy:
+    needs: [build_api_image, build_worker_validator_image]
+    if: >
+        always()
+        && (inputs.deploy_worker_validator || inputs.deploy_api)
+        && !(contains(fromJSON('["failure", "cancelled"]'), needs.build_api_image.result))
+        && !(contains(fromJSON('["failure", "cancelled"]'), needs.build_worker_validator_image.result))
     runs-on: ubuntu-latest
     env:
       ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
@@ -115,7 +99,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # ensure that there was a release before deploying to prod
+      # ensure that there was a jive github release before deploying to prod
       - name: Verify GitHub release exists
         if: ${{ inputs.environment == 'prod' }}
         env:
@@ -194,8 +178,9 @@ jobs:
 
      
 
-      # For components NOT being deployed, look up the currently running
+      # For components not being deployed, look up the currently running
       # image tag so the opentofu deploy leaves them untouched.
+      # if a job specifed tag does not exist the opentofu steps will fail.
       - name: Resolve current image tags
         env:
           RESOURCE_GROUP: ${{ env.ACR_RESOURCE_GROUP }}
@@ -238,6 +223,9 @@ jobs:
             echo "IMAGE_TAG_WORKER_VALIDATOR=$IMAGE_TAG_WORKER_VALIDATOR" >> "$GITHUB_ENV"
           fi
 
+      # gets the relevant schemas version. if specifying a specific release:
+      # - For dev/test there must be a release of some sort
+      # - For prod there must be a published release
       - name: Resolve Argus schemas version
         env:
           ARGUS_SCHEMAS_REPO: impact-initiatives/argus_schemas

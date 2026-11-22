@@ -127,6 +127,11 @@ resource "azurerm_container_app_job" "validator" {
         name  = "JIRA_AUTH_TYPE"
         value = "token"
       }
+
+      env {
+        name  = "QUEUE_NAME"
+        value = var.validator_queue_name
+      }
     }
   }
 }
