@@ -128,7 +128,7 @@ jobs:
 
       - name: Post plan to PR
         if: github.event_name == 'pull_request' && !cancelled()
-        uses: actions/github-script@v8.0.0
+        uses: actions/github-script@v9.0.0
         env:
             PLAN: ${{ steps.plan.outputs.stdout }}
             PLAN_OUTCOME: ${{ steps.plan.outcome }}
