@@ -36,10 +36,6 @@ env:
   API_APP_NAME: jive-api
   VALIDATOR_JOB_NAME: jive-worker-validator
 
-concurrency:
-  group: deploy-jive-${{ inputs.environment }}
-  cancel-in-progress: false
-
 jobs:   
   # build docker images and push them to azure container registry
   # must target dev environment

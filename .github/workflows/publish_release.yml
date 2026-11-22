@@ -1,4 +1,4 @@
-name: Jive build and deploy images
+name: Publish Releases
 
 # Builds Jive images and deploys them to the dev envrionment.
 
