@@ -5,24 +5,32 @@ name: Jive build and deploy images
 on:
   workflow_dispatch:
     inputs:
-      release_tag:
+      release_jive:
+        description: 'Publish a "Jive" release.'
+        required: true
+        type: boolean
+      jive_release_tag:
         description: '"Jive" release tag in format "YYYYMMDDXX" .'
         required: true
         type: string
+      jive_prerelease:                     
+        description: 'Mark the "Jive" release as a pre-release.'
+        required: false
+        type: boolean
+        default: false
+      release_argus_schemas:
+        description: 'Publish an "Arugs Schemas" release.'
+        required: true
+        type: boolean
       argus_schemas_release_tag:
-        description: '"Argus Schemas" release tag in format "YYYYMMDDXX" or "latest".'
+        description: '"Argus Schemas" release tag in format "YYYYMMDDXX".'
         required: true
         type: string
         default: latest
-      deploy_jive_worker:
-        description: 'Create Jive worker image and container app revision.'
-        required: true
-        type: boolean  
-        default: false    
-      deploy_jive_api:
-        description: 'Create Jive api image and container app revision.'
-        required: true
-        type: boolean  
+      argus_schemas_prerelease:             
+        description: 'Mark the "Argus Schemas" release as a pre-release.'
+        required: false
+        type: boolean
         default: false
 
 permissions:
@@ -30,59 +38,47 @@ permissions:
 
 jobs:  
 
+  create_jive_release:
+    if: ${{ inputs.release_jive &&  always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout codes
+        uses: actions/checkout@v7.0.1  
+        with:
+          persist-credentials: false
 
-  build_and_push_jive_worker_images:
-    if: ${{ always() && inputs.deploy_jive_worker}}
-    uses: $/.github/workflows/push_to_azure_acr.yml
-    with:
-      release_tag: ${{ inputs.release_tag }}
-      acr_name: acrimpact
-      image_name: jive-worker-validator
-      # release_type: ${{ inputs.release_type }}
-      file: ./workers/validator/Dockerfile
-    secrets:
-      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.jive_release_tag }}
+          PRE_RELEASE: ${{ inputs.jive_prerelease }}
+        run: |
+          ARGS=""
+          if [[ "$PRE_RELEASE" == "true" ]]; then
+            ARGS="--prerelease"
+          fi
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --generate-notes \
+            $ARGS
 
-  build_and_push_jive_api_images:
-    if: ${{ always() && inputs.deploy_jive_api }}
-    uses: $/.github/workflows/push_to_azure_acr.yml
-    with:
-      release_tag: ${{ inputs.release_tag }}
-      acr_name: acrimpact
-      image_name: jive-api
-      # release_type: ${{ inputs.release_type }}
-      file: ./api/Dockerfile
-    secrets:
-      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+  create_argus_schemas_release:
+    if: ${{ always() &&  inputs.release_argus_schemas}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger argus_schemas workflow
+        uses: peter-evans/repository-dispatch@v4.0.1
+        with:
+          token: ${{ secrets.REPO_DISPATCH_TOKEN }}  
+          repository: impact-initiatives/argus_schemas
+          event-type: manual-release
+          client-payload: '{"release_tag": "${{ inputs.argus_schemas_release_tag }}", "prerelease": "${{ inputs.argus_schemas_prerelease }}"}'
 
-  deploy_infrastructure:
-    needs: [build_and_push_jive_worker_images, build_and_push_jive_api_images]
-    if: >
-      always()
-      && (inputs.deploy_jive_worker || inputs.deploy_jive_api)
-      && !(contains(fromJSON('["failure", "cancelled"]'), needs.build_and_push_jive_worker_images.result)
-        || contains(fromJSON('["failure", "cancelled"]'), needs.build_and_push_jive_api_images.result))
-    uses: $/.github/workflows/deploy_infrastructure.yml
-    with:
-      environment: dev
-      image_tag: ${{ inputs.release_tag }}
-      deploy_worker_validator: ${{ inputs.deploy_jive_worker }}
-      deploy_api: ${{ inputs.deploy_jive_api }}
-      argus_schemas_release_tag: ${{ inputs.argus_schemas_release_tag }}
-    secrets:
-      ACR_RESOURCE_GROUP: ${{ secrets.ACR_RESOURCE_GROUP }}
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-      JIVE_API_KEY: ${{ secrets.JIVE_API_KEY }}
-      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-      JIRA_CLOUD_ID: ${{ secrets.JIRA_CLOUD_ID }}
-      JIVE_DOCUMENTATION: ${{ secrets.JIVE_DOCUMENTATION }}
-      ALLOWED_DOMAINS: ${{ secrets.ALLOWED_DOMAINS }}
-      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-      LOG_ANALYTICS_SHARED_KEY: ${{ secrets.LOG_ANALYTICS_SHARED_KEY }}
+
+  
+
+
 
     
