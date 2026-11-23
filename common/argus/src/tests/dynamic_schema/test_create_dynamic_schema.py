@@ -1,4 +1,4 @@
-from pathlib import Path, PosixPath
+from pathlib import Path
 
 import polars as pl
 import pytest
@@ -11,16 +11,14 @@ from argus.loaders.base_excel_loader import ExcelLoaderData
 from argus.models.base import SheetClassification
 from argus.models.dynamic_schema import DynamicDataset
 from argus.models.resolver import find_dataset_files
-from argus.utils.yaml_loader import download_config
 from tests.helpers import admin_error_counter, error_counter
 
 
 @pytest.fixture
 def valid_dataset():
     """Create a UniqueColumn validator instance"""
-    dataset_config_directory = download_config(settings.DATASET_CONFIG_DIR)
     result = find_dataset_files(
-        dataset_config_directory, "other", "dataset", "en", "schema.yaml", "validators.yaml"
+        settings.schemas_directory, "other", "dataset", "en", "schema.yaml", "validators.yaml"
     )
     assert result is not None
     dataset: DynamicDataset = DynamicDataset(
@@ -28,7 +26,6 @@ def valid_dataset():
     )
     return {
         "dataset": dataset,
-        "dataset_config_directory": dataset_config_directory,
     }
 
 
@@ -285,11 +282,9 @@ class TestDynamicSchema:
     ):
 
         dataset = valid_dataset["dataset"]
-        dataset_config_directory = valid_dataset["dataset_config_directory"]
-        assert isinstance(dataset_config_directory, PosixPath)
         assert isinstance(dataset, DynamicDataset)
         dataset.data = valid_excel_data
-        results = dataset.process_data(dataset_config_directory=dataset_config_directory)
+        results = dataset.process_data()
         assert len(error_counter(results)) == 0
 
         assert (
@@ -329,12 +324,10 @@ class TestDynamicSchema:
         self, valid_dataset: dict[str, DynamicDataset | Path], invalid_excel_data: ExcelLoaderData
     ):
         dataset = valid_dataset["dataset"]
-        dataset_config_directory = valid_dataset["dataset_config_directory"]
-        assert isinstance(dataset_config_directory, PosixPath)
         assert isinstance(dataset, DynamicDataset)
 
         dataset.data = invalid_excel_data
-        results = dataset.process_data(dataset_config_directory=dataset_config_directory)
+        results = dataset.process_data()
         assert len(admin_error_counter(results)) == 0
         assert len(error_counter(results)) == 9
 

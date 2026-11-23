@@ -1,0 +1,39 @@
+imports:
+  - "../../../common/schema_defaults.yaml"
+
+definitions:
+
+  meb_analysis:
+    standard_name: "meb_analysis"
+    allow_fuzzy_matching: false
+    columns: 
+      - standard_name: "country"
+        allow_fuzzy_matching: false
+        allow_empty_values: false
+      - standard_name: "round"
+        allow_fuzzy_matching: false
+        allow_empty_values: false
+      - $use: temporal_columns
+      - $use: admin_columns
+      - standard_name: "meb_total" 
+        allow_fuzzy_matching: false
+      - standard_name: "admin_level_aggregation" 
+        allow_fuzzy_matching: false
+      - standard_name: "currency_code" 
+        allow_fuzzy_matching: false
+        
+
+  mfs_analysis:
+    standard_name: "mfs_analysis"
+    allow_fuzzy_matching: false
+    columns: 
+      - standard_name: "country"
+        allow_fuzzy_matching: false
+        allow_empty_values: false
+      - standard_name: "round"
+        allow_fuzzy_matching: false
+        allow_empty_values: false
+      - $use: temporal_columns
+      - $use: admin_columns
+      - standard_name: "admin_level_aggregation" 
+        allow_fuzzy_matching: false

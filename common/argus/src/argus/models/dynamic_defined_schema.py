@@ -1,8 +1,9 @@
-from pathlib import Path, PosixPath
+from pathlib import Path
 from typing import override
 
 from jive_logging.logger import get_logger
 
+from ..config import settings
 from ..models.base_dataset import BaseDataset
 from ..utils.yaml_loader import load_file
 from ..validators.base import BaseValidator, SortedSheets, ValidationResult
@@ -46,21 +47,19 @@ class DynamicDefinedDataset(BaseDataset):
         """Runs all the steps."""
         all_results: list[ValidationResult] = []
 
-        dataset_config_directory = kwargs["dataset_config_directory"]
-        if type(dataset_config_directory) is PosixPath:
-            try:
-                sheet_options, _ = load_file(
-                    dataset_config_directory
-                    / self.schema.programme_type
-                    / "config/sheet_options.yaml"
-                )
-                self.update_schema(sheet_options)
+        try:
+            sheet_options, _ = load_file(
+                settings.schemas_directory
+                / self.schema.programme_type
+                / "config/sheet_options.yaml"
+            )
+            self.update_schema(sheet_options)
 
-            except Exception:
-                logger.info(
-                    "No sheet prefixes found. Schema left unchanged.",
-                    extra={"file": dataset_config_directory / "config/sheet_options.yaml"},
-                )
+        except Exception:
+            logger.info(
+                "No sheet prefixes found. Schema left unchanged.",
+                extra={"file": settings.schemas_directory / "config/sheet_options.yaml"},
+            )
 
         # this must come after update_schema
         # to ensure the complete schema is referenced

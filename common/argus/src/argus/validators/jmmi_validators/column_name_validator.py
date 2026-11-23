@@ -1,11 +1,12 @@
 import re
 from dataclasses import dataclass
-from pathlib import Path, PosixPath
+from pathlib import Path
 from typing import override
 
 import polars as pl
 
 from ...common.list_matching import lower_list_items, match_list, upper_list_items
+from ...config import settings
 from ...loaders.base_excel_loader import ExcelLoaderData
 from ...utils.yaml_loader import load_file
 from ...validators.base import BaseValidator, SeverityLevel, ValidationResult
@@ -119,10 +120,7 @@ class JMMIColumnNameCheck(BaseValidator):
             "submitted_by",
         ]
 
-        dataset_config_directory = kwargs["dataset_config_directory"]
-        assert type(dataset_config_directory) is PosixPath
-
-        jmmi_config: Path = dataset_config_directory / "jmmi" / "config"
+        jmmi_config: Path = settings.schemas_directory / "jmmi" / "config"
 
         # config files stored in argus_schemas repoistory
         country_codes_list: list[str] = self._load_file(jmmi_config, "iso_codes.yaml")

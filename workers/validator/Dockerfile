@@ -6,6 +6,7 @@ ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 
 COPY workers/validator/ /app/workers/validator/
 COPY common/argus/ /app/common/argus/
+COPY common/argus_schemas/ /app/common/argus_schemas/
 COPY common/jira/ /app/common/jira/
 COPY common/jive_logging/ /app/common/jive_logging/
 COPY common/worker_base/ /app/common/worker_base/
@@ -16,11 +17,11 @@ RUN uv sync --locked --directory workers/validator
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-RUN mkdir -p /app/logs /app/dataset_config
+RUN mkdir -p /app/logs 
 
 # Run as a non-root user
 RUN useradd --create-home --no-log-init jive
-RUN chown -R jive:jive /app/logs /app/dataset_config 
+RUN chown -R jive:jive /app/logs 
 USER jive
 
 CMD ["python", "-m", "validator.main"]

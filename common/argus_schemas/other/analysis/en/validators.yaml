@@ -1,0 +1,7 @@
+_imports:
+  - "../../../common/validator_defaults.yaml"
+
+validators:
+  - $use: base_validators
+  
+# other validators added dynamically based on schema

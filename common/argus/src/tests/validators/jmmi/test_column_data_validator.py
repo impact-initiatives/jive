@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from argus.validators.base import BaseValidator
@@ -36,7 +34,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 0)
 
     def test_missing_country(self, validator: BaseValidator):
@@ -59,7 +57,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 1)
         assert results[0].details is not None
         assert "should be 3 uppercase" in results[0].details["issue"][0]
@@ -84,7 +82,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 1)
         assert results[0].details is not None
         assert "should be 3 uppercase" in results[0].details["issue"][0]
@@ -109,7 +107,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 1)
         assert results[0].details is not None
         assert "start with 'country'" in results[0].details["issue"][0]
@@ -134,7 +132,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 1)
         assert results[0].details is not None
         assert "start with 'country'" in results[0].details["issue"][0]
@@ -159,7 +157,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 1)
         assert results[0].details is not None
         assert "start with 'country'" in results[0].details["issue"][0]
@@ -184,7 +182,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 1)
         assert results[0].details is None
         assert "country" in results[0].message
@@ -209,7 +207,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 1)
         assert results[0].details is None
         assert "round" in results[0].message
@@ -234,7 +232,7 @@ class TestColumnData:
                 ],
             }
         )
-        results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+        results = validator.validate(data)
         do_basic_checks(results, 1)
         assert results[0].details is None
         assert "clean_data" in results[0].message

@@ -1,0 +1,63 @@
+imports:
+  - "../../../common/schema_defaults.yaml"
+
+definitions:
+  # template for repeat groups
+  msna_repeat_group:
+    - $use: base_repeat_sheet
+      override:
+        standard_name: "{prefix}raw_data"
+        classification: "raw_data_sheet"
+        parent_sheet: hh_raw_data
+        parent_linking_column: uuid
+        linked_log: "{prefix}deletion_log"
+        linked_sheet: "{prefix}clean_data"
+      $append_columns:
+        - $use: uuid_column
+          override:
+            standard_name: "{prefix}person_id"
+            alternate_names: []
+
+    - $use: base_repeat_sheet
+      override:
+        standard_name: "{prefix}clean_data"
+        classification: "clean_data_sheet"
+        parent_sheet: hh_clean_data
+        parent_linking_column: uuid
+        linked_log: "{prefix}cleaning_log"
+        linked_sheet: "{prefix}raw_data"
+      $append_columns:
+        - $use: uuid_column
+          override:
+            standard_name: "{prefix}person_id"
+            alternate_names: []
+
+    - $use: cleaning_log_base
+      override:
+        standard_name: "{prefix}cleaning_log"
+        parent_sheet: "{prefix}clean_data"
+        parent_linking_column: "{prefix}person_id"
+      $append_columns:
+        - $use: uuid_column
+          override:
+            is_unique: false
+            standard_name: "{prefix}person_id"
+            alternate_names: []
+
+    - $use: deletion_log_base
+      override:
+        standard_name: "{prefix}deletion_log"
+        parent_sheet: "{prefix}raw_data"
+        parent_linking_column: "{prefix}person_id"
+      $append_columns:
+        - $use: uuid_column
+          override:
+            standard_name: "{prefix}person_id"
+            alternate_names: []
+
+  base_repeat_sheet:
+    allow_fuzzy_matching: false
+    columns:
+      - $use: uuid_column
+        override:
+          is_unique: false

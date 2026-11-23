@@ -506,11 +506,6 @@ def format_comment_adf(
                 },
                 {
                     "type": "text",
-                    "text": f"Argus Schemas v{response.metadata.argus_schemas_version} | ",
-                    "marks": [{"type": "em"}],
-                },
-                {
-                    "type": "text",
                     "text": "Validated at: ",
                     "marks": [{"type": "em"}, {"type": "strong"}],
                 },

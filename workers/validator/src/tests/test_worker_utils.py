@@ -188,7 +188,6 @@ def test_publish_results_small_file(
             output_type="dataset",
             file_name="report.xlsx",
             validation_date=datetime.datetime.now().isoformat(),
-            argus_schemas_version="2026010100",
         ),
         warnings=[],
         errors=[],
@@ -220,7 +219,6 @@ def test_publish_results_large_file(
             output_type="dataset",
             file_name="report.xlsx",
             validation_date=datetime.datetime.now().isoformat(),
-            argus_schemas_version="2026010100",
         ),
         warnings=[],
         errors=[],
@@ -273,7 +271,6 @@ def test_run_validation_minor_schema_mismatch(
             "programme_type": "jmmi",
             "output_type": "dataset",
             "validation_date": "2023-01-01T00:00:00Z",
-            "argus_schemas_version": "1.2.3",
             "file_name": "report.xlsx",
         },
         # warnings, info, admin_errors are missing

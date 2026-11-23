@@ -1,0 +1,13 @@
+_imports:
+  - "../../../common/validator_defaults.yaml"
+
+validators:
+  - $use: base_validators
+
+  - type: "JMMIColumnNameCheck"
+  - type: "JMMIMebAnalysisCheck"
+  - type: "JMMIColumnDataCheck"
+
+  # other validators added dynamically based on schema
+
+  

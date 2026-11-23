@@ -1,0 +1,19 @@
+# these are used as a reference of possible expected sheets
+# if the sheets are not found they are removed from the schema
+
+prefixes:
+  - hh_
+  - roster_
+  - edu_
+  - health_
+  - nut_
+  - prot_
+  - preg_
+  - died_member_
+  - adults_working_
+
+sheet_type:
+  - clean_data
+  - raw_data
+  - cleaning_log
+  - deletion_log

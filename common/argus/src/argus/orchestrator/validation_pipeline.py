@@ -15,7 +15,6 @@ from ..models.base_dataset_schemas import BaseDatasetSchema
 from ..models.dynamic_defined_schema import DynamicDefinedDataset
 from ..models.dynamic_schema import DynamicDataset
 from ..models.resolver import find_dataset_files
-from ..utils.yaml_loader import download_config
 from ..validators.base import BaseValidator, SeverityLevel, ValidationResult
 
 logger = get_logger("argus.orchestrator")
@@ -24,11 +23,8 @@ logger = get_logger("argus.orchestrator")
 class ValidationPipeline:
     def __init__(self):
         self.set_errors: set[SeverityLevel] = set([SeverityLevel.ADMIN_ERROR, SeverityLevel.ERROR])
-        self.argus_schemas_version: str = ""
 
-    def _setup_schema(
-        self, dataset_config_directory: Path, programme_type: str, output_type: str, locale: str
-    ):
+    def _setup_schema(self, programme_type: str, output_type: str, locale: str):
         """Initialise schema and validators based on dataset type.
 
         Raises:
@@ -37,7 +33,7 @@ class ValidationPipeline:
         schema_file_name = "schema.yaml"
         validator_file_name = "validators.yaml"
         result = find_dataset_files(
-            root_directory=dataset_config_directory,
+            root_directory=settings.schemas_directory,
             programme_type=programme_type,
             output_type=output_type,
             locale=locale,
@@ -125,13 +121,7 @@ class ValidationPipeline:
 
         # load the initial schema and validator list
         try:
-            if use_local_config:
-                dataset_config_directory = settings.DATASET_CONFIG_LOCAL_DIR
-            else:
-                dataset_config_directory = download_config(settings.DATASET_CONFIG_DIR)
-            self.argus_schemas_version = dataset_config_directory.name
             dataset = self._setup_schema(
-                dataset_config_directory=dataset_config_directory,
                 programme_type=programme_type,
                 output_type=output_type,
                 locale=locale,
@@ -142,34 +132,17 @@ class ValidationPipeline:
                     ValidationResult(
                         rule="GetYAMLConfig",
                         message=f"No schema for '{programme_type}' '{output_type}' was"
-                        + f" found for version '{dataset_config_directory.name}'. Falling back to"
+                        + " found. Falling back to"
                         + f" '{dataset.schema.programme_type}' '{dataset.schema.output_type}'.",
                         severity=SeverityLevel.WARNING,
                     )
                 )
                 logger.warning(
-                    f"No dataset schema for '{programme_type}' '{output_type}' was found for"
-                    + f" version '{dataset_config_directory.name}'. Falling back to"
+                    f"No dataset schema for '{programme_type}' '{output_type}' was found"
+                    + ". Falling back to"
                     + f" '{dataset.schema.programme_type}' '{dataset.schema.output_type}'.",
                     extra={"file": filepath.name},
                 )
-
-            all_results.append(
-                ValidationResult(
-                    rule="GetYAMLConfig",
-                    message=f"Using schema version '{dataset_config_directory.name}' for "
-                    + f"dataset '{dataset.schema.programme_type}' '{dataset.schema.output_type}'.",
-                    severity=SeverityLevel.ADMIN_INFO,
-                )
-            )
-            logger.info(
-                f"Using schema version '{self.argus_schemas_version}'.",
-                extra={
-                    "file": filepath.name,
-                    "programme_type": dataset.schema.programme_type,
-                    "output_type": dataset.schema.output_type,
-                },
-            )
 
         except Exception as e:
             all_results.append(
@@ -185,6 +158,7 @@ class ValidationPipeline:
                     "file": filepath.name,
                     "programme_type": programme_type,
                     "output_type": output_type,
+                    "schemas_directory": settings.schemas_directory.resolve(),
                 },
             )
             return all_results
@@ -199,7 +173,6 @@ class ValidationPipeline:
                     "file": filepath.name,
                     "programme_type": dataset.schema.programme_type,
                     "output_type": dataset.schema.output_type,
-                    "schema version": self.argus_schemas_version,
                 },
             )
             validation_errors = dataset.validate_schema_item_names()
@@ -226,7 +199,6 @@ class ValidationPipeline:
                     "file": filepath.name,
                     "programme_type": dataset.schema.programme_type,
                     "output_type": dataset.schema.output_type,
-                    "schema version": self.argus_schemas_version,
                 },
             )
             return all_results
@@ -286,12 +258,9 @@ class ValidationPipeline:
                 "file": filepath.name,
                 "programme_type": dataset.schema.programme_type,
                 "output_type": dataset.schema.output_type,
-                "schema version": self.argus_schemas_version,
             },
         )
-        results: list[ValidationResult] = dataset.process_data(
-            dataset_config_directory=dataset_config_directory
-        )
+        results: list[ValidationResult] = dataset.process_data()
         if results:
             all_results.extend(results)
 
@@ -321,14 +290,11 @@ class ValidationPipeline:
                 "file": filepath.name,
                 "programme_type": dataset.schema.programme_type,
                 "output_type": dataset.schema.output_type,
-                "schema version": self.argus_schemas_version,
             },
         )
         for validator in dataset.validators:
             try:
-                results = validator.validate(
-                    dataset.data, dataset_config_directory=dataset_config_directory
-                )
+                results = validator.validate(dataset.data)
                 if results:
                     all_results.extend(results)
 
@@ -415,7 +381,6 @@ class ValidationPipeline:
                 "programme_type": programme_type,
                 "output_type": output_type,
                 "validation_date": datetime.now(UTC).isoformat(timespec="seconds"),
-                "argus_schemas_version": self.argus_schemas_version,
                 "file_name": filepath.name,
             },
         }
