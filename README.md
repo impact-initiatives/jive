@@ -30,6 +30,8 @@ Shared components that can be resued by workers or other components.
 
 [argus](common/argus/) - Framework for validating datasets submitted to RQA.
 
+[argus schemas](common/argus_schemas/) - Dataset schemas and config files used by argus.
+
 [jira](common/jira/) - Reusable components for interacting with Jira tickets.
 
 [worker_base](common/worker_base/) - Base worker components for interacting with the queue and Jira.

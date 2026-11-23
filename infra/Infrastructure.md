@@ -35,9 +35,8 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_allowed_domains"></a> [allowed\_domains](#input\_allowed\_domains) | External domains Jive is allowed to reach. | `string` | n/a | yes |
+| <a name="input_allowed_domains"></a> [allowed\_domains](#input\_allowed\_domains) | External domains Jive is allowed to reach. | `string` | `"repository.impact-initiatives.org,impact-initiatives.atlassian.net,api.atlassian.com"` | no |
 | <a name="input_api_container_app_name"></a> [api\_container\_app\_name](#input\_api\_container\_app\_name) | Container app name for Jive Api. | `string` | `"jive-api-dev"` | no |
-| <a name="input_argus_schemas_version"></a> [argus\_schemas\_version](#input\_argus\_schemas\_version) | Argus schemas version used by argus in the validator worker. | `string` | n/a | yes |
 | <a name="input_container_registry_password"></a> [container\_registry\_password](#input\_container\_registry\_password) | Password for the Azure container registry. | `string` | n/a | yes |
 | <a name="input_container_registry_username"></a> [container\_registry\_username](#input\_container\_registry\_username) | Username for Azure container registry. | `string` | n/a | yes |
 | <a name="input_debug_ip_rules"></a> [debug\_ip\_rules](#input\_debug\_ip\_rules) | Temporary public IPs allowed to reach storage. Remove after use. | `list(string)` | `[]` | no |

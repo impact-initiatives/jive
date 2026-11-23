@@ -13,17 +13,16 @@ on:
         description: 'Image tag for the components being deployed.'
         required: true
         type: string
-      argus_schemas_release_tag:
-        description: '"Argus Schemas" release tag in format "YYYYMMDDXX" or "latest".'
-        required: true
-        type: string
-        default: latest
       deploy_api:
         description: 'Deploy API app'
         type: boolean
         default: false
       deploy_worker_validator:
         description: 'Deploy validation worker job'
+        type: boolean
+        default: false
+      config_only:
+        description: 'Apply variable/secret changes only; leave running image tags untouched.'
         type: boolean
         default: false
     
@@ -40,7 +39,7 @@ jobs:
   # build docker images and push them to azure container registry
   # must target dev environment
   build_api_image:
-    if: ${{ inputs.environment == 'dev' && inputs.deploy_api }}
+    if: ${{ inputs.environment == 'dev' && inputs.deploy_api && !inputs.config_only}}
     uses: $/.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.image_tag }}
@@ -52,7 +51,7 @@ jobs:
       ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
 
   build_worker_validator_image:
-    if: ${{ inputs.environment == 'dev' && inputs.deploy_worker_validator }}
+    if: ${{ inputs.environment == 'dev' && inputs.deploy_worker_validator && !inputs.config_only}}
     uses: $/.github/workflows/push_to_azure_acr.yml
     with:
       release_tag: ${{ inputs.image_tag }}
@@ -70,7 +69,7 @@ jobs:
     needs: [build_api_image, build_worker_validator_image]
     if: >
         always()
-        && (inputs.deploy_worker_validator || inputs.deploy_api)
+        && (inputs.deploy_worker_validator || inputs.deploy_api || inputs.config_only)
         && !(contains(fromJSON('["failure", "cancelled"]'), needs.build_api_image.result))
         && !(contains(fromJSON('["failure", "cancelled"]'), needs.build_worker_validator_image.result))
     runs-on: ubuntu-latest
@@ -124,7 +123,7 @@ jobs:
 
       # checks that things are released in sequence: dev > test > prod
       - name: Verify promotion chain
-        if: ${{ inputs.environment != 'dev' }}
+        if: ${{ inputs.environment != 'dev'  && !inputs.config_only}}
         env:
           RESOURCE_GROUP: ${{ env.ACR_RESOURCE_GROUP }}
           IMAGE_TAG: ${{ inputs.image_tag }}
@@ -182,6 +181,7 @@ jobs:
           RESOURCE_GROUP: ${{ env.ACR_RESOURCE_GROUP }}
           IMAGE_TAG: ${{ inputs.image_tag }}
           ENVIRONMENT: ${{ inputs.environment }}
+          CONFIG_ONLY: ${{ inputs.config_only }}
         run: |
           set -euo pipefail
           resolve_tag() {
@@ -209,56 +209,15 @@ jobs:
 
           export NEW_TAG="$IMAGE_TAG"
 
-          if [ -z "$IMAGE_TAG_API" ]; then
+          if [ "$CONFIG_ONLY" = "true" ] || [ -z "$IMAGE_TAG_API" ]; then
             IMAGE_TAG_API=$(resolve_tag app "${API_APP_NAME}-${ENVIRONMENT}")
             echo "IMAGE_TAG_API=$IMAGE_TAG_API" >> "$GITHUB_ENV"
           fi
 
-          if [ -z "$IMAGE_TAG_WORKER_VALIDATOR" ]; then
+          if [ "$CONFIG_ONLY" = "true" ] || [ -z "$IMAGE_TAG_WORKER_VALIDATOR" ]; then
             IMAGE_TAG_WORKER_VALIDATOR=$(resolve_tag job "${VALIDATOR_JOB_NAME}-${ENVIRONMENT}")
             echo "IMAGE_TAG_WORKER_VALIDATOR=$IMAGE_TAG_WORKER_VALIDATOR" >> "$GITHUB_ENV"
-          fi
-
-      # gets the relevant schemas version. if specifying a specific release:
-      # - For dev/test there must be a release of some sort
-      # - For prod there must be a published release
-      - name: Resolve Argus schemas version
-        env:
-          ARGUS_SCHEMAS_REPO: impact-initiatives/argus_schemas
-          PROVIDED_TAG: ${{ inputs.argus_schemas_release_tag || 'latest' }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-
-          if [ "$PROVIDED_TAG" != "latest" ]; then
-            release_json=$(gh release view "$PROVIDED_TAG" --repo "$ARGUS_SCHEMAS_REPO" \
-                             --json tagName,isDraft,isPrerelease 2>/dev/null) || {
-              echo "::error::No release '$PROVIDED_TAG' in $ARGUS_SCHEMAS_REPO. Publish it before deploying."
-              exit 1
-            }
-            resolved=$(echo "$release_json" | jq -r '.tagName')
-
-            if [ "$ENVIRONMENT" = "prod" ]; then
-              draft=$(echo "$release_json" | jq -r '.isDraft')
-              prerelease=$(echo "$release_json" | jq -r '.isPrerelease')
-              if [ "$draft" = "true" ]; then
-                echo "::error::Argus schemas release '$PROVIDED_TAG' is a draft. Publish it before deploying to prod."
-                exit 1
-              fi
-              if [ "$prerelease" = "true" ]; then
-                echo "::error::Argus schemas release '$PROVIDED_TAG' is a prerelease. Publish a full release before deploying to prod."
-                exit 1
-              fi
-            fi
-          else
-            # GitHub's /releases/latest returns the newest non-draft, non-prerelease release,
-            # so the resolved version is inherently published — safe for prod as-is.
-            resolved=$(gh api "repos/${ARGUS_SCHEMAS_REPO}/releases/latest" --jq '.tag_name')
-            echo "::notice::No Argus schemas tag provided — resolved to latest release '$resolved'"
-          fi
-
-          echo "ARGUS_SCHEMAS_VERSION=$resolved" >> "$GITHUB_ENV"
+          fi      
 
       - uses: opentofu/setup-opentofu@v2.0.2
         with:
@@ -293,7 +252,6 @@ jobs:
           TF_VAR_jira_api_token: ${{ env.JIRA_API_TOKEN }}
           TF_VAR_jira_cloud_id: ${{ env.JIRA_CLOUD_ID }}
           TF_VAR_jive_documentation: ${{ env.JIVE_DOCUMENTATION }}
-          TF_VAR_argus_schemas_version: ${{ env.ARGUS_SCHEMAS_VERSION }}
           TF_VAR_jive_worker_validator_version: ${{ env.IMAGE_TAG_WORKER_VALIDATOR }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |

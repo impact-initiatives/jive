@@ -1,0 +1,10 @@
+definitions:
+  base_validators:
+    - type: "MissingSheetsCheck"    
+    - type: "UnexpectedSheetsCheck"  
+    - type: "DuplicateSheetMatchCheck"  
+    - type: "MandatoryColumnsCheck"  
+    - type: "UniqueColumnCheck"  
+    - type: "PiiDataCheck"   
+    - type: "ColumnNameCheck"
+    - type: "EmptyColumnCheck"

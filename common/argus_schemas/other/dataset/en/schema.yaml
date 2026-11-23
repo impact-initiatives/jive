@@ -1,0 +1,20 @@
+
+_imports:
+  - "../../../common/schema_defaults.yaml"
+
+programme_type: "other"
+output_type: "dataset"
+
+loaded_sheets:    
+  - $use: survey
+  - $use: choices  
+  - $use: variable_tracker_sheet
+  # additional sheets are added dynamically
+
+unloaded_sheets:
+  - $use: read_me
+  - $use: sampling_info  
+  - $use: checklist_data_cleaning
+
+  - $use: enumerator_performance_sheet
+

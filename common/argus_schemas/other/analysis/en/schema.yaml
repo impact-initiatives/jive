@@ -1,0 +1,18 @@
+
+_imports:
+  - "../../../common/schema_defaults.yaml"
+
+programme_type: "other"
+output_type: "analysis"
+
+loaded_sheets:
+  - $use: survey
+  - $use: choices
+  # additional sheets are added dynamically
+
+unloaded_sheets:
+  - $use: read_me
+  - $use: sampling_info  
+  - $use: composite_indicators
+  - $use: analysis_table
+  - $use: checklist_data_analysis

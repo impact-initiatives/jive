@@ -1,5 +1,5 @@
 from difflib import SequenceMatcher
-from pathlib import Path, PosixPath
+from pathlib import Path
 from typing import Any, override
 
 import polars as pl
@@ -71,11 +71,9 @@ class DynamicDataset(BaseDataset):
         all_results: list[ValidationResult] = []
 
         # for loading the base deletion and cleaning log sheets
-        dataset_config_directory = kwargs["dataset_config_directory"]
-        if type(dataset_config_directory) is PosixPath:
-            self.schema_defaults, _ = load_file(
-                dataset_config_directory / "common/schema_defaults.yaml"
-            )
+        self.schema_defaults, _ = load_file(
+            settings.schemas_directory / "common/schema_defaults.yaml"
+        )
 
         results = self.match_data()
         if results:

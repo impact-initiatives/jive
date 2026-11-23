@@ -89,11 +89,6 @@ resource "azurerm_container_app_job" "validator" {
       }
 
       env {
-        name  = "ARGUS_SCHEMAS_VERSION"
-        value = var.argus_schemas_version
-      }
-
-      env {
         name  = "JIVE_VERSION"
         value = var.jive_worker_validator_version
       }

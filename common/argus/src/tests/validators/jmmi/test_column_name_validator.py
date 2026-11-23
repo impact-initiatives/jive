@@ -1,4 +1,3 @@
-from pathlib import Path
 from unittest.mock import patch
 
 import polars as pl
@@ -66,7 +65,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 0)
 
     def test_valid_standardised_variable_country(self, validator: BaseValidator):
@@ -76,7 +75,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 0)
 
     def test_valid_country_variable(self, validator: BaseValidator):
@@ -84,7 +83,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 0)
 
     def test_valid_country_variable_valid_post_suffix(self, validator: BaseValidator):
@@ -92,7 +91,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 0)
 
     def test_valid_country_variable_invalid_post_suffix(self, validator: BaseValidator):
@@ -100,7 +99,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -111,7 +110,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -122,7 +121,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -133,7 +132,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -144,7 +143,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -155,7 +154,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -166,7 +165,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -180,7 +179,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -191,7 +190,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -202,7 +201,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 2)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 1
@@ -216,7 +215,7 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert results[0].details is not None
             assert len(results[0].details["sheet"]) == 2
@@ -229,6 +228,6 @@ class TestColumnNames:
         with patch.object(
             JMMIColumnNameCheck, "_load_file", side_effect=make_fake_load_file(MOCK_FILE_DATA)
         ):
-            results = validator.validate(data, dataset_config_directory=Path("./some/location"))
+            results = validator.validate(data)
             do_basic_checks(results, 1)
             assert "clean_data" in results[0].message

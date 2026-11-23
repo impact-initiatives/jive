@@ -1,0 +1,168 @@
+# Shared component definitions for all schemas.
+# Use "$use: <key>" in schema files to reference these.
+
+definitions:
+  # --- Sheets ---
+  
+  raw_data:
+    standard_name: "raw_data"
+    allow_fuzzy_matching: false
+    classification: "raw_data_sheet"
+    columns:
+      - $use: uuid_column
+      - $use: _id_column
+      - $use: consent_column
+
+  clean_data:
+    standard_name: "clean_data"
+    allow_fuzzy_matching: false
+    classification: "clean_data_sheet"
+    columns:
+      - $use: uuid_column
+      - $use: _id_column
+      - standard_name: "weight"
+        allow_fuzzy_matching: false
+        required: false
+
+  cleaning_log_base:
+    # cleaning log template. need to add an id column to this as a minimum
+    standard_name: "cleaning_log" 
+    alternate_names: [] 
+    allow_fuzzy_matching: false
+    classification: "cleaning_log_sheet"
+    columns:
+      - standard_name: "old_value"
+      - standard_name: "new_value"
+      - standard_name: "change_type"
+        process_values:
+          - process_name: "cleaning_log_validation"
+            values: ["yes", "change_response", "blank_response"]
+      - standard_name: "variable"
+        alternate_names: ["question"]
+
+  variable_tracker_sheet:
+    standard_name: "variable_tracker"
+    alternate_names: []
+    allow_fuzzy_matching: false
+    columns:
+      - standard_name: "variable"
+      - standard_name: "action"
+      - standard_name: "rationale"
+        alternate_names: ["reason", "justification", "explanation"]
+
+  enumerator_performance_sheet:
+    standard_name: "enumerator_performance_log"
+    alternate_names: []
+    required: false
+    columns: []
+
+# deletion log base. need to add an id column to this as a minimum
+  deletion_log_base:
+    standard_name: "deletion_log"
+    allow_fuzzy_matching: false
+    classification: "deletion_log_sheet"
+    columns:
+      - standard_name: "reason_deletion"
+        alternate_names: ["reason", "rationale", "explanation"]
+      # - standard_name: "enum_id"
+      #   alternate_names: ["enumerator"]
+
+  choices:
+    standard_name: "choices"
+    allow_fuzzy_matching: false
+    columns:
+      - standard_name: "list_name"
+      - standard_name: "name"
+
+  survey:
+    standard_name: "survey"
+    allow_fuzzy_matching: false
+    columns:
+      - standard_name: "type"
+        process_values:
+          - process_name: "data_type_numeric_check"
+            values: ["integer", "decimal"]
+          - process_name: "data_type_temporal_check"
+            values: ["date"]
+      - standard_name: "name"
+      - standard_name: "calculation"
+      - standard_name: "relevant"
+      - standard_name: "required"
+
+
+  read_me:
+    standard_name: "read_me"
+    allow_fuzzy_matching: false
+    columns: []
+
+  sampling_info:
+    standard_name: "sampling_info"
+    required: false
+    allow_fuzzy_matching: false
+    columns:
+      - standard_name: "strata"
+      - standard_name: "population"
+      - standard_name: "planned surveys"
+      - standard_name: "sampled surveys"
+      - standard_name: "modality (in-person / remote / mixed)"
+
+  checklist_data_cleaning:
+    standard_name: "checklist_data_cleaning"
+
+  checklist_data_analysis:
+    standard_name: "checklist_data_analysis"
+
+  composite_indicators:
+    standard_name: "composite_indicators"
+    required: false
+    matching_term: "composite_indicators"
+
+  analysis_table:
+    standard_name: "analysis_table"
+    matching_term: "analysis"
+    matching_term_ignore: [checklist]
+
+  # --- Columns & Process Maps (Reused) ---
+
+  uuid_column:
+    standard_name: "uuid"
+    alternate_names: ["_uuid"]
+    is_unique: true
+    allow_fuzzy_matching: false
+    allow_empty_values: false
+
+  consent_column:
+    standard_name: "consent"
+    alternate_names: ["consentement"]
+    process_values:
+      - process_name: "consent_check_validation"
+        values: ["yes", "oui"]
+
+  _id_column:
+    standard_name: "_id"
+    allow_fuzzy_matching: false
+
+  admin_columns:
+    - standard_name: "admin1_code"
+      allow_fuzzy_matching: false
+      allow_empty_values: false
+    - standard_name: "admin1_label"
+      allow_fuzzy_matching: false
+      allow_empty_values: false
+    - standard_name: "admin2_code"
+      allow_fuzzy_matching: false
+      allow_empty_values: false
+    - standard_name: "admin2_label" 
+      allow_fuzzy_matching: false
+      allow_empty_values: false
+  
+  temporal_columns:
+    - standard_name: "date"
+      allow_fuzzy_matching: false
+      allow_empty_values: false
+    - standard_name: "month"
+      allow_fuzzy_matching: false
+      allow_empty_values: false
+    - standard_name: "year"
+      allow_fuzzy_matching: false
+      allow_empty_values: false

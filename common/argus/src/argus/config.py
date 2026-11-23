@@ -81,24 +81,26 @@ class Settings(BaseSettings):
     # useful to reduce memory usage
     COLUMN_CHUNK_SIZE: int = 400
 
-    # for local testing
-    # eg Path.cwd() / "dataset_config" / "v2026.06.25.01"
-    DATASET_CONFIG_LOCAL_DIR: Path = Path.cwd() / "dataset_config"
-    # DATASET_CONFIG_LOCAL_DIR: Path = Path("/home/g-impact/Documents/dev/argus_schemas")
-
-    ARGUS_SCHEMAS_VERSION: str = "latest"
-
-    DATASET_CONFIG_DIR: Path = Path.cwd() / "dataset_config"
-
     @computed_field
     @property
-    def config_url(self) -> str:
-        if self.ARGUS_SCHEMAS_VERSION.lower() == "latest":
-            return "https://api.github.com/repos/impact-initiatives/argus_schemas/releases/latest"
-        else:
-            return f"https://api.github.com/repos/impact-initiatives/argus_schemas/releases/tags/{self.ARGUS_SCHEMAS_VERSION}"
+    def schemas_directory(self) -> Path:
+        # the directory will change based on where argus is running from:
+        # (worker, stand alone, docker)
 
-    Path(DATASET_CONFIG_DIR).mkdir(parents=True, exist_ok=True)
+        schema_locations: list[Path] = [
+            Path.cwd() / "common/argus_schemas",
+            Path.cwd() / "../argus_schemas/",
+            Path.cwd() / "../common/argus_schemas/",
+            Path.cwd() / "../../common/argus_schemas/",
+        ]
+
+        found: Path | None = next((p for p in schema_locations if p.is_dir()), None)
+        if found is None:
+            raise FileNotFoundError(
+                f"argus_schemas directory not found; looked in: "
+                f"{[str(p.resolve()) for p in schema_locations]}"
+            )
+        return found.resolve()
 
     FALLBACK_PROGRAMME: str = "other"
     FALLBACK_OUTPUT: str = "dataset"

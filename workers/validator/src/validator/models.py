@@ -32,7 +32,6 @@ class MetadataModel(BaseModel):
     programme_type: str
     validation_date: str
     file_name: str
-    argus_schemas_version: str
 
 
 class PipelineResponse(BaseModel):

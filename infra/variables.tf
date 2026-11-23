@@ -79,11 +79,6 @@ variable "image_tag_worker_validator" {
   type        = string
 }
 
-variable "argus_schemas_version" {
-  description = "Argus schemas version used by argus in the validator worker."
-  type        = string
-}
-
 variable "jive_worker_validator_version" {
   description = "Version of Jive worker modules running."
   type        = string
@@ -93,6 +88,7 @@ variable "jive_worker_validator_version" {
 variable "allowed_domains" {
   description = "External domains Jive is allowed to reach."
   type        = string
+  default     = "repository.impact-initiatives.org,impact-initiatives.atlassian.net,api.atlassian.com"
 }
 
 variable "jira_base_url" {

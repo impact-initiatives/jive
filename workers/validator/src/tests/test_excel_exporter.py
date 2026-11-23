@@ -24,7 +24,6 @@ def test_export_empty_response(tmp_path):
             output_type="dataset",
             file_name="some_dataset.xlsx",
             validation_date="20260101",
-            argus_schemas_version="2026010100",
         ),
         warnings=[],
         errors=[],
@@ -60,7 +59,6 @@ def test_export_populated_response(tmp_path):
             output_type="dataset",
             file_name="data.xlsx",
             validation_date="20260101",
-            argus_schemas_version="2026010100",
         ),
         warnings=[
             ResultItemModel(
@@ -115,7 +113,6 @@ def test_export_invalid_details(tmp_path):
             output_type="dataset",
             file_name="data.xlsx",
             validation_date="20260101",
-            argus_schemas_version="2026010100",
         ),
         errors=[
             ResultItemModel(

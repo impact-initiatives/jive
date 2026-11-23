@@ -68,10 +68,6 @@ flowchart TD
         └── worker_utils.py
 ```
 
-## Related Repositories
-- [`impact-initiatives/argus_schemas`](https://github.com/impact-initiatives/argus_schemas) — Configuration files for Argus datasets.
-
-
 ## Validator Local Deployment 
 We recommend using the provided `local/docker-compose.yml` to mirror the Azure architecture (FastAPI Gateway + Azurite + Validator). Before running this make sure that `api` and `validator` both have an `.env` file set up. To deploy locally to Docker:
 
