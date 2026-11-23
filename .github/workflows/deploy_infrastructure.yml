@@ -22,7 +22,7 @@ on:
         type: boolean
         default: false
       config_only:
-        description: 'Apply variable/secret changes only; leave running image tags untouched.'
+        description: 'Apply config changes only.'
         type: boolean
         default: false
     
