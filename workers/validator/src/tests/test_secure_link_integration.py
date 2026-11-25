@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from argus.orchestrator.output_models import MetadataModel, PipelineResponse
 from worker_base.models import JiraSubmissionPayload
 
 from ..validator.main import Validator
@@ -53,24 +54,26 @@ def test_worker_process_message_with_secure_link(
 
     mock_pipeline = MagicMock()
     mock_pipeline_cls.return_value = mock_pipeline
-    mock_pipeline.run_all.return_value = {
-        "success": True,
-        "metadata": {
-            "programme_type": "jmmi",
-            "output_type": "dataset",
-            "validation_date": "2023-01-01T00:00:00Z",
-            "file_name": "report.xlsx",
-        },
-        "summary": {
+    mock_pipeline.run_all.return_value = PipelineResponse.model_construct(
+        success=True,
+        summary={
+            "passed": True,
+            "admin_errors": 0,
             "errors": 0,
             "warnings": 0,
             "info": 0,
-            "admin_errors": 0,
-            "admin_info": 0,
-            "passed": True,
         },
-        "details": {},
-    }
+        metadata=MetadataModel.model_construct(
+            programme_type="jmmi",
+            output_type="dataset",
+            file_name="report.xlsx",
+            validation_date="2023-01-01T00:00:00Z",
+        ),
+        warnings=[],
+        errors=[],
+        info=[],
+        admin_errors=[],
+    )
 
     # Mock the Excel report path returned by export
     mock_excel_path = MagicMock(spec=Path)

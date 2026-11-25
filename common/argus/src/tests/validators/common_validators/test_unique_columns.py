@@ -56,8 +56,8 @@ class TestUniqueColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["column"][0] == "uuid"
+        assert result.details[0].details is not None
+        assert result.details[0].details["column"][0] == "uuid"
 
     def test_invalid_unique_column_int(
         self,
@@ -68,5 +68,5 @@ class TestUniqueColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["column"][0] == "uuid"
+        assert result.details[0].details is not None
+        assert result.details[0].details["column"][0] == "uuid"

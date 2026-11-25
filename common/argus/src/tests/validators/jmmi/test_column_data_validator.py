@@ -59,8 +59,8 @@ class TestColumnData:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is not None
-        assert "should be 3 uppercase" in results[0].details["issue"][0]
+        assert results.details[0].details is not None
+        assert "should be 3 uppercase" in results.details[0].details["issue"][0]
 
     def test_invalid_country(self, validator: BaseValidator):
         data = build_excel_data(
@@ -84,8 +84,8 @@ class TestColumnData:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is not None
-        assert "should be 3 uppercase" in results[0].details["issue"][0]
+        assert results.details[0].details is not None
+        assert "should be 3 uppercase" in results.details[0].details["issue"][0]
 
     def test_round_invalid_country(self, validator: BaseValidator):
         data = build_excel_data(
@@ -109,8 +109,8 @@ class TestColumnData:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is not None
-        assert "start with 'country'" in results[0].details["issue"][0]
+        assert results.details[0].details is not None
+        assert "start with 'country'" in results.details[0].details["issue"][0]
 
     def test_round_invalid_month(self, validator: BaseValidator):
         data = build_excel_data(
@@ -134,8 +134,8 @@ class TestColumnData:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is not None
-        assert "start with 'country'" in results[0].details["issue"][0]
+        assert results.details[0].details is not None
+        assert "start with 'country'" in results.details[0].details["issue"][0]
 
     def test_round_invalid_year(self, validator: BaseValidator):
         data = build_excel_data(
@@ -159,8 +159,8 @@ class TestColumnData:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is not None
-        assert "start with 'country'" in results[0].details["issue"][0]
+        assert results.details[0].details is not None
+        assert "start with 'country'" in results.details[0].details["issue"][0]
 
     def test_missing_country_column(self, validator: BaseValidator):
         data = build_excel_data(
@@ -184,8 +184,8 @@ class TestColumnData:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is None
-        assert "country" in results[0].message
+        assert results.details[0].details is None
+        assert "country" in results.details[0].message
 
     def test_missing_round_column(self, validator: BaseValidator):
         data = build_excel_data(
@@ -209,8 +209,8 @@ class TestColumnData:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is None
-        assert "round" in results[0].message
+        assert results.details[0].details is None
+        assert "round" in results.details[0].message
 
     def test_missing_sheet(self, validator: BaseValidator):
         data = build_excel_data(
@@ -234,5 +234,5 @@ class TestColumnData:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is None
-        assert "clean_data" in results[0].message
+        assert results.details[0].details is None
+        assert "clean_data" in results.details[0].message

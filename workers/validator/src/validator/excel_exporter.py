@@ -3,10 +3,11 @@ from typing import Any
 
 import polars as pl
 import xlsxwriter
+from argus.orchestrator.output_models import PipelineResponse
+from argus.validators.base import ValidationResult, ValidatorResponse
 
 from .config import get_settings
 from .logs import get_logger
-from .models import PipelineResponse, ResultItemModel
 
 logger = get_logger("jive.validator.excel_exporter")
 settings = get_settings()
@@ -36,12 +37,17 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
     df_readme = pl.DataFrame({"read_me": [readme_text]})
 
     # Consolidate results
-    all_issues: list[ResultItemModel] = []
-
-    all_issues.extend(response.admin_errors)
-    all_issues.extend(response.errors)
-    all_issues.extend(response.warnings)
-    all_issues.extend(response.info)
+    all_issues: list[tuple[ValidatorResponse, ValidationResult]] = [
+        (validator, result)
+        for validators in (
+            response.admin_errors,
+            response.errors,
+            response.warnings,
+            response.info,
+        )
+        for validator in validators
+        for result in (validator.details or [])
+    ]
 
     if not all_issues:
         # Empty excel file with headers for the summary sheet if there are no issues
@@ -58,13 +64,11 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
             _ = df.write_excel(workbook=workbook, worksheet="Validation Summary")
         return
 
-    for item in all_issues:
-        # Pydantic/ Dict safety
-
+    for validator, item in all_issues:
         summary_rows.append(
             {
-                "Severity": item.severity,
-                "Rule": item.rule,
+                "Severity": str(item.severity),
+                "Rule": validator.name,
                 "Sheet Name": item.sheet_name if item.sheet_name is not None else "",
                 "Column Name": item.column_name if item.column_name is not None else "",
                 "Message": item.message,
@@ -91,24 +95,24 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
                     truncated = True
                 df = df.with_columns(pl.all().cast(pl.String))
 
-                if item.rule not in rule_detail_dfs:
-                    rule_detail_dfs[item.rule] = []
+                if validator.name not in rule_detail_dfs:
+                    rule_detail_dfs[validator.name] = []
 
-                rule_detail_dfs[item.rule].append(df)
+                rule_detail_dfs[validator.name].append(df)
                 total_detail_rows += len(df)
             except Exception as e:
                 try:
                     # some dicts cant be converted into dataframe so just store it as a string
                     df = pl.DataFrame({"details": repr(item.details)})
-                    if item.rule not in rule_detail_dfs:
-                        rule_detail_dfs[item.rule] = []
+                    if validator.name not in rule_detail_dfs:
+                        rule_detail_dfs[validator.name] = []
 
-                    rule_detail_dfs[item.rule].append(df)
+                    rule_detail_dfs[validator.name].append(df)
                     total_detail_rows += len(df)
 
                 except Exception as ex:
                     logger.warning(
-                        f"Failed to expand details for rule '{item.rule}' into DataFrame"
+                        f"Failed to expand details for rule '{validator.name}' into DataFrame"
                         + f" — skipping. Error: {e}, {ex}",
                     )
 

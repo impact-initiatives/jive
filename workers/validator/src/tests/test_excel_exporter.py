@@ -1,12 +1,12 @@
 import polars as pl
-
-from ..validator.excel_exporter import export_response_to_excel  # noqa: E402
-from ..validator.models import (  # noqa: E402
+from argus.orchestrator.output_models import (  # noqa: E402
     MetadataModel,
     PipelineResponse,
-    ResultItemModel,
     SummaryModel,
 )
+from argus.validators.base import SeverityLevel, ValidationResult, ValidatorResponse
+
+from ..validator.excel_exporter import export_response_to_excel  # noqa: E402
 
 
 def test_export_empty_response(tmp_path):
@@ -61,24 +61,42 @@ def test_export_populated_response(tmp_path):
             validation_date="20260101",
         ),
         warnings=[
-            ResultItemModel(
-                severity="warning",
-                rule="W1",
-                message="Warning msg",
-                sheet_name="S1",
-                column_name="C1",
+            ValidatorResponse(
+                name="test",
+                details=[
+                    ValidationResult(
+                        severity=SeverityLevel.WARNING,
+                        message="Warning msg",
+                        sheet_name="S1",
+                        column_name="C1",
+                    )
+                ],
             )
         ],
         errors=[
-            ResultItemModel(
-                severity="error",
-                rule="E1",
-                message="Error msg",
-                details={"Row": [1, 2], "Value": ["a", "b"]},
+            ValidatorResponse(
+                name="E1",
+                details=[
+                    ValidationResult(
+                        severity=SeverityLevel.ERROR,
+                        message="Error msg",
+                        details={"Row": [1, 2], "Value": ["a", "b"]},
+                    )
+                ],
             )
         ],
-        info=[ResultItemModel(severity="info", rule="I1", message="Info msg")],
-        admin_errors=[ResultItemModel(severity="admin", rule="A1", message="Admin msg")],
+        info=[
+            ValidatorResponse(
+                name="test",
+                details=[ValidationResult(severity=SeverityLevel.INFO, message="Info msg")],
+            )
+        ],
+        admin_errors=[
+            ValidatorResponse(
+                name="E1",
+                details=[ValidationResult(severity=SeverityLevel.ADMIN_INFO, message="Admin msg")],
+            )
+        ],
         passed=[],
     )
     output_path = tmp_path / "populated_report.xlsx"
@@ -115,14 +133,18 @@ def test_export_invalid_details(tmp_path):
             validation_date="20260101",
         ),
         errors=[
-            ResultItemModel(
-                severity="error",
-                rule="E1",
-                message="Error msg",
-                details={
-                    "Row": 1,
-                    "Value": "a",  # Not a list, should be caught by exception handling
-                },
+            ValidatorResponse(
+                name="test",
+                details=[
+                    ValidationResult(
+                        severity=SeverityLevel.ERROR,
+                        message="Error msg",
+                        details={
+                            "Row": 1,
+                            "Value": "a",  # Not a list, should be caught by exception handling
+                        },
+                    )
+                ],
             )
         ],
         warnings=[],

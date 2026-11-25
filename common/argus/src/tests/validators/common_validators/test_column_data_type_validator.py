@@ -296,8 +296,8 @@ class TestDataType:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
 
     def test_invalid_numeric(
         self,
@@ -330,8 +330,8 @@ class TestDataType:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
 
     def test_invalid_date_and_numeric(
         self,
@@ -364,10 +364,10 @@ class TestDataType:
         result = validor.validate(data)
 
         do_basic_checks(result, 2)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
-        assert result[1].details is not None
-        assert len(result[1].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
+        assert result.details[1].details is not None
+        assert len(result.details[1].details["uuid"]) == 1
 
     def test_date_as_numeric(
         self,
@@ -397,6 +397,6 @@ class TestDataType:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 3
-        assert "non-temporal values" in result[0].message
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 3
+        assert "non-temporal values" in result.details[0].message

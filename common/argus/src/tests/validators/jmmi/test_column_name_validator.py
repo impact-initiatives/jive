@@ -101,9 +101,9 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Item not in goods dictionary."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert results.details[0].details["issue"][0] == "Item not in goods dictionary."
 
     def test_country_variable_missing_prefix(self, validator: BaseValidator):
         data = create_loader_data("chicken_meat_availability_in_4_months_item_yn")
@@ -112,9 +112,9 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Missing prefix or suffix."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert results.details[0].details["issue"][0] == "Missing prefix or suffix."
 
     def test_country_variable_missing_suffix(self, validator: BaseValidator):
         data = create_loader_data("BRA_chicken_meat_availability_in_4_months_item")
@@ -123,9 +123,9 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Missing prefix or suffix."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert results.details[0].details["issue"][0] == "Missing prefix or suffix."
 
     def test_country_variable_unknown_suffix(self, validator: BaseValidator):
         data = create_loader_data("SSD_chicken_meat_availability_in_4_months_item_ynn")
@@ -134,9 +134,9 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Missing prefix or suffix."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert results.details[0].details["issue"][0] == "Missing prefix or suffix."
 
     def test_country_variable_unknown_prefix(self, validator: BaseValidator):
         data = create_loader_data("sssd_chicken_meat_availability_in_4_months_item_yn")
@@ -145,9 +145,9 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Missing prefix or suffix."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert results.details[0].details["issue"][0] == "Missing prefix or suffix."
 
     def test_country_variable_lowercase_prefix(self, validator: BaseValidator):
         data = create_loader_data("ssd_chicken_meat_availability_in_4_months_item_yn")
@@ -156,9 +156,9 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Missing prefix or suffix."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert results.details[0].details["issue"][0] == "Missing prefix or suffix."
 
     def test_valid_country_standardisable_variable(self, validator: BaseValidator):
         data = create_loader_data("SSD_chicken_meat_availability_in_3_months_item_yn")
@@ -167,10 +167,10 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
             assert (
-                results[0].details["issue"][0]
+                results.details[0].details["issue"][0]
                 == "Column contains standardised items and variables."
             )
 
@@ -181,9 +181,9 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Item not in goods dictionary."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert results.details[0].details["issue"][0] == "Item not in goods dictionary."
 
     def test_invalid_standardised_variable(self, validator: BaseValidator):
         data = create_loader_data("chicken_meat_3_months_availability_item")
@@ -192,9 +192,11 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Variable not in column name dictionary."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert (
+                results.details[0].details["issue"][0] == "Variable not in column name dictionary."
+            )
 
     def test_invalid_standardised_variable_and_item(self, validator: BaseValidator):
         data = create_loader_data("kangaroo_meat_3_months_availability_item")
@@ -203,12 +205,14 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 2)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 1
-            assert results[0].details["issue"][0] == "Item not in goods dictionary."
-            assert results[1].details is not None
-            assert len(results[1].details["sheet"]) == 1
-            assert results[1].details["issue"][0] == "Variable not in column name dictionary."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 1
+            assert results.details[0].details["issue"][0] == "Item not in goods dictionary."
+            assert results.details[1].details is not None
+            assert len(results.details[1].details["sheet"]) == 1
+            assert (
+                results.details[1].details["issue"][0] == "Variable not in column name dictionary."
+            )
 
     def test_invalid_column(self, validator: BaseValidator):
         data = create_loader_data("deviceid")
@@ -217,9 +221,9 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert results[0].details is not None
-            assert len(results[0].details["sheet"]) == 2
-            assert results[0].details["issue"][0] == "Column must be removed."
+            assert results.details[0].details is not None
+            assert len(results.details[0].details["sheet"]) == 2
+            assert results.details[0].details["issue"][0] == "Column must be removed."
 
     def test_missing_sheet(self, validator: BaseValidator):
         data = create_loader_data(
@@ -230,4 +234,4 @@ class TestColumnNames:
         ):
             results = validator.validate(data)
             do_basic_checks(results, 1)
-            assert "clean_data" in results[0].message
+            assert "clean_data" in results.details[0].message

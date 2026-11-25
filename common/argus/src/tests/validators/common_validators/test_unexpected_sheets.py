@@ -50,8 +50,8 @@ class TestUnexpectedSheets:
         result = get_validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["unexpected_sheets"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["unexpected_sheets"]) == 2
 
     def test_hidden_sheet(
         self,
@@ -65,8 +65,8 @@ class TestUnexpectedSheets:
         result = get_validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["hidden_sheets"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["hidden_sheets"]) == 2
 
     def test_expected_sheets(
         self,

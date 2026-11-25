@@ -3,7 +3,7 @@ import pytest
 
 from argus.models.base import SchemaColumnMap
 from argus.models.base_dataset_schemas import BaseDatasetSchema
-from argus.validators.base import ValidationResult
+from argus.validators.base import ValidatorResponse
 from argus.validators.common_validators import (
     SkipLogicCheck,
 )
@@ -23,7 +23,7 @@ def get_validator(schema: BaseDatasetSchema, parent_sheet: str, child_sheets: li
 
 def run_skip_validation(
     columns: dict[str, list[tuple[str, list]]],
-) -> list[ValidationResult]:
+) -> ValidatorResponse:
     """Build schema + data, run the validator on 'clean_data', return result."""
     schema = build_schema_with_process(
         {
@@ -70,8 +70,8 @@ class TestParserLiterals:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_string_equality_true_not_required(self):
         result = run_skip_validation(
@@ -149,8 +149,8 @@ class TestParserLiterals:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_case_sensitive_string_equality(self):
         # 'Other' != 'other' -- the condition is false, so empty value is fine
@@ -187,8 +187,8 @@ class TestParserLiterals:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
 
     def test_false_function_never_shown(self):
         # false() is never relevant -> any value present is a violation
@@ -207,8 +207,8 @@ class TestParserLiterals:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_bare_true_keyword(self):
         # If your parser also supports bare 'true' (not the function form),
@@ -228,8 +228,8 @@ class TestParserLiterals:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_false_makes_condition_false(self):
         # false() or <anything> is always False -> question always hidden ->
@@ -251,8 +251,8 @@ class TestParserLiterals:
         # rec 1: hidden & empty -> ok
         # rec 2: hidden & filled -> "value when question was skipped"
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
 
 class TestParserComparisonOperators:
@@ -286,8 +286,8 @@ class TestParserComparisonOperators:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == expect_violations
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == expect_violations
 
     def test_negative_numeric_literal(self):
         # sentinel value: -999 means 'not applicable'
@@ -307,8 +307,8 @@ class TestParserComparisonOperators:
         )
         # record 1: -999 -> hidden but answered 'salary' -> violation
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_numeric_literal_left_side(self):
         # reversed operand order must also cast correctly
@@ -327,8 +327,8 @@ class TestParserComparisonOperators:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
 
 
 class TestParserBooleanLogic:
@@ -351,8 +351,8 @@ class TestParserBooleanLogic:
             }
         )
         do_basic_checks(result, 1)  # only record 1 satisfies the condition
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_or_short_circuit_either_side(self):
         result = run_skip_validation(
@@ -375,8 +375,8 @@ class TestParserBooleanLogic:
         )
         # record 1 satisfied via first disjunct -> 1 violation
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_not_operator(self):
         # ODK semantics: not(comparison over unanswered ref) is TRUE,
@@ -397,8 +397,8 @@ class TestParserBooleanLogic:
         )
         # inner: '' != 'x' -> null -> fill_false; not(false) -> true -> shown but empty
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_parentheses_override_precedence(self):
         # and binds tighter than or:  a='x' or b='y' and c='z'
@@ -422,8 +422,8 @@ class TestParserBooleanLogic:
         )
         # ('x' or 'yes') and 'no' -> only record 1
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_nested_parentheses(self):
         result = run_skip_validation(
@@ -449,8 +449,8 @@ class TestParserBooleanLogic:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_whitespace_insensitivity(self):
         # spaces, tabs, no-space variants must all parse identically
@@ -469,8 +469,8 @@ class TestParserBooleanLogic:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
         # and the cramped version:
         result2 = run_skip_validation(
             {
@@ -487,8 +487,8 @@ class TestParserBooleanLogic:
             }
         )
         do_basic_checks(result2, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
 
 class TestParserArithmetic:
@@ -512,8 +512,8 @@ class TestParserArithmetic:
             }
         )
         do_basic_checks(result, 1)  # only record 1: 400 > 300
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_addition(self):
         result = run_skip_validation(
@@ -533,8 +533,8 @@ class TestParserArithmetic:
         )
         # fix column names to match: (use hh_size/extra consistently)
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_modulo(self):
         # count-selected-like arithmetic: ${n} mod 2 = 0
@@ -553,8 +553,8 @@ class TestParserArithmetic:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_div(self):
         result = run_skip_validation(
@@ -573,8 +573,8 @@ class TestParserArithmetic:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_negative_sentinel_comparison(self):
         # regression test for the unary-minus parsing bug: -999 must
@@ -594,8 +594,8 @@ class TestParserArithmetic:
             }
         )
         do_basic_checks(result, 1)  # all records: shown & filled -> consistent
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
 
     def test_neg_ref_compared_to_negative_literal(self):
         # ${loss} = '50' -> -(50) = -50 < -10 -> shown; empty target -> violation
@@ -615,8 +615,8 @@ class TestParserArithmetic:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_neg_of_parenthesised_arithmetic(self):
         # -(3 + 4) = -7 is a constant True -> always shown; empty -> 2 violations
@@ -634,8 +634,8 @@ class TestParserArithmetic:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
 
     def test_neg_on_unanswered_ref_is_false(self):
         # ODK: -(unanswered) is null; comparison against null is False
@@ -675,8 +675,8 @@ class TestParserArithmetic:
             }
         )
         do_basic_checks(result, 1)  # -(-5) = 5 -> True -> shown but empty
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
 
 class TestParserSelectedFunction:
@@ -696,8 +696,8 @@ class TestParserSelectedFunction:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_select_multiple_space_separated(self):
         result = run_skip_validation(
@@ -715,8 +715,8 @@ class TestParserSelectedFunction:
             }
         )
         do_basic_checks(result, 1)  # only record 1
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_selected_multiple_words_not_substring(self):
         # 'water' must not match 'rainwater' -- split-on-space, not substring
@@ -735,8 +735,8 @@ class TestParserSelectedFunction:
             }
         )
         do_basic_checks(result, 1)  # hidden but answered
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_count_selected(self):
         result = run_skip_validation(
@@ -754,8 +754,8 @@ class TestParserSelectedFunction:
             }
         )
         do_basic_checks(result, 1)  # only record 1
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_count_selected_empty_is_zero(self):
         # regression: null/empty must count as 0, not 1 ([''] trap)
@@ -774,8 +774,8 @@ class TestParserSelectedFunction:
             }
         )
         do_basic_checks(result, 1)  # only record 1
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
 
 class TestParserEmptyValueSemantics:
@@ -853,8 +853,8 @@ class TestParserEmptyValueSemantics:
         # rec 3: hidden & empty  -> ok
         # rec 4: shown & filled  -> ok
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 3
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 3
 
 
 class TestParserStartsWithFunction:
@@ -875,8 +875,8 @@ class TestParserStartsWithFunction:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_starts_with_second_word_no_match(self):
         # prefix anchored at the START only: 'food water' does not
@@ -932,8 +932,8 @@ class TestParserStartsWithFunction:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_starts_with_hidden_but_filled(self):
         # other violation direction: 'well' fails the prefix -> hidden,
@@ -953,8 +953,8 @@ class TestParserStartsWithFunction:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_starts_with_empty_ref_is_false(self):
         # unanswered ref -> condition False -> hidden & empty -> consistent
@@ -1008,8 +1008,8 @@ class TestParserStartsWithFunction:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
 
 class TestParserStringFunctions:
@@ -1031,8 +1031,8 @@ class TestParserStringFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_ends_with_other_position_no_match(self):
         # 'water_bottle_food' contains 'food' but does not END with it
@@ -1068,8 +1068,8 @@ class TestParserStringFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_contains_is_literal_not_regex(self):
         # 'price usd' contains the inner text 'usd' but NOT the literal '(usd)'.
@@ -1110,8 +1110,8 @@ class TestParserStringFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_regex_match(self):
         # IDs must match the ^KE_ pattern
@@ -1130,8 +1130,8 @@ class TestParserStringFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_regex_non_matching_value_hidden(self):
         result = run_skip_validation(
@@ -1150,8 +1150,8 @@ class TestParserStringFunctions:
         )
         # rec 2: hidden but filled -> 1 violation
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
 
     def test_string_length_numeric_comparison(self):
         # open 'other' answers shorter than 3 chars are treated as junk
@@ -1170,8 +1170,8 @@ class TestParserStringFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_string_length_empty_is_zero(self):
         # regression: unanswered ref -> length 0, condition True,
@@ -1191,8 +1191,8 @@ class TestParserStringFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
 
 class TestParserCompositeFunctions:
@@ -1217,8 +1217,8 @@ class TestParserCompositeFunctions:
         )
         # record 2: 400 > 100 -> shown & empty; record 1: 50 -> hidden
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_coalesce_both_empty_stays_null(self):
         # null coalesced with null remains null -> condition False -> hidden
@@ -1256,8 +1256,8 @@ class TestParserCompositeFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_concat_skips_null_parts(self):
         # null parts contribute '' rather than poisoning the result
@@ -1278,8 +1278,8 @@ class TestParserCompositeFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_if_selects_then_branch(self):
         result = run_skip_validation(
@@ -1297,8 +1297,8 @@ class TestParserCompositeFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_if_selects_else_branch(self):
         # both records resolve to 'minor' -> condition False -> hidden & empty
@@ -1352,8 +1352,8 @@ class TestParserCompositeFunctions:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
 
 class TestParserSumFunction:
@@ -1380,8 +1380,8 @@ class TestParserSumFunction:
         # rec 2: 300 + 0 = 300 -> shown & empty -> violation
         # rec 3: 130 -> hidden & empty, ok
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
 
     def test_sum_three_columns_skips_null_parts(self):
         # regression: a null/empty part must contribute 0, not null the sum
@@ -1402,8 +1402,8 @@ class TestParserSumFunction:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
         # and the arithmetic version:
         result2 = run_skip_validation(
             {
@@ -1423,8 +1423,8 @@ class TestParserSumFunction:
         )
         # rec 2: 10 + 20 + 30 = 60 -> shown & empty
         do_basic_checks(result2, 1)
-        assert result2[0].details is not None
-        assert len(result2[0].details["uuid"]) == 1
+        assert result2.details[0].details is not None
+        assert len(result2.details[0].details["uuid"]) == 1
 
     def test_sum_all_empty_is_zero(self):
         # unanswered everything -> sum = 0 -> condition False -> hidden & empty
@@ -1462,8 +1462,8 @@ class TestParserSumFunction:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1  # rec 1 only
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1  # rec 1 only
 
     def test_sum_in_comparison_forces_numeric_cast(self):
         # string-typed export: 150 + 150 = 300, NOT string concat '150150'
@@ -1485,8 +1485,8 @@ class TestParserSumFunction:
         # string-concat trap (if sum fell through to '+') would give
         # '150150' != 300 -> never shown; numeric path flags both records
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 2
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 2
 
 
 class TestParserInvalidExpressions:
@@ -1554,8 +1554,8 @@ class TestSchemaObjects:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is None
-        assert "A data sheet for" in result[0].message
+        assert result.details[0].details is None
+        assert "A data sheet for" in result.details[0].message
 
     def test_missing_loaded_column(self):
         result = run_skip_validation(
@@ -1573,8 +1573,8 @@ class TestSchemaObjects:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is None
-        assert "A column for 'name'" in result[0].message
+        assert result.details[0].details is None
+        assert "A column for 'name'" in result.details[0].message
 
     def test_missing_id_column(self):
         result = run_skip_validation(
@@ -1592,8 +1592,8 @@ class TestSchemaObjects:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is None
-        assert "Expected one unique id column for" in result[0].message
+        assert result.details[0].details is None
+        assert "Expected one unique id column for" in result.details[0].message
 
     def test_no_relevant_columns(self):
         result = run_skip_validation(
@@ -1658,5 +1658,5 @@ class TestSchemaObjects:
             }
         )
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["sheet"][0] == "clean_data"
+        assert result.details[0].details is not None
+        assert result.details[0].details["sheet"][0] == "clean_data"

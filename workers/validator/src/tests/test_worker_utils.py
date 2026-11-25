@@ -4,15 +4,15 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from worker_base.models import JiraSubmissionPayload
-
-from validator.config import get_settings, reload_settings
-
-from ..validator.models import (  # noqa: E402
+from argus.orchestrator.output_models import (  # noqa: E402
     MetadataModel,
     PipelineResponse,
     SummaryModel,
 )
+from worker_base.models import JiraSubmissionPayload
+
+from validator.config import get_settings, reload_settings
+
 from ..validator.worker_utils import (  # noqa: E402
     check_idempotency,
     publish_results,
@@ -143,26 +143,26 @@ def test_run_validation(
 ):
     mock_pipeline_instance: MagicMock = MagicMock()
     mock_pipeline_class.return_value = mock_pipeline_instance
-    mock_pipeline_instance.run_all.return_value = {
-        "success": True,
-        "summary": {
+    mock_pipeline_instance.run_all.return_value = PipelineResponse.model_construct(
+        success=True,
+        summary={
             "passed": True,
             "admin_errors": 0,
-            "admin_info": 0,
             "errors": 0,
             "warnings": 0,
             "info": 0,
         },
-        "metadata": {
-            "programme_type": "jmmi",
-            "output_type": "dataset",
-        },
-        "warnings": [],
-        "errors": [],
-        "info": [],
-        "admin_errors": [],
-        "admin_info": [],
-    }
+        metadata=MetadataModel.model_construct(
+            programme_type="jmmi",
+            output_type="dataset",
+            file_name="report.xlsx",
+            validation_date="2023-01-01T00:00:00Z",
+        ),
+        warnings=[],
+        errors=[],
+        info=[],
+        admin_errors=[],
+    )
 
     result = run_validation(tmp_path / "data.xlsx", payload)
 
@@ -245,45 +245,6 @@ def test_publish_results_large_file(
     args, kwargs = mock_jira_client.post_comment.call_args
     comment_content = str(args[1])
     assert "exceeds the Jira attachment limit" in comment_content
-
-
-@patch("src.validator.worker_utils.ValidationPipeline")
-def test_run_validation_minor_schema_mismatch(
-    mock_pipeline_class: MagicMock, payload: JiraSubmissionPayload, tmp_path: Path
-):
-    mock_pipeline_instance = MagicMock()
-    mock_pipeline_class.return_value = mock_pipeline_instance
-    # Simulates an output containing unexpected extra keys and some missing fields that Pydantic
-    #  would normally reject
-    mock_pipeline_instance.run_all.return_value = {
-        "success": True,
-        "unexpected_new_field": "some_value",
-        "errors": [{"severity": "error", "rule": "E2", "message": "Schema test"}],
-        "summary": {
-            "errors": 0,
-            "warnings": 0,
-            "info": 0,
-            "admin_errors": 0,
-            "admin_info": 0,
-            "passed": True,
-        },
-        "metadata": {
-            "programme_type": "jmmi",
-            "output_type": "dataset",
-            "validation_date": "2023-01-01T00:00:00Z",
-            "file_name": "report.xlsx",
-        },
-        # warnings, info, admin_errors are missing
-    }
-
-    result = run_validation(tmp_path / "data.xlsx", payload)
-
-    assert isinstance(result, PipelineResponse)
-    assert result.success is True
-    # Verify Pydantic fallback bypassed validation and constructed lists correctly
-    assert len(result.errors) == 1
-    assert result.errors[0].rule == "E2"
-    assert result.warnings == []
 
 
 # @patch("src.worker.worker_utils.ValidationPipeline")

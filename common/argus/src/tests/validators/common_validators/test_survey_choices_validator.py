@@ -225,9 +225,9 @@ class TestSurveyChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == "invalid_gender"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == "invalid_gender"
 
     def test_invalid_select_multiple_data(
         self,
@@ -271,9 +271,9 @@ class TestSurveyChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == "rice apples"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == "rice apples"
 
     def test_invalid_choice_data(
         self,
@@ -320,9 +320,9 @@ class TestSurveyChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == "male"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == "male"
 
     def test_missing_choices_selectone_data(
         self,
@@ -366,9 +366,9 @@ class TestSurveyChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["value"]) == 1
-        assert result[0].details["value"][0] == "gender_missing"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["value"]) == 1
+        assert result.details[0].details["value"][0] == "gender_missing"
 
     def test_missing_choices_selectmultiple_data(
         self,
@@ -412,9 +412,9 @@ class TestSurveyChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["value"]) == 1
-        assert result[0].details["value"][0] == "item_missing"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["value"]) == 1
+        assert result.details[0].details["value"][0] == "item_missing"
 
 
 class TestSurveyBinaryChoices:
@@ -483,9 +483,9 @@ class TestSurveyBinaryChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == "3"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == "3"
 
     def test_empty_binary_data(
         self,
@@ -519,9 +519,9 @@ class TestSurveyBinaryChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == ""
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == ""
 
     def test_empty_binary_data_2(
         self,
@@ -555,10 +555,10 @@ class TestSurveyBinaryChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["uuid"][0] == "3"
-        assert result[0].details["value"][0] == "1"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["uuid"][0] == "3"
+        assert result.details[0].details["value"][0] == "1"
 
     def test_empty_binary_data_3(
         self,
@@ -592,10 +592,10 @@ class TestSurveyBinaryChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == ""
-        assert result[0].details["uuid"][0] == "1"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == ""
+        assert result.details[0].details["uuid"][0] == "1"
 
     def test_binary_not_in_parent_data(
         self,
@@ -629,10 +629,10 @@ class TestSurveyBinaryChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == "1"
-        assert result[0].details["uuid"][0] == "1"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == "1"
+        assert result.details[0].details["uuid"][0] == "1"
 
     def test_binary_not_in_parent_data_2(
         self,
@@ -666,10 +666,10 @@ class TestSurveyBinaryChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == "1"
-        assert result[0].details["uuid"][0] == "3"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == "1"
+        assert result.details[0].details["uuid"][0] == "3"
 
     def test_parent_not_in_binary_data(
         self,
@@ -703,10 +703,10 @@ class TestSurveyBinaryChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["uuid"]) == 1
-        assert result[0].details["value"][0] == "0"
-        assert result[0].details["uuid"][0] == "1"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["uuid"]) == 1
+        assert result.details[0].details["value"][0] == "0"
+        assert result.details[0].details["uuid"][0] == "1"
 
     def test_missing_binary_column(
         self,
@@ -739,6 +739,6 @@ class TestSurveyBinaryChoices:
         result = validor.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["value"]) == 1
-        assert result[0].details["value"][0] == "items.none"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["value"]) == 1
+        assert result.details[0].details["value"][0] == "items.none"

@@ -4,7 +4,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
-from ..validator.models import ResultItemModel  # noqa: E402
+from argus.validators.base import SeverityLevel, ValidationResult, ValidatorResponse  # noqa: E402
+
 from ..validator.report_formatter import format_comment_adf  # noqa: E402
 
 
@@ -17,6 +18,17 @@ def _make_response(
     """Helper to build a minimal PipelineResponse-like object for testing."""
     from unittest.mock import MagicMock
 
+    def _to_validator_responses(items: list[dict[str, str]] | None) -> list[ValidatorResponse]:
+        """Group items by rule name: one ValidatorResponse per rule,
+        with one ValidationResult per item belonging to that rule."""
+        grouped: dict[str, list[ValidationResult]] = {}
+        for item in items or []:
+            rule = next(iter(item.values()))
+            grouped.setdefault(rule, []).append(
+                ValidationResult(message="", severity=SeverityLevel.WARNING)
+            )
+        return [ValidatorResponse(name=rule, details=results) for rule, results in grouped.items()]
+
     response = MagicMock()
     response.success = success
 
@@ -26,20 +38,10 @@ def _make_response(
     response.metadata.validation_date = "2023-01-01T12:00:00Z"
     response.metadata.file_name = "report.xlsx"
 
-    def _convert_items(items: list[dict[str, str]]):
-        validated_items: list[ResultItemModel] = []
-        for item in items:
-            item["message"] = ""
-            item["severity"] = ""
-            validated_items.append(ResultItemModel.model_validate(item))
-
-        return validated_items
-
-    # Lists of dicts for the new formatter
-    response.errors = _convert_items(errors) if errors is not None else []
-    response.warnings = _convert_items(warnings) if warnings is not None else []
+    response.errors = _to_validator_responses(errors)
+    response.warnings = _to_validator_responses(warnings)
     response.admin_errors = []
-    response.passed = _convert_items(passed) if passed is not None else []
+    response.passed = _to_validator_responses(passed)
 
     return response
 

@@ -58,8 +58,8 @@ class TestMissingSheets:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["sheet"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["sheet"]) == 1
 
     def test_optional_sheet(
         self,
@@ -92,8 +92,8 @@ class TestMissingSheets:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["sheet"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["sheet"]) == 1
 
     def test_optional_missing_sampling_sheet(
         self,

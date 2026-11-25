@@ -46,8 +46,8 @@ class TestEmptyColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["empty_values"][0] == 1
+        assert result.details[0].details is not None
+        assert result.details[0].details["empty_values"][0] == 1
 
     def test_missing_data_string(
         self,
@@ -58,8 +58,8 @@ class TestEmptyColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["empty_values"][0] == 1
+        assert result.details[0].details is not None
+        assert result.details[0].details["empty_values"][0] == 1
 
     def test_missing_data_multiple(
         self,
@@ -70,8 +70,8 @@ class TestEmptyColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["empty_values"][0] == 2
+        assert result.details[0].details is not None
+        assert result.details[0].details["empty_values"][0] == 2
 
     def test_missing_data_allowed(
         self,

@@ -60,7 +60,7 @@ class TestColumnNames:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is None
+        assert results.details[0].details is None
 
     def test_not_enough_xrate_columns(self, validator: BaseValidator):
         data = create_loader_data(
@@ -72,7 +72,7 @@ class TestColumnNames:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is None
+        assert results.details[0].details is None
 
     def test_numeric_column_no_suffix(self, validator: BaseValidator):
         data = create_loader_data(
@@ -86,8 +86,8 @@ class TestColumnNames:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is not None
-        assert len(results[0].details["numeric columns without suffix"]) == 1
+        assert results.details[0].details is not None
+        assert len(results.details[0].details["numeric columns without suffix"]) == 1
 
     def test_non_numeric_column_with_suffix(self, validator: BaseValidator):
         data = create_loader_data(
@@ -101,8 +101,8 @@ class TestColumnNames:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert results[0].details is not None
-        assert len(results[0].details["non-numeric column with numeric suffix"]) == 1
+        assert results.details[0].details is not None
+        assert len(results.details[0].details["column with numeric suffix"]) == 1
 
     def test_no_suffix_not_numeric(self, validator: BaseValidator):
         data = create_loader_data(
@@ -116,8 +116,8 @@ class TestColumnNames:
         )
         results = validator.validate(data)
         do_basic_checks(results, 2)
-        assert results[1].details is not None
-        assert len(results[1].details["non-numeric column with numeric suffix"]) == 1
+        assert results.details[1].details is not None
+        assert len(results.details[1].details["column with numeric suffix"]) == 1
 
     def test_missing_sheet(self, validator: BaseValidator):
         data = create_loader_data(
@@ -131,4 +131,4 @@ class TestColumnNames:
         )
         results = validator.validate(data)
         do_basic_checks(results, 1)
-        assert "clean_data" in results[0].message
+        assert "clean_data" in results.details[0].message

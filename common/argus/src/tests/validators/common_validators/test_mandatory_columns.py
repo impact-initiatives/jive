@@ -79,9 +79,9 @@ class TestMandatoryColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["required"]) == 1
-        assert result[0].details["required"][0] == "Yes"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["required"]) == 1
+        assert result.details[0].details["required"][0] == "Yes"
 
     def test_multiple_missing_required_column(
         self,
@@ -99,9 +99,9 @@ class TestMandatoryColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["required"]) == 2
-        assert result[0].details["required"][0] == "Yes"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["required"]) == 2
+        assert result.details[0].details["required"][0] == "Yes"
 
     def test_missing_required_column_optional_sheet(
         self,
@@ -119,9 +119,9 @@ class TestMandatoryColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["required"]) == 1
-        assert result[0].details["required"][0] == "Yes"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["required"]) == 1
+        assert result.details[0].details["required"][0] == "Yes"
 
     def test_missing_optional_column(
         self,
@@ -139,9 +139,9 @@ class TestMandatoryColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["required"]) == 1
-        assert result[0].details["required"][0] == "Check if required"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["required"]) == 1
+        assert result.details[0].details["required"][0] == "Check if required"
 
     def test_missing_optional_column_optional_sheet(
         self,
@@ -159,9 +159,9 @@ class TestMandatoryColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["required"]) == 1
-        assert result[0].details["required"][0] == "Check if required"
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["required"]) == 1
+        assert result.details[0].details["required"][0] == "Check if required"
 
     def test_missing_sheet(
         self,
@@ -179,5 +179,5 @@ class TestMandatoryColumns:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert len(result[0].details["missing_sheets"]) == 1
+        assert result.details[0].details is not None
+        assert len(result.details[0].details["missing_sheets"]) == 1

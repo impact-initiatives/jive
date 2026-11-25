@@ -37,8 +37,8 @@ class TestColumnNames:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["columns"][0] == "some@column"
+        assert result.details[0].details is not None
+        assert result.details[0].details["columns"][0] == "some@column"
 
     def test_invalid_column2(
         self,
@@ -49,8 +49,8 @@ class TestColumnNames:
         result = validator.validate(data)
 
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["columns"][0] == "some column"
+        assert result.details[0].details is not None
+        assert result.details[0].details["columns"][0] == "some column"
 
     def test_ignore_sheet(
         self,

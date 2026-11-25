@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
+from argus.orchestrator.output_models import PipelineResponse
 from argus.orchestrator.validation_pipeline import ValidationPipeline
 from jira.jira_client import JiraClient
 from jira.models import IssueAttachment
@@ -9,7 +10,6 @@ from worker_base.models import JiraSubmissionPayload
 
 from .config import get_settings
 from .logs import get_logger
-from .models import PipelineResponse
 from .report_formatter import format_comment_adf
 
 logger = get_logger("jive.validator.worker_utils")
@@ -142,58 +142,13 @@ def run_validation(dataset_path: Path, payload: JiraSubmissionPayload) -> Pipeli
         },
     )
     pipeline = ValidationPipeline()
-    response_dict = pipeline.run_all(
+    response = pipeline.run_all(
         filepath=dataset_path,
         programme_type=payload.programme_type,
         output_type=payload.output_type,
     )
 
-    try:
-        # 1. Attempt strict parsing (standard Pydantic validation)
-        return PipelineResponse.model_validate(response_dict)
-    except Exception as e:
-        logger.warning(
-            "Failed strict Pydantic parsing of validation response."
-            + " Attempting schema-tolerant model_construct fallback.",
-            exc_info=e,
-            extra={"issue_key": payload.issue_key},
-        )
-        try:
-            # 2. Fallback 1: Construct the model directly, bypassing Pydantic input validation.
-            # This handles extra fields, missing optional keys, or slight type discrepancies.
-            return PipelineResponse.model_construct(**response_dict)
-        except Exception as fallback_err:
-            logger.error(
-                "Critical: Schema-tolerant model construction failed."
-                + " Generating generic error report.",
-                exc_info=fallback_err,
-                extra={"issue_key": payload.issue_key},
-            )
-            # 3. Fallback 2: Generate a generic error response indicating formatting mismatch
-            # so the worker pipeline completes gracefully without dead-lettering.
-            return PipelineResponse.model_construct(
-                success=False,
-                summary={"passed": False, "admin_errors": 1, "errors": 0, "warnings": 0, "info": 0},
-                metadata={
-                    "programme_type": payload.programme_type,
-                    "output_type": payload.output_type,
-                },
-                errors=[],
-                warnings=[],
-                info=[],
-                admin_info=[],
-                admin_errors=[
-                    {
-                        "severity": "ADMIN",
-                        "rule": "JIVE_SCHEMA_MISMATCH",
-                        "message": (
-                            "The validation pipeline executed successfully, but JIVE encountered "
-                            "a schema format error when reading the results."
-                            f"  Please contact support. Error details: {str(fallback_err)}"
-                        ),
-                    }
-                ],
-            )
+    return response
 
 
 def publish_results(

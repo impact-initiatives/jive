@@ -1,29 +1,51 @@
+from collections.abc import Sequence
+
 import polars as pl
 
 from argus.loaders.base import DataColumnMap, DataSheetMap
 from argus.loaders.base_excel_loader import ExcelLoaderData
 from argus.models.base import ProcessValueMap, SchemaColumnMap, SchemaSheetMap
 from argus.models.base_dataset_schemas import BaseDatasetSchema
-from argus.validators.base import SeverityLevel, ValidationResult
+from argus.validators.base import SeverityLevel, ValidationResult, ValidatorResponse
+
+ErrorInput = ValidatorResponse | Sequence[ValidationResult]
 
 
-def error_counter(results: list[ValidationResult]):
-    """Filter out some results to get a list of errors/warnings only."""
+def as_result_list(input_: ErrorInput) -> list[ValidationResult]:
+    if isinstance(input_, ValidatorResponse):
+        return list(input_.details or [])
+    return list(input_)
+
+
+def error_counter(results: ErrorInput):
+    """Filter results down to errors/warnings only.
+
+    Accepts a single ValidatorResponse (filters its details) or an
+    already-flattened sequence of ValidationResults.
+    """
     return [
-        item
-        for item in results
-        if item.severity in [SeverityLevel.ERROR, SeverityLevel.ADMIN_ERROR, SeverityLevel.WARNING]
+        result
+        for result in as_result_list(results)
+        if result.severity
+        in [SeverityLevel.ERROR, SeverityLevel.ADMIN_ERROR, SeverityLevel.WARNING]
     ]
 
 
-def admin_error_counter(results: list[ValidationResult]):
-    """Filter out some results to get a list of admin errors only."""
-    return [item for item in results if item.severity == SeverityLevel.ADMIN_ERROR]
+def admin_error_counter(results: ErrorInput):
+    """Filter results down to admin errors only."""
+    return [
+        result for result in as_result_list(results) if result.severity == SeverityLevel.ADMIN_ERROR
+    ]
 
 
-def do_basic_checks(results: list[ValidationResult], expected: int):
-    assert isinstance(results, list)
-    assert len(error_counter(results)) == expected
+def do_basic_checks(results: ErrorInput, expected: int):
+    assert isinstance(results, (ValidatorResponse, list, tuple)), type(results)
+    filtered = [
+        r
+        for r in as_result_list(results)
+        if r.severity in [SeverityLevel.ERROR, SeverityLevel.ADMIN_ERROR, SeverityLevel.WARNING]
+    ]
+    assert len(filtered) == expected
 
 
 def build_excel_data(sheet_details: dict[str, list[tuple[str, list[str | int | float | None]]]]):

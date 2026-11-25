@@ -75,8 +75,8 @@ class TestDuplicateSheets:
 
         result = validator.validate(data)
         do_basic_checks(result, 1)
-        assert result[0].details is not None
-        assert result[0].details["sheet"][0] == "clean_data"
+        assert result.details[0].details is not None
+        assert result.details[0].details["sheet"][0] == "clean_data"
 
     def test_valid_schema_matching_term(
         self,

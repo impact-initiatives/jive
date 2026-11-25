@@ -1,9 +1,10 @@
 from typing import Any
 
+from argus.orchestrator.output_models import PipelineResponse
+from argus.validators.base import ValidationResult, ValidatorResponse
 from pydantic import Json
 
 from .config import get_settings
-from .models import PipelineResponse, ResultItemModel
 
 settings = get_settings()
 
@@ -140,18 +141,19 @@ def format_comment_adf(
     # 3. Validation Summary Table (for actionable issues)
     actionable_issues: list[tuple[str, str, str, tuple[int, int]]] = []
 
-    def extract_issues(items: list[ResultItemModel], severity: str, icon: str):
-        if not items:
-            return
-        rule_counts: dict[str, tuple[int, int]] = {}
-        for item in items:
-            rule_counts[item.rule] = (
-                rule_counts.get(item.rule, (0, 0))[0] + 1,
-                rule_counts.get(item.rule, (0, 0))[1] + item.get_details_length(),
-            )
+    def extract_issues(validators: list[ValidatorResponse], severity: str, icon: str):
+        def validator_results(validator: ValidatorResponse) -> list[ValidationResult]:
+            """A validator's results, tolerating None."""
+            return validator.details or []
 
-        for rule, count in rule_counts.items():
-            actionable_issues.append((rule, severity, icon, count))
+        if not validators:
+            return
+        for validator in validators:
+            failed_checks = len(validator_results(validator))
+            issues_found = sum(r.get_details_length() for r in validator_results(validator))
+            actionable_issues.append(
+                (validator.name, severity, icon, (failed_checks, issues_found))
+            )
 
     extract_issues(response.errors, "Error", "❌")
     extract_issues(response.admin_errors, "Jive Error", "🔥")
@@ -297,13 +299,11 @@ def format_comment_adf(
     # Collect all rules that had at least one error/warning
     actionable_rule_names = {rule for rule, _, _, _ in actionable_issues}
 
-    passed_items = response.passed
-    passed_rules: set[str] = set()
-    for item in passed_items:
-        rule = item.rule
-        # Only consider a rule "passed" if it never triggered an error/warning
-        if rule not in actionable_rule_names:
-            passed_rules.add(rule)
+    passed_rules = {
+        validator.name
+        for validator in response.passed
+        if validator.name not in actionable_rule_names
+    }
 
     num_passed = len(passed_rules)
     passed_list_str = ", ".join(sorted([str(r) for r in passed_rules]))
@@ -480,9 +480,7 @@ def format_comment_adf(
                                 "content": [
                                     {
                                         "type": "text",
-                                        "text": "No further action is required. The global data"
-                                        + " engineering pipelines will automatically sync this"
-                                        + " verified resource and proceed with routing shortly.",
+                                        "text": "No further action is required.",
                                     }
                                 ],
                             }
