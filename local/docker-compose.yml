@@ -44,6 +44,19 @@ services:
     depends_on:
       - azurite
 
+  hermes:
+    build:
+      context: ../../jive
+      dockerfile: apps/hermes/Dockerfile
+    container_name: hermes
+    ports:
+      - "8501:8501"
+    env_file:
+      - ../.env
+    environment:
+      - MAX_EXCEL_ERRORS=500000
+
+
   # jive-file-mover:
   #   build:
   #     context: ../../jive
