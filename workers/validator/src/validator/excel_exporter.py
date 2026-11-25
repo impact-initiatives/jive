@@ -4,13 +4,20 @@ from typing import Any
 import polars as pl
 import xlsxwriter
 from argus.orchestrator.output_models import PipelineResponse
-from argus.validators.base import ValidationResult, ValidatorResponse
+from argus.validators.base import SeverityLevel, ValidationResult, ValidatorResponse
 
 from .config import get_settings
 from .logs import get_logger
 
 logger = get_logger("jive.validator.excel_exporter")
 settings = get_settings()
+
+SEVERITY_ORDER = {
+    SeverityLevel.ADMIN_ERROR.value: 0,
+    SeverityLevel.ERROR.value: 1,
+    SeverityLevel.WARNING.value: 2,
+    SeverityLevel.INFO.value: 3,
+}
 
 
 def export_response_to_excel(response: PipelineResponse, output_path: Path):
@@ -115,7 +122,7 @@ def export_response_to_excel(response: PipelineResponse, output_path: Path):
                         f"Failed to expand details for rule '{validator.name}' into DataFrame"
                         + f" — skipping. Error: {e}, {ex}",
                     )
-
+    summary_rows.sort(key=lambda row: SEVERITY_ORDER.get(row["Severity"], len(SEVERITY_ORDER)))
     if truncated:
         summary_rows.insert(
             0,

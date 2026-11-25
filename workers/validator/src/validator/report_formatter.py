@@ -1,7 +1,7 @@
 from typing import Any
 
 from argus.orchestrator.output_models import PipelineResponse
-from argus.validators.base import ValidationResult, ValidatorResponse
+from argus.validators.base import ValidatorResponse
 from pydantic import Json
 
 from .config import get_settings
@@ -139,25 +139,51 @@ def format_comment_adf(
     )
 
     # 3. Validation Summary Table (for actionable issues)
-    actionable_issues: list[tuple[str, str, str, tuple[int, int]]] = []
+    actionable_issues: list[tuple[str, str, str, tuple[int, int], int]] = []
 
-    def extract_issues(validators: list[ValidatorResponse], severity: str, icon: str):
-        def validator_results(validator: ValidatorResponse) -> list[ValidationResult]:
-            """A validator's results, tolerating None."""
-            return validator.details or []
+    SEVERITY_DISPLAY: dict[str, tuple[str, str, int]] = {
+        "ADMIN": ("Jive Error", "🔥", 0),
+        "ERROR": ("Error", "❌", 1),
+        "WARNING": ("Warning", "⚠️", 2),
+    }
 
+    def _severity_key(severity: Any) -> tuple[str, str, int] | None:
+        """Resolve a severity representation to (label, icon, priority), or None to skip."""
+        name = getattr(severity, "name", str(severity)).upper().rsplit(".", maxsplit=1)[-1]
+        return SEVERITY_DISPLAY.get(name)
+
+    def extract_issues(validators: list[ValidatorResponse]):
         if not validators:
             return
         for validator in validators:
-            failed_checks = len(validator_results(validator))
-            issues_found = sum(r.get_details_length() for r in validator_results(validator))
-            actionable_issues.append(
-                (validator.name, severity, icon, (failed_checks, issues_found))
-            )
+            buckets: dict[str, tuple[str, str, int, int, int]] = {}
+            for result in validator.details or []:
+                resolved = _severity_key(result.severity)
+                if resolved is None:  # e.g. INFO — not part of the actionable summary
+                    continue
+                label, icon, priority = resolved
+                entry = buckets.get(label)
+                if entry is None:
+                    buckets[label] = (label, icon, priority, 1, result.get_details_length())
+                else:
+                    _, _, prio, failed_checks, issues_found = entry
+                    buckets[label] = (
+                        label,
+                        icon,
+                        prio,
+                        failed_checks + 1,
+                        issues_found + result.get_details_length(),
+                    )
+            for entry in buckets.values():
+                actionable_issues.append(
+                    (validator.name, entry[0], entry[1], (entry[3], entry[4]), entry[2])
+                )
 
-    extract_issues(response.errors, "Error", "❌")
-    extract_issues(response.admin_errors, "Jive Error", "🔥")
-    extract_issues(response.warnings, "Warning", "⚠️")
+    extract_issues(response.errors)
+    extract_issues(response.admin_errors)
+    extract_issues(response.warnings)
+
+    actionable_issues.sort(key=lambda t: (t[4], t[0]))
 
     if actionable_issues:
         table_rows = [
@@ -228,7 +254,7 @@ def format_comment_adf(
             }
         ]
 
-        for rule, severity, icon, count in actionable_issues:
+        for rule, severity, icon, count, _ in actionable_issues:
             table_rows.append(
                 {
                     "type": "tableRow",
@@ -297,7 +323,7 @@ def format_comment_adf(
     # 4. Clear Actionable Portal Next-Steps
 
     # Collect all rules that had at least one error/warning
-    actionable_rule_names = {rule for rule, _, _, _ in actionable_issues}
+    actionable_rule_names = {rule for rule, _, _, _, _ in actionable_issues}
 
     passed_rules = {
         validator.name
