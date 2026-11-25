@@ -151,7 +151,7 @@ class ValidationPipeline:
 
         """
         all_responses: list[ValidatorResponse] = []
-        orchestrator_response = ValidatorResponse(name="ArgusOrchesrator")
+        orchestrator_response = ValidatorResponse(name="ArgusOrchestrator")
 
         orchestrator_results: list[ValidationResult] = []
 

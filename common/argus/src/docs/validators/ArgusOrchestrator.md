@@ -1,5 +1,5 @@
 ## Orchestrator Errors
-These errors can fall into two main categories. Any issues under this category should be resolved before addressing other validation errors.
+These errors can fall into two main categories. Any errors under this category should be resolved before addressing other validation errors.
 
 ### Admin Errors
 These are errors with the underlying validation process and could be issues related to:

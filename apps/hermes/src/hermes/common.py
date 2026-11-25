@@ -13,7 +13,7 @@ from argus.orchestrator.output_models import (
     PipelineResponse,
     ValidatorResponse,
 )
-from argus.validators.base import ValidationResult, ValidatorResult
+from argus.validators.base import SeverityLevel, ValidationResult, ValidatorResult
 
 from .config import get_settings
 
@@ -32,12 +32,23 @@ SESSION_KEY = "validation_results"
 #: the results page to pre-filter the rules widget.
 FOCUS_RULE_KEY = "results_focus_rule"
 
-SEVERITY_ORDER: list[str] = ["error", "admin_error", "warning", "info", "admin_info", "passed"]
-ACTIONABLE: list[str] = ["error", "admin_error", "warning"]
-SEVERITY_ICON: dict[str, str] = {
-    "error": "❌ Error",
-    "admin_error": "🔥 Admin Error",
-    "warning": "⚠️ Warning",
+SEVERITY_ORDER: list[SeverityLevel] = [
+    SeverityLevel.ERROR,
+    SeverityLevel.ADMIN_ERROR,
+    SeverityLevel.WARNING,
+    SeverityLevel.INFO,
+    SeverityLevel.ADMIN_INFO,
+    SeverityLevel.PASSED,
+]
+ACTIONABLE: list[SeverityLevel] = [
+    SeverityLevel.ERROR,
+    SeverityLevel.ADMIN_ERROR,
+    SeverityLevel.WARNING,
+]
+SEVERITY_ICON: dict[SeverityLevel, str] = {
+    SeverityLevel.ERROR: "❌ Error",
+    SeverityLevel.ADMIN_ERROR: "🔥 Admin Error",
+    SeverityLevel.WARNING: "⚠️ Warning",
 }
 
 #: Validator-level outcomes that get their own section on the summary page.
@@ -49,13 +60,13 @@ VALIDATOR_FAILURE_RESULTS: frozenset[ValidatorResult] = frozenset(
 )
 
 #: (severity label, PipelineResponse attribute) — enumerates every result bucket
-_SEVERITY_BUCKETS: list[tuple[str, str]] = [
-    ("error", "errors"),
-    ("admin_error", "admin_errors"),
-    ("warning", "warnings"),
-    ("info", "info"),
-    ("admin_info", "admin_info"),
-    ("passed", "passed"),
+_SEVERITY_BUCKETS: list[tuple[SeverityLevel, str]] = [
+    (SeverityLevel.ERROR, "errors"),
+    (SeverityLevel.ADMIN_ERROR, "admin_errors"),
+    (SeverityLevel.WARNING, "warnings"),
+    (SeverityLevel.INFO, "info"),
+    (SeverityLevel.ADMIN_INFO, "admin_info"),
+    (SeverityLevel.PASSED, "passed"),
 ]
 
 VALIDATOR_SCHEMA = {
@@ -95,9 +106,18 @@ def as_pipeline_response(results: PipelineResponse | dict[str, Any]) -> Pipeline
     return PipelineResponse.model_validate(results)
 
 
+def iter_result_items(
+    response: PipelineResponse,
+) -> Generator[tuple[SeverityLevel, ValidatorResponse, ValidationResult]]:
+    """Yield ``(severity, validator, result)`` per ValidationResult."""
+    for _bucket, validator in iter_validator_items(response):
+        for result in validator.details:
+            yield result.severity, validator, result
+
+
 def iter_validator_items(
     response: PipelineResponse,
-) -> Generator[tuple[str, ValidatorResponse]]:
+) -> Generator[tuple[SeverityLevel, ValidatorResponse]]:
     """Yield ``(severity, validator)`` for every validator, in severity order."""
     for severity, attr in _SEVERITY_BUCKETS:
         for validator in getattr(response, attr):
@@ -114,20 +134,19 @@ def validator_messages(validator: ValidatorResponse) -> list[str]:
 
 
 def build_validators_df(response: PipelineResponse) -> pl.DataFrame:
-    """One row per validator; ``issues`` sums get_details_length() over its results."""
     rows = [
         {
-            "severity": severity,
+            "severity": severity.value,  # ← was the resolved bucket string
             "rule": validator.name,
             "result": str(validator.result),
-            "failed_checks": len(validator.details),
-            "issues": sum(result.get_details_length() for result in validator.details),
-            "messages": " | ".join(validator_messages(validator)),
+            "failed_checks": 1,
+            "issues": result.get_details_length(),
+            "messages": result.message,
         }
-        for severity, validator in iter_validator_items(response)
+        for severity, validator, result in iter_result_items(response)
     ]
     return pl.DataFrame(rows, schema=VALIDATOR_SCHEMA).with_columns(
-        pl.col("severity").cast(pl.Enum(SEVERITY_ORDER))
+        pl.col("severity").cast(pl.Enum([s.value for s in SEVERITY_ORDER]))
     )
 
 
@@ -251,7 +270,9 @@ def render_issue_summary(
     Selecting a row shows the rule's header, help popover, drill-down button
     and deduplicated messages in one card.
     """
-    df = build_validators_df(results).filter(pl.col("severity").is_in(ACTIONABLE))
+    df = build_validators_df(results).filter(
+        pl.col("severity").is_in([s.value for s in ACTIONABLE])
+    )
     if df.height == 0:
         return
 
@@ -263,14 +284,14 @@ def render_issue_summary(
             pl.col("failed_checks").sum().alias("failed_checks"),
             pl.col("issues").sum().alias("issues_found"),
         )
-        .with_columns(pl.col("severity").cast(pl.Enum(ACTIONABLE)))
+        .with_columns(pl.col("severity").cast(pl.Enum([s.value for s in ACTIONABLE])))
         .sort("severity", "rule")
     )
     display_df = (
         rollup.with_columns(
             pl.col("severity")
             .cast(pl.String)
-            .replace_strict(SEVERITY_ICON, default="")
+            .replace_strict({s.value: icon for s, icon in SEVERITY_ICON.items()}, default="")
             .alias("severity_label")
         )
         .select(["rule", "severity_label", "failed_checks", "issues_found", "severity"])
@@ -293,7 +314,8 @@ def render_issue_summary(
         return
 
     picked = display_df.row(int(selected_rows[0]), named=True)
-    severity, rule = picked["severity"], picked["rule"]
+    severity = SeverityLevel(picked["severity"])  # str -> enum; lookup keys match again
+    rule = picked["rule"]
     icon = SEVERITY_ICON.get(severity, "")
     message_list = validator_messages_for(results, severity, rule)
 
@@ -325,11 +347,9 @@ def render_issue_summary(
 
 def validator_messages_for(results: PipelineResponse, severity: str, rule: str) -> list[str]:
     seen: list[str] = []
-    for sev, validator in iter_validator_items(results):
-        if sev == severity and validator.name == rule:
-            for message in validator_messages(validator):
-                if message not in seen:
-                    seen.append(message)
+    for sev, validator, result in iter_result_items(results):
+        if sev == severity and validator.name == rule and result.message not in seen:
+            seen.append(result.message)
     return seen
 
 
@@ -366,12 +386,19 @@ def render_summary(
     df = build_validators_df(results)
 
     # --- KPI strip (now one count per validator, not per finding) -----------
-    actionable_rules = set(df.filter(pl.col("severity").is_in(ACTIONABLE))["rule"].to_list())
+    actionable_rules = set(
+        df.filter(pl.col("severity").is_in([s.value for s in ACTIONABLE]))["rule"].to_list()
+    )
 
-    kpi_order = ["error", "admin_error", "warning", "passed"]
+    kpi_order = [
+        SeverityLevel.ADMIN_ERROR,
+        SeverityLevel.ERROR,
+        SeverityLevel.WARNING,
+        SeverityLevel.PASSED,
+    ]
     failed_metrics = {
         row["severity"]: row["failed_checks"]
-        for row in df.filter(pl.col("severity").is_in(ACTIONABLE))
+        for row in df.filter(pl.col("severity").is_in([s.value for s in ACTIONABLE]))
         .group_by("severity")
         .agg(pl.col("failed_checks").sum())
         .iter_rows(named=True)
@@ -386,11 +413,8 @@ def render_summary(
     cols = st.columns(len(kpi_order))
     for col, sev in zip(cols, kpi_order, strict=False):
         col.metric(
-            label=sev.replace(
-                "_",
-                " ",
-            ).title(),
-            value=f"{metrics.get(sev, 0):,}",
+            label=sev.value.replace("_", " ").title(),
+            value=f"{metrics.get(sev.value, 0):,}",  # ← key by value, not the enum
         )
 
     # --- validators that failed to run --------------------------------------
@@ -400,7 +424,9 @@ def render_summary(
     render_issue_summary(results, results_page=results_page)
 
     # --- passed checks (≈ the italic passed-rules paragraph) ----------------
-    actionable_rules = set(df.filter(pl.col("severity").is_in(ACTIONABLE))["rule"].to_list())
+    actionable_rules = set(
+        df.filter(pl.col("severity").is_in([s.value for s in ACTIONABLE]))["rule"].to_list()
+    )
     passed_rules = sorted(
         set(
             df.filter((pl.col("severity") == "passed") & (~pl.col("rule").is_in(actionable_rules)))[
