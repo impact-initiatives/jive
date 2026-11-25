@@ -228,7 +228,6 @@ class DynamicDataset(BaseDataset):
 
         """
         results: list[ValidationResult] = []
-        rule = "DynamicSchemaCreation_match_data"
 
         min_matching_score: float = 0.8
         # get schema sheet names and already matched excel sheet names
@@ -312,7 +311,6 @@ class DynamicDataset(BaseDataset):
                     )
                     results.append(
                         ValidationResult(
-                            rule=rule,
                             message=_(
                                 "helpers.number_unique_columns",
                                 sheet=sheet.data_sheet_name,
@@ -381,7 +379,6 @@ class DynamicDataset(BaseDataset):
 
         results.append(
             ValidationResult(
-                rule=rule,
                 message="Sheet matching results.",
                 severity=SeverityLevel.ADMIN_INFO,
                 details=pl.DataFrame(

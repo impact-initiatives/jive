@@ -1,4 +1,5 @@
 import traceback
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -9,20 +10,54 @@ from jive_logging.logger import get_logger
 from ..config import settings
 from ..loaders.base import DataSheetMap
 from ..loaders.base_excel_loader import ExcelLoaderData
-from ..loaders.excel_loader import ExcelLoader
+from ..loaders.excel_loader import ExcelLoader, ExcelSource
 from ..locales.il8n import _, i18n
 from ..models.base_dataset_schemas import BaseDatasetSchema
 from ..models.dynamic_defined_schema import DynamicDefinedDataset
 from ..models.dynamic_schema import DynamicDataset
 from ..models.resolver import find_dataset_files
-from ..validators.base import BaseValidator, SeverityLevel, ValidationResult
+from ..orchestrator.output_models import MetadataModel, PipelineResponse, SummaryModel
+from ..validators.base import (
+    BaseValidator,
+    SeverityLevel,
+    ValidationResult,
+    ValidatorResponse,
+    ValidatorResult,
+)
 
 logger = get_logger("argus.orchestrator")
+
+_BUCKET_PRECEDENCE: tuple[tuple[str, frozenset[SeverityLevel]], ...] = (
+    ("admin_errors", frozenset({SeverityLevel.ADMIN_ERROR})),
+    ("errors", frozenset({SeverityLevel.ERROR})),
+    ("warnings", frozenset({SeverityLevel.WARNING})),
+    ("info", frozenset({SeverityLevel.INFO})),
+    ("admin_info", frozenset({SeverityLevel.ADMIN_INFO})),
+)
+
+
+class OrchestratorError(Exception):
+    def __init__(self, details: list[ValidationResult]):
+        self.details = details
 
 
 class ValidationPipeline:
     def __init__(self):
         self.set_errors: set[SeverityLevel] = set([SeverityLevel.ADMIN_ERROR, SeverityLevel.ERROR])
+        self.filename: str = ""
+
+    @staticmethod
+    def _source_filename(source: ExcelSource, override: str | None = None) -> str:
+        """Resolve a display/log filename from any ExcelSource variant."""
+        if override:
+            return Path(override).name
+        if isinstance(source, (Path, str)):
+            return Path(source).name
+        # file-like: open files, BytesIO with a name set, Streamlit UploadedFile, ...
+        name = getattr(source, "name", None)
+        if isinstance(name, str) and name:
+            return Path(name).name
+        return ""
 
     def _setup_schema(self, programme_type: str, output_type: str, locale: str):
         """Initialise schema and validators based on dataset type.
@@ -61,12 +96,11 @@ class ValidationPipeline:
 
     def run_all(
         self,
-        filepath: Path,
+        filepath: ExcelSource,
         programme_type: str,
         output_type: str,
         locale: str = settings.FALLBACK_LOCALE,
-        use_local_config: bool = False,
-    ) -> dict[str, Any]:
+    ) -> PipelineResponse:
         """_summary_
 
         Args:
@@ -83,16 +117,16 @@ class ValidationPipeline:
         token = i18n.set_locale(locale)
         programme_type = programme_type.lower()
         output_type = output_type.lower()
-        logger.info("Running the validation pipeline.", extra={"file": filepath.name})
+        self.filename = self._source_filename(filepath)
+        logger.info("Running the validation pipeline.", extra={"file": self.filename})
         results = self._run(
             filepath=filepath,
             programme_type=programme_type,
             output_type=output_type,
             locale=locale,
-            use_local_config=use_local_config,
         )
         i18n.reset_locale(token)
-        logger.info("Compiling validation results.", extra={"file": filepath.name})
+        logger.info("Compiling validation results.", extra={"file": self.filename})
         return self._compile_results(
             results=results,
             filepath=filepath,
@@ -102,12 +136,11 @@ class ValidationPipeline:
 
     def _run(
         self,
-        filepath: Path,
+        filepath: ExcelSource,
         programme_type: str,
         output_type: str,
         locale: str,
-        use_local_config: bool = False,
-    ) -> list[ValidationResult]:
+    ) -> list[ValidatorResponse]:
         """Orchestrator for the dataset validation pipeline.
 
         Args:
@@ -117,7 +150,10 @@ class ValidationPipeline:
             list[ValidationResult]: validation results.
 
         """
-        all_results: list[ValidationResult] = []
+        all_responses: list[ValidatorResponse] = []
+        orchestrator_response = ValidatorResponse(name="ArgusOrchesrator")
+
+        orchestrator_results: list[ValidationResult] = []
 
         # load the initial schema and validator list
         try:
@@ -128,9 +164,8 @@ class ValidationPipeline:
             )
 
             if dataset.schema.programme_type != programme_type:
-                all_results.append(
+                orchestrator_results.append(
                     ValidationResult(
-                        rule="GetYAMLConfig",
                         message=f"No schema for '{programme_type}' '{output_type}' was"
                         + " found. Falling back to"
                         + f" '{dataset.schema.programme_type}' '{dataset.schema.output_type}'.",
@@ -141,13 +176,12 @@ class ValidationPipeline:
                     f"No dataset schema for '{programme_type}' '{output_type}' was found"
                     + ". Falling back to"
                     + f" '{dataset.schema.programme_type}' '{dataset.schema.output_type}'.",
-                    extra={"file": filepath.name},
+                    extra={"file": self.filename},
                 )
 
         except Exception as e:
-            all_results.append(
+            orchestrator_results.append(
                 ValidationResult(
-                    rule="GetYAMLConfig",
                     message=f"Error getting the YAML dataset config files: {str(e)}",
                     severity=SeverityLevel.ADMIN_ERROR,
                 )
@@ -155,13 +189,15 @@ class ValidationPipeline:
             logger.exception(
                 "Error getting the YAML dataset config files.",
                 extra={
-                    "file": filepath.name,
+                    "file": self.filename,
                     "programme_type": programme_type,
                     "output_type": output_type,
                     "schemas_directory": settings.schemas_directory.resolve(),
                 },
             )
-            return all_results
+            orchestrator_response.result = ValidatorResult.ORCHESTRATOR_ERROR
+            orchestrator_response.details.extend(orchestrator_results)
+            return [orchestrator_response]
 
         # pre-validate the schema. checks for duplicate sheet/column
         # names etc
@@ -170,7 +206,7 @@ class ValidationPipeline:
             logger.info(
                 "Validating schema.",
                 extra={
-                    "file": filepath.name,
+                    "file": self.filename,
                     "programme_type": dataset.schema.programme_type,
                     "output_type": dataset.schema.output_type,
                 },
@@ -178,16 +214,17 @@ class ValidationPipeline:
             validation_errors = dataset.validate_schema_item_names()
 
             if validation_errors:
-                all_results.extend(validation_errors)
+                orchestrator_results.extend(validation_errors)
                 logger.error(
                     f"Validating schema for '{programme_type}' '{output_type}' failed.",
-                    extra={"validation errors": validation_errors, "file": filepath.name},
+                    extra={"validation errors": validation_errors, "file": self.filename},
                 )
-                return all_results
+                orchestrator_response.result = ValidatorResult.ORCHESTRATOR_ERROR
+                orchestrator_response.details.extend(orchestrator_results)
+                return [orchestrator_response]
         except Exception as e:
-            all_results.append(
+            orchestrator_results.append(
                 ValidationResult(
-                    rule="SchemaValidation",
                     message=f"Schema validation encountered an error: {str(e)}",
                     severity=SeverityLevel.ADMIN_ERROR,
                     details=vars(dataset.schema),
@@ -196,16 +233,18 @@ class ValidationPipeline:
             logger.exception(
                 "Schema validation encountered an error.",
                 extra={
-                    "file": filepath.name,
+                    "file": self.filename,
                     "programme_type": dataset.schema.programme_type,
                     "output_type": dataset.schema.output_type,
                 },
             )
-            return all_results
+            orchestrator_response.result = ValidatorResult.ORCHESTRATOR_ERROR
+            orchestrator_response.details.extend(orchestrator_results)
+            return [orchestrator_response]
 
         # load the excel data
         try:
-            logger.info("Loading and matching Excel data.", extra={"file": filepath.name})
+            logger.info("Loading and matching Excel data.", extra={"file": self.filename})
             loader = ExcelLoader(dataset.schema)
             dataset.data, excel_results = loader.load(
                 filepath,
@@ -213,69 +252,68 @@ class ValidationPipeline:
             )
 
             if excel_results:
-                all_results.extend(excel_results)
+                orchestrator_response.details.extend(excel_results)
 
-            all_results.append(
+            orchestrator_response.details.append(
                 ValidationResult(
-                    rule="ExcelFileLoading",
                     message="Data mapping after data load.",
                     severity=SeverityLevel.ADMIN_INFO,
                     details=self._excel_loader_to_dict(dataset.data),
                 )
             )
         except CalamineCellError as ce:
-            all_results.append(
+            orchestrator_results.append(
                 ValidationResult(
-                    rule="ExcelFileLoading",
                     message=_(
-                        "validation_pipeline.calamine_cell_error", file=filepath.name, error=str(ce)
+                        "validation_pipeline.calamine_cell_error", file=self.filename, error=str(ce)
                     ),
                     severity=SeverityLevel.ERROR,
                 )
             )
             logger.exception(
                 "Loading of the excel file encountered a CalamineCellError.",
-                extra={"file": filepath.name},
+                extra={"file": self.filename},
             )
-            return all_results
+            orchestrator_response.result = ValidatorResult.ORCHESTRATOR_ERROR
+            orchestrator_response.details.extend(orchestrator_results)
+            return [orchestrator_response]
         except Exception as e:
-            all_results.append(
+            orchestrator_results.append(
                 ValidationResult(
-                    rule="ExcelFileLoading",
-                    message=f"Loading of the excel file '{filepath.name}'"
+                    message=f"Loading of the excel file '{self.filename}'"
                     + f" encountered an error: {str(e)}",
                     severity=SeverityLevel.ADMIN_ERROR,
                 )
             )
             logger.exception(
-                "Loading of the excel file encountered an error.", extra={"file": filepath.name}
+                "Loading of the excel file encountered an error.", extra={"file": self.filename}
             )
-            return all_results
+            orchestrator_response.result = ValidatorResult.ORCHESTRATOR_ERROR
+            orchestrator_response.details.extend(orchestrator_results)
+            return [orchestrator_response]
 
         logger.info(
             "Building schema and validators.",
             extra={
-                "file": filepath.name,
+                "file": self.filename,
                 "programme_type": dataset.schema.programme_type,
                 "output_type": dataset.schema.output_type,
             },
         )
         results: list[ValidationResult] = dataset.process_data()
         if results:
-            all_results.extend(results)
+            orchestrator_results.extend(results)
 
-        all_results.append(
+        orchestrator_results.append(
             ValidationResult(
-                rule="ExcelFileLoading",
                 message="Data mapping after dynamic data matching.",
                 severity=SeverityLevel.ADMIN_INFO,
                 details=self._excel_loader_to_dict(dataset.data),
             )
         )
 
-        all_results.append(
+        orchestrator_results.append(
             ValidationResult(
-                rule="Schema Details",
                 message=f"Schema for dataset '{programme_type}' '{output_type}' and"
                 + f" file '{filepath}'",
                 severity=SeverityLevel.ADMIN_INFO,
@@ -287,103 +325,111 @@ class ValidationPipeline:
         logger.info(
             "Running validation rules.",
             extra={
-                "file": filepath.name,
+                "file": self.filename,
                 "programme_type": dataset.schema.programme_type,
                 "output_type": dataset.schema.output_type,
             },
         )
         for validator in dataset.validators:
             try:
-                results = validator.validate(dataset.data)
-                if results:
-                    all_results.extend(results)
+                validator_response = validator.validate(dataset.data)
 
-                if not [item for item in results if item.severity in self.set_errors]:
-                    all_results.append(
-                        ValidationResult(
-                            rule=validator.name,
-                            message=_("validation_pipeline.passed", name=validator.name),
-                            severity=SeverityLevel.PASSED,
-                            details=self._get_validator_params(validator),
-                        )
-                    )
-            except Exception:
-                all_results.append(
-                    ValidationResult(
-                        rule=validator.name,
-                        message=f"Validator '{validator.name}' encountered an error:"
-                        + f" {traceback.format_exc()}",
-                        severity=SeverityLevel.ADMIN_ERROR,
-                        details=self._get_validator_params(validator),
+                if not self._check_errors(validator_response, self.set_errors):
+                    validator_response.result = ValidatorResult.PASSED
+                all_responses.append(validator_response)
+            except Exception as e:
+                all_responses.append(
+                    ValidatorResponse(
+                        name=validator.name,
+                        details=[
+                            ValidationResult(
+                                message=f"Validator '{validator.name}' encountered an error:"
+                                + f" {traceback.format_exc()} {e}",
+                                severity=SeverityLevel.ADMIN_ERROR,
+                                details=self._get_validator_params(validator),
+                            )
+                        ],
+                        result=ValidatorResult.ORCHESTRATOR_ERROR,
                     )
                 )
                 logger.exception(
                     f"Validator '{validator.name}' encountered an error.",
-                    extra={"file": filepath.name, "validator": validator.name},
+                    extra={"file": self.filename, "validator": validator.name},
                 )
 
-        return all_results
+        if self._check_errors(orchestrator_response, self.set_errors):
+            orchestrator_response.result = ValidatorResult.ORCHESTRATOR_ERROR
+
+        all_responses.append(orchestrator_response)
+        return all_responses
+
+    def _check_errors(
+        self, response: ValidatorResponse, errors: list[SeverityLevel] | set[SeverityLevel]
+    ):
+        return any(result.severity in errors for result in response.details)
+
+    def _bucket_for_response(self, response: ValidatorResponse) -> str:
+
+        severities = {detail.severity for detail in response.details}
+        for bucket, levels in _BUCKET_PRECEDENCE:
+            if severities & levels:
+                return bucket
+        return "passed"
 
     def _compile_results(
-        self, results: list[ValidationResult], programme_type: str, output_type: str, filepath: Path
-    ) -> dict[str, Any]:
-        """Compile validation results into structured output."""
-        buckets: dict[str, list[dict[str, Any]]] = {level.value: [] for level in SeverityLevel}
-        counts: dict[str, int] = {level.value: 0 for level in SeverityLevel}
-        error_count: int = 0
+        self,
+        results: list[ValidatorResponse],
+        programme_type: str,
+        output_type: str,
+        filepath: ExcelSource,
+    ) -> PipelineResponse:
+        """Compile validator responses into the typed pipeline output."""
+        buckets: dict[str, list[ValidatorResponse]] = {
+            name: [] for name, _ in _BUCKET_PRECEDENCE
+        } | {"passed": []}
 
-        limit_details_message = _(
-            "validation_pipeline.limit_details", count=settings.LIMIT_DETAILS_THRESHOLD
+        for response in results:
+            self._truncate_details(response.details)
+            buckets[self._bucket_for_response(response)].append(response)
+
+        severity_counts = Counter(d.severity for response in results for d in response.details)
+
+        return PipelineResponse(
+            success=not (buckets["errors"] or buckets["admin_errors"]),
+            summary=SummaryModel(
+                passed=severity_counts[SeverityLevel.PASSED],
+                errors=severity_counts[SeverityLevel.ERROR],
+                warnings=severity_counts[SeverityLevel.WARNING],
+                info=severity_counts[SeverityLevel.INFO],
+                admin_errors=severity_counts[SeverityLevel.ADMIN_ERROR],
+                admin_info=severity_counts[SeverityLevel.ADMIN_INFO],
+            ),
+            metadata=MetadataModel(
+                # TODO: this is the requested programme_type, not the fallback one
+                programme_type=programme_type,
+                output_type=output_type,
+                validation_date=datetime.now(UTC).isoformat(timespec="seconds"),
+                file_name=self.filename,
+            ),
+            **buckets,
         )
 
+    def _truncate_details(self, results: list[ValidationResult]) -> None:
+        """Apply the details-threshold limit in place."""
+        if settings.LIMIT_DETAILS_THRESHOLD <= 0:
+            return
         for result in results:
+            if not result.details:
+                continue
             was_truncated = False
-            if result.details and settings.LIMIT_DETAILS_THRESHOLD > 0:
-                # if the number of details needs to be lmited
-                for key, value in result.details.items():
-                    # checks to see if the value is a list and if it has too many items.
-                    if isinstance(value, list) and len(value) > settings.LIMIT_DETAILS_THRESHOLD:
-                        # truncate the list
-                        result.details[key] = value[: settings.LIMIT_DETAILS_THRESHOLD]
-                        was_truncated = True
-
-                # update message
-                if was_truncated:
-                    result.message = f"{result.message} {limit_details_message}"
-
-            counts[result.severity.value] += 1
-
-            if result.severity in self.set_errors:
-                error_count += 1
-
-            buckets[result.severity.value].append(
-                {
-                    "rule": result.rule,
-                    "message": result.message,
-                    "severity": result.severity.value,
-                    "sheet_name": result.sheet_name,
-                    "column_name": result.column_name,
-                    "details": result.details,
-                }
-            )
-
-        success = error_count == 0
-
-        return {
-            "success": success,
-            "summary": counts,
-            **{key: buckets[key] for key in buckets},
-            "metadata": {
-                # this is currently the passed in value, not neceissarily the used value
-                # eg: if the programme does not have a schema and argus reverts to 'other'
-                # then programme_type here will not be 'other'
-                # TODO: set programme_type = used programme_type
-                "programme_type": programme_type,
-                "output_type": output_type,
-                "validation_date": datetime.now(UTC).isoformat(timespec="seconds"),
-                "file_name": filepath.name,
-            },
-        }
+            for key, value in result.details.items():
+                if isinstance(value, list) and len(value) > settings.LIMIT_DETAILS_THRESHOLD:
+                    result.details[key] = value[: settings.LIMIT_DETAILS_THRESHOLD]
+                    was_truncated = True
+            if was_truncated:
+                result.message = f"{result.message} " + _(
+                    "validation_pipeline.limit_details", count=settings.LIMIT_DETAILS_THRESHOLD
+                )
 
     def _get_validator_params(self, validator: BaseValidator) -> dict[str, Any]:
         """Get validator paramaters for logs but exclude schema."""

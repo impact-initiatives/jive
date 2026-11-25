@@ -4,7 +4,13 @@ import polars as pl
 
 from ...loaders.base_excel_loader import ExcelLoaderData
 from ...models.base_dataset_schemas import BaseDatasetSchema
-from ..base import BaseValidator, SeverityLevel, ValidationResult
+from ..base import (
+    BaseValidator,
+    MissingComponents,
+    SeverityLevel,
+    ValidationResult,
+    ValidatorResponse,
+)
 from ..helpers.data_helpers import (
     get_data_loaded_columns,
     get_data_loaded_sheets,
@@ -50,9 +56,7 @@ class ConsentCheck(BaseValidator):
         return "ConsentCheck"
 
     @override
-    def validate(
-        self, data: ExcelLoaderData, **kwargs: str | int | float
-    ) -> list[ValidationResult]:
+    def validate(self, data: ExcelLoaderData, **kwargs: str | int | float) -> ValidatorResponse:
         """Checks that records in raw_data that did not provide consent are
         not present in clean_data.
 
@@ -62,112 +66,102 @@ class ConsentCheck(BaseValidator):
         Returns:
             List[ValidationResult]: List of validation errors.
         """
-        results: list[ValidationResult] = []
+        with self._validation() as response:
+            results: list[ValidationResult] = []
 
-        result, data_loaded_sheets = get_data_loaded_sheets(
-            data=data,
-            sheet_names=[self.clean_data_sheet, self.raw_data_sheet],
-            rule=self.name,
-        )
-
-        if result is not None:
-            results.append(result)
-            return results
-
-        result, data_loaded_columns = get_data_loaded_columns(
-            data={self.schema_consent_column: data_loaded_sheets[self.raw_data_sheet]},
-            rule=self.name,
-        )
-
-        if result is not None:
-            results.append(result)
-            return results
-
-        result, schema_loaded_sheets = get_schema_loaded_sheets(
-            schema=self.schema, sheet_names=[self.raw_data_sheet], rule=self.name
-        )
-
-        if result is not None:
-            results.append(result)
-            return results
-
-        result, schema_consent_column = get_schema_loaded_column(
-            schema_loaded_sheets[self.raw_data_sheet],
-            data_loaded_columns[self.schema_consent_column].schema_column_name,
-            self.name,
-        )
-        if result is not None:
-            results.append(result)
-            return results
-
-        assert schema_consent_column is not None
-
-        result, consent_values = get_schema_process_value(
-            self.process_value_map_name,
-            self.raw_data_sheet,
-            schema_consent_column,
-            self.name,
-        )
-        if result is not None:
-            results.append(result)
-            return results
-
-        assert consent_values is not None
-
-        result, data_sheet_ids = get_data_sheet_ids(
-            schema=self.schema,
-            data={
-                self.clean_data_sheet: data_loaded_sheets[self.clean_data_sheet],
-                self.raw_data_sheet: data_loaded_sheets[self.raw_data_sheet],
-            },
-            rule=self.name,
-        )
-
-        if result:
-            results.extend(result)
-            return results
-
-        raw_data_id_column = data_sheet_ids[self.raw_data_sheet][0]
-        clean_data_id_column = data_sheet_ids[self.clean_data_sheet][0]
-
-        # get records that have not provided consent
-        raw_data_filter_df = (
-            data_loaded_sheets[self.raw_data_sheet]
-            .data.filter(
-                ~pl.col(data_loaded_columns[self.schema_consent_column].data_column_name)
-                .str.to_lowercase()
-                .is_in(consent_values.values)
+            result, data_loaded_sheets = get_data_loaded_sheets(
+                data=data,
+                sheet_names=[self.clean_data_sheet, self.raw_data_sheet],
             )
-            .select(
-                [
-                    raw_data_id_column.data_column_name,
-                    data_loaded_columns[self.schema_consent_column].data_column_name,
-                ]
-            )
-        )
 
-        if raw_data_filter_df.height > 0:
-            # join to clean_data to see if clean_data contains any of the records
-            clean_data_filter_df = data_loaded_sheets[self.clean_data_sheet].data.join(
-                other=raw_data_filter_df,
-                left_on=clean_data_id_column.data_column_name,
-                right_on=raw_data_id_column.data_column_name,
-                how="inner",
+            if result is not None:
+                raise MissingComponents([result])
+
+            result, data_loaded_columns = get_data_loaded_columns(
+                data={self.schema_consent_column: data_loaded_sheets[self.raw_data_sheet]},
             )
-            if clean_data_filter_df.height > 0:
-                results.append(
-                    ValidationResult(
-                        rule=self.name,
-                        message=self._(
-                            "consent_check_validator.consent_check",
-                            count=clean_data_filter_df.height,
-                            sheet=data_loaded_sheets[self.clean_data_sheet].data_sheet_name,
-                        ),
-                        severity=SeverityLevel.ERROR,
-                        details=clean_data_filter_df.select(
-                            [clean_data_id_column.data_column_name]
-                        ).to_dict(as_series=False),
-                    )
+
+            if result is not None:
+                raise MissingComponents([result])
+
+            result, schema_loaded_sheets = get_schema_loaded_sheets(
+                schema=self.schema, sheet_names=[self.raw_data_sheet]
+            )
+
+            if result is not None:
+                raise MissingComponents([result])
+
+            result, schema_consent_column = get_schema_loaded_column(
+                schema_loaded_sheets[self.raw_data_sheet],
+                data_loaded_columns[self.schema_consent_column].schema_column_name,
+            )
+            if result is not None:
+                raise MissingComponents([result])
+
+            assert schema_consent_column is not None
+
+            result, consent_values = get_schema_process_value(
+                self.process_value_map_name,
+                self.raw_data_sheet,
+                schema_consent_column,
+            )
+            if result is not None:
+                raise MissingComponents([result])
+
+            assert consent_values is not None
+
+            result, data_sheet_ids = get_data_sheet_ids(
+                schema=self.schema,
+                data={
+                    self.clean_data_sheet: data_loaded_sheets[self.clean_data_sheet],
+                    self.raw_data_sheet: data_loaded_sheets[self.raw_data_sheet],
+                },
+            )
+
+            if result:
+                raise MissingComponents(result)
+
+            raw_data_id_column = data_sheet_ids[self.raw_data_sheet][0]
+            clean_data_id_column = data_sheet_ids[self.clean_data_sheet][0]
+
+            # get records that have not provided consent
+            raw_data_filter_df = (
+                data_loaded_sheets[self.raw_data_sheet]
+                .data.filter(
+                    ~pl.col(data_loaded_columns[self.schema_consent_column].data_column_name)
+                    .str.to_lowercase()
+                    .is_in(consent_values.values)
                 )
+                .select(
+                    [
+                        raw_data_id_column.data_column_name,
+                        data_loaded_columns[self.schema_consent_column].data_column_name,
+                    ]
+                )
+            )
 
-        return results
+            if raw_data_filter_df.height > 0:
+                # join to clean_data to see if clean_data contains any of the records
+                clean_data_filter_df = data_loaded_sheets[self.clean_data_sheet].data.join(
+                    other=raw_data_filter_df,
+                    left_on=clean_data_id_column.data_column_name,
+                    right_on=raw_data_id_column.data_column_name,
+                    how="inner",
+                )
+                if clean_data_filter_df.height > 0:
+                    results.append(
+                        ValidationResult(
+                            message=self._(
+                                "consent_check_validator.consent_check",
+                                count=clean_data_filter_df.height,
+                                sheet=data_loaded_sheets[self.clean_data_sheet].data_sheet_name,
+                            ),
+                            severity=SeverityLevel.ERROR,
+                            details=clean_data_filter_df.select(
+                                [clean_data_id_column.data_column_name]
+                            ).to_dict(as_series=False),
+                        )
+                    )
+
+            response.details.extend(results)
+        return response

@@ -63,7 +63,6 @@ class BaseExcelLoader:
                     # ideally this should not happen
                     results.append(
                         ValidationResult(
-                            rule="Match excel column to schema",
                             message=self._(
                                 "base_excel_loader.match_excel_columns_to_schema.multiple_literal_matches",
                                 sheet=schema_sheet.standard_name,
@@ -91,7 +90,6 @@ class BaseExcelLoader:
 
                     results.append(
                         ValidationResult(
-                            rule="Match excel column to schema",
                             message=self._(
                                 "base_excel_loader.match_excel_columns_to_schema.fuzzy_match",
                                 sheet=schema_sheet.standard_name,
@@ -106,7 +104,6 @@ class BaseExcelLoader:
                 else:
                     results.append(
                         ValidationResult(
-                            rule="Match excel column to schema",
                             message=self._(
                                 "base_excel_loader.match_excel_columns_to_schema.fuzzy_match_miltiple",
                                 sheet=schema_sheet.standard_name,
@@ -167,7 +164,6 @@ class BaseExcelLoader:
             ):
                 results.append(
                     ValidationResult(
-                        rule="Match excel sheeet to schema",
                         message=self._(
                             "base_excel_loader.match_excel_sheet_to_schema.matching_term",
                             excel_sheet=excel_sheet_name,
@@ -188,7 +184,6 @@ class BaseExcelLoader:
                 sheet_name = list(fuzzy_matched_values_schema.keys())[0]
                 results.append(
                     ValidationResult(
-                        rule="Match excel sheeet to schema",
                         message=self._(
                             "base_excel_loader.match_excel_sheet_to_schema.fuzzy_match",
                             excel_sheet=excel_sheet_name,
@@ -204,7 +199,6 @@ class BaseExcelLoader:
                 # fuzzy match to multiple schema sheets
                 results.append(
                     ValidationResult(
-                        rule="Match excel sheeet to schema",
                         message=self._(
                             "base_excel_loader.match_excel_sheet_to_schema.fuzzy_match_multiple",
                             excel_sheet=excel_sheet_name,
@@ -238,7 +232,6 @@ class BaseExcelLoader:
         duplicate_columns = duplicate_list_items(lower_list_items(columns))
         if duplicate_columns:
             result = ValidationResult(
-                rule="Excel Sheet Loading",
                 message=self._(
                     "base_excel_loader.check_duplicate_columns",
                     excel_sheet=sheet_name,

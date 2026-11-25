@@ -9,7 +9,6 @@ def get_schema_process_value(
     process_value_map_name: str,
     sheet_name: str,
     schema_column: SchemaColumnMap,
-    rule: str,
 ) -> tuple[ValidationResult | None, ProcessValueMap | None]:
     """Gets schema process values if found
 
@@ -30,7 +29,6 @@ def get_schema_process_value(
 
     if process_values is None or len(process_values.values) == 0:
         result = ValidationResult(
-            rule=rule,
             message=_(
                 "schema_helpers.get_schema_process_value",
                 column=schema_column.standard_name,
@@ -47,7 +45,7 @@ def get_schema_process_value(
 
 
 def get_schema_process_values(
-    data: dict[str, dict[str, SchemaColumnMap]], rule: str
+    data: dict[str, dict[str, SchemaColumnMap]],
 ) -> tuple[list[ValidationResult], dict[str, ProcessValueMap]]:
     """Gets a list of schema process values if found.
 
@@ -66,7 +64,7 @@ def get_schema_process_values(
 
     for sheet, item in data.items():
         for process, column in item.items():
-            result, process_value = get_schema_process_value(process, sheet, column, rule)
+            result, process_value = get_schema_process_value(process, sheet, column)
 
             if result is None:
                 assert process_value is not None
@@ -78,7 +76,7 @@ def get_schema_process_values(
 
 
 def get_schema_loaded_column(
-    loaded_sheet: SchemaSheetMap, column: str, rule: str
+    loaded_sheet: SchemaSheetMap, column: str
 ) -> tuple[ValidationResult | None, SchemaColumnMap | None]:
     """Gets a schema column if it exists.
 
@@ -98,7 +96,6 @@ def get_schema_loaded_column(
     if schema_column is None:
         # should not actually happen as its already mapped above.
         result = ValidationResult(
-            rule=rule,
             message=_(
                 "helpers.get_loaded_column",
                 column=column,
@@ -113,7 +110,7 @@ def get_schema_loaded_column(
 
 
 def get_schema_loaded_columns(
-    data: dict[str, SchemaSheetMap], rule: str
+    data: dict[str, SchemaSheetMap],
 ) -> tuple[ValidationResult | None, dict[str, SchemaColumnMap]]:
     """Gets a list of schema columns if they exists
 
@@ -130,20 +127,20 @@ def get_schema_loaded_columns(
     loaded_columns: dict[str, SchemaColumnMap] = {}
 
     for column, sheet in data.items():
-        result, schema_column = get_schema_loaded_column(sheet, column, rule)
+        result, schema_column = get_schema_loaded_column(sheet, column)
         if result is None:
             assert schema_column is not None
             loaded_columns[column] = schema_column
         else:
             results.append(result)
 
-    final_result = consolidate_messages(results, "columns", "schema", rule)
+    final_result = consolidate_messages(results, "columns", "schema")
 
     return final_result, loaded_columns
 
 
 def get_schema_loaded_sheet(
-    schema: BaseDatasetSchema, sheet_name: str, rule: str
+    schema: BaseDatasetSchema, sheet_name: str
 ) -> tuple[ValidationResult | None, SchemaSheetMap | None]:
     """Gets a schema loaded sheet if it exists.
 
@@ -161,7 +158,6 @@ def get_schema_loaded_sheet(
 
     if not schema_sheet:
         result = ValidationResult(
-            rule=rule,
             message=_("helpers.get_loaded_sheet", sheet=sheet_name, sheet_type="schema"),
             severity=SeverityLevel.ERROR,
             sheet_name=sheet_name,
@@ -171,7 +167,7 @@ def get_schema_loaded_sheet(
 
 
 def get_schema_loaded_sheets(
-    schema: BaseDatasetSchema, sheet_names: list[str], rule: str
+    schema: BaseDatasetSchema, sheet_names: list[str]
 ) -> tuple[ValidationResult | None, dict[str, SchemaSheetMap]]:
     """Gets a list of schema loaded sheets if it exists.
 
@@ -188,7 +184,7 @@ def get_schema_loaded_sheets(
     loaded_sheets: dict[str, SchemaSheetMap] = {}
 
     for sheet in sheet_names:
-        result, loaded_sheet = get_schema_loaded_sheet(schema, sheet, rule)
+        result, loaded_sheet = get_schema_loaded_sheet(schema, sheet)
 
         if result is None:
             assert loaded_sheet is not None
@@ -196,13 +192,13 @@ def get_schema_loaded_sheets(
         else:
             results.append(result)
 
-    final_result = consolidate_messages(results, "sheets", "schema", rule)
+    final_result = consolidate_messages(results, "sheets", "schema")
 
     return final_result, loaded_sheets
 
 
 def consolidate_messages(
-    results: list[ValidationResult], item_type: str, item_source: str, rule: str
+    results: list[ValidationResult], item_type: str, item_source: str
 ) -> ValidationResult | None:
     """Consolidates messages. Useful when the messages are the same except for
     different sheets or columns. eg: get_schema_loaded_sheets
@@ -233,7 +229,6 @@ def consolidate_messages(
                 items.append(result.sheet_name)
 
         result = ValidationResult(
-            rule=rule,
             message=_(
                 "schema_helpers.missing_items",
                 item_type=item_type,

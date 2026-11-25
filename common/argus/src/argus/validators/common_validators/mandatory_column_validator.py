@@ -6,7 +6,13 @@ from ...loaders.base import DataSheetMap
 from ...loaders.base_excel_loader import ExcelLoaderData
 from ...models.base import SchemaColumnMap
 from ...models.base_dataset_schemas import BaseDatasetSchema
-from ..base import BaseValidator, SeverityLevel, ValidationResult
+from ..base import (
+    BaseValidator,
+    MissingComponents,
+    SeverityLevel,
+    ValidationResult,
+    ValidatorResponse,
+)
 from ..helpers.data_helpers import get_data_loaded_columns, get_data_loaded_sheets
 
 
@@ -20,9 +26,7 @@ class MandatoryColumnsCheck(BaseValidator):
         self.schema: BaseDatasetSchema = schema
 
     @override
-    def validate(
-        self, data: ExcelLoaderData, **kwargs: str | int | float
-    ) -> list[ValidationResult]:
+    def validate(self, data: ExcelLoaderData, **kwargs: str | int | float) -> ValidatorResponse:
         """Checks to see if any expected mandatory columns are missing
         across relevant sheets.
 
@@ -37,7 +41,7 @@ class MandatoryColumnsCheck(BaseValidator):
 
         def _get_loaded_columns(schema_columns: list[SchemaColumnMap], loaded_sheet: DataSheetMap):
             search_items = {key.standard_name: loaded_sheet for key in schema_columns}
-            result, _ = get_data_loaded_columns(search_items, self.name)
+            result, _ = get_data_loaded_columns(search_items)
             if result is not None:
                 result.sheet_name = loaded_sheet.data_sheet_name
 
@@ -79,89 +83,89 @@ class MandatoryColumnsCheck(BaseValidator):
 
             column_df = pl.DataFrame(column_dict).to_dict(as_series=False)
             result = ValidationResult(
-                rule=self.name,
                 message=self._(message_key, count=len(results), item_type=item_type),
                 severity=severity,
                 details=column_df,
             )
             return result
 
-        results: list[ValidationResult] = []
-        results_required: list[ValidationResult] = []
-        results_optional: list[ValidationResult] = []
+        with self._validation() as response:
+            results: list[ValidationResult] = []
+            results_required: list[ValidationResult] = []
+            results_optional: list[ValidationResult] = []
 
-        result, data_loaded_sheets = get_data_loaded_sheets(
-            data=data,
-            sheet_names=self.schema.get_loaded_sheets_standard_names(required=True),
-            rule=self.name,
-            check_data=False,
-        )
-        # if optional sheets have been loaded, check their columns
-        _, data_loaded_sheets_optional = get_data_loaded_sheets(
-            data=data,
-            sheet_names=self.schema.get_loaded_sheets_standard_names(required=False),
-            rule=self.name,
-            check_data=False,
-        )
+            result, data_loaded_sheets = get_data_loaded_sheets(
+                data=data,
+                sheet_names=self.schema.get_loaded_sheets_standard_names(required=True),
+                check_data=False,
+            )
+            # if optional sheets have been loaded, check their columns
+            _, data_loaded_sheets_optional = get_data_loaded_sheets(
+                data=data,
+                sheet_names=self.schema.get_loaded_sheets_standard_names(required=False),
+                check_data=False,
+            )
 
-        if data_loaded_sheets_optional:
-            data_loaded_sheets.update(data_loaded_sheets_optional)
+            if data_loaded_sheets_optional:
+                data_loaded_sheets.update(data_loaded_sheets_optional)
 
-        if result is not None:
-            if result.details is None:
-                result.details = {"missing_sheets": [result.sheet_name]}
+            if result is not None:
+                if result.details is None:
+                    result.details = {"missing_sheets": [result.sheet_name]}
 
-            results.append(
-                ValidationResult(
-                    rule=self.name,
-                    message=self._(
-                        "mandatory_column_validator.missing_item",
-                        count=len(result.details["missing_sheets"]),
-                        item_type="sheets",
-                    ),
-                    severity=SeverityLevel.ERROR,
-                    details=result.details,
+                results.append(
+                    ValidationResult(
+                        message=self._(
+                            "mandatory_column_validator.missing_item",
+                            count=len(result.details["missing_sheets"]),
+                            item_type="sheets",
+                        ),
+                        severity=SeverityLevel.ERROR,
+                        details=result.details,
+                    )
                 )
-            )
 
-            return results
+                raise MissingComponents(results)
 
-        for sheet, loaded_sheet in data_loaded_sheets.items():
-            # get all the columns expected for the sheet
+            for sheet, loaded_sheet in data_loaded_sheets.items():
+                # get all the columns expected for the sheet
 
-            schema_sheet = self.schema.get_schema_sheet(sheet)
-            # sheet is checked above
-            assert schema_sheet is not None
+                schema_sheet = self.schema.get_schema_sheet(sheet)
+                # sheet is checked above
+                assert schema_sheet is not None
 
-            required_columns = [column for column in schema_sheet.columns if column.required]
-            optional_columns = [column for column in schema_sheet.columns if not column.required]
+                required_columns = [column for column in schema_sheet.columns if column.required]
+                optional_columns = [
+                    column for column in schema_sheet.columns if not column.required
+                ]
 
-            if required_columns:
-                result = _get_loaded_columns(required_columns, loaded_sheet)
-                if result is not None:
-                    results_required.append(result)
+                if required_columns:
+                    result = _get_loaded_columns(required_columns, loaded_sheet)
+                    if result is not None:
+                        results_required.append(result)
 
-            if optional_columns:
-                result = _get_loaded_columns(optional_columns, loaded_sheet)
-                if result is not None:
-                    results_optional.append(result)
+                if optional_columns:
+                    result = _get_loaded_columns(optional_columns, loaded_sheet)
+                    if result is not None:
+                        results_optional.append(result)
 
-        if results_required:
-            result = _process_results(
-                results_required,
-                SeverityLevel.ERROR,
-                "mandatory_column_validator.missing_item",
-                item_type="columns",
-            )
-            results.append(result)
+            if results_required:
+                result = _process_results(
+                    results_required,
+                    SeverityLevel.ERROR,
+                    "mandatory_column_validator.missing_item",
+                    item_type="columns",
+                )
+                results.append(result)
 
-        if results_optional:
-            result = _process_results(
-                results_optional,
-                SeverityLevel.WARNING,
-                "mandatory_column_validator.optional_columns",
-                item_type="",
-            )
-            results.append(result)
+            if results_optional:
+                result = _process_results(
+                    results_optional,
+                    SeverityLevel.WARNING,
+                    "mandatory_column_validator.optional_columns",
+                    item_type="",
+                )
+                results.append(result)
 
-        return results
+            response.details.extend(results)
+        return response

@@ -13,7 +13,7 @@ from .schema_helpers import consolidate_messages, get_schema_loaded_sheet
 
 
 def get_data_loaded_sheet(
-    data: ExcelLoaderData, sheet_name: str, rule: str, check_data: bool = True
+    data: ExcelLoaderData, sheet_name: str, check_data: bool = True
 ) -> tuple[ValidationResult | None, DataSheetMap | None]:
     """Gets a data loaded sheet if it exists.
 
@@ -32,19 +32,18 @@ def get_data_loaded_sheet(
 
     if loaded_sheet is None:
         result = ValidationResult(
-            rule=rule,
             message=_("helpers.get_loaded_sheet", sheet=sheet_name, sheet_type="data"),
             severity=SeverityLevel.ERROR,
             sheet_name=sheet_name,
         )
     elif check_data:
-        result = check_data_exists(loaded_sheet.data, sheet_name, rule)
+        result = check_data_exists(loaded_sheet.data, sheet_name)
 
     return result, loaded_sheet
 
 
 def get_data_loaded_sheets(
-    data: ExcelLoaderData, sheet_names: list[str], rule: str, check_data: bool = True
+    data: ExcelLoaderData, sheet_names: list[str], check_data: bool = True
 ) -> tuple[ValidationResult | None, dict[str, DataSheetMap]]:
     """Gets a list of data loaded sheets if they exist.
 
@@ -62,7 +61,7 @@ def get_data_loaded_sheets(
     loaded_sheets: dict[str, DataSheetMap] = {}
 
     for sheet in sheet_names:
-        result, loaded_sheet = get_data_loaded_sheet(data, sheet, rule, check_data)
+        result, loaded_sheet = get_data_loaded_sheet(data, sheet, check_data)
 
         if result is None:
             assert loaded_sheet is not None
@@ -70,13 +69,13 @@ def get_data_loaded_sheets(
         else:
             results.append(result)
 
-    final_result = consolidate_messages(results, "sheets", "excel", rule)
+    final_result = consolidate_messages(results, "sheets", "excel")
 
     return final_result, loaded_sheets
 
 
 def get_data_loaded_column(
-    loaded_sheet: DataSheetMap, column_name: str, rule: str
+    loaded_sheet: DataSheetMap, column_name: str
 ) -> tuple[ValidationResult | None, DataColumnMap | None]:
     """Gets a data loaded column if found.
 
@@ -94,7 +93,6 @@ def get_data_loaded_column(
     column = loaded_sheet.get_column_map(column_name)
     if column is None:
         result = ValidationResult(
-            rule=rule,
             message=_(
                 "helpers.get_loaded_column",
                 column=column_name,
@@ -110,7 +108,7 @@ def get_data_loaded_column(
 
 
 def get_data_loaded_columns(
-    data: dict[str, DataSheetMap], rule: str
+    data: dict[str, DataSheetMap],
 ) -> tuple[ValidationResult | None, dict[str, DataColumnMap]]:
     """Gets a list of data loaded columns if found.
 
@@ -127,7 +125,7 @@ def get_data_loaded_columns(
     loaded_columns: dict[str, DataColumnMap] = {}
 
     for column, loaded_sheet in data.items():
-        result, loaded_column = get_data_loaded_column(loaded_sheet, column, rule)
+        result, loaded_column = get_data_loaded_column(loaded_sheet, column)
 
         if result is None:
             assert loaded_column is not None
@@ -135,7 +133,7 @@ def get_data_loaded_columns(
         else:
             results.append(result)
 
-    final_result = consolidate_messages(results, "columns", "excel", rule)
+    final_result = consolidate_messages(results, "columns", "excel")
 
     return final_result, loaded_columns
 
@@ -144,7 +142,6 @@ def get_data_sheet_id(
     sheet_name: str,
     schema: BaseDatasetSchema,
     loaded_sheet: DataSheetMap,
-    rule: str,
     expected: int = 1,
 ) -> tuple[ValidationResult | None, list[DataColumnMap]]:
     """Gets unique columns for a scheema sheet and loaded sheet.
@@ -165,14 +162,12 @@ def get_data_sheet_id(
 
     if not ids:
         result = ValidationResult(
-            rule=rule,
             message=_("helpers.number_unique_columns", sheet=loaded_sheet.data_sheet_name, count=0),
             severity=SeverityLevel.ERROR,
             sheet_name=loaded_sheet.data_sheet_name,
         )
     elif len(ids) != expected:
         result = ValidationResult(
-            rule=rule,
             message=_(
                 "data_helpers.get_data_sheet_id.count_invalid",
                 count=expected,
@@ -188,7 +183,6 @@ def get_data_sheet_id(
 def get_data_sheet_ids(
     schema: BaseDatasetSchema,
     data: dict[str, DataSheetMap],
-    rule: str,
     expected: int = 1,
 ) -> tuple[list[ValidationResult], dict[str, list[DataColumnMap]]]:
     """Gets unique columns for a list of scheema sheets and loaded sheets.
@@ -206,7 +200,7 @@ def get_data_sheet_ids(
     loaded_columns: dict[str, list[DataColumnMap]] = {}
 
     for sheet, loaded_sheet in data.items():
-        result, loaded_column = get_data_sheet_id(sheet, schema, loaded_sheet, rule, expected)
+        result, loaded_column = get_data_sheet_id(sheet, schema, loaded_sheet, expected)
 
         if result is None:
             assert loaded_column is not None
@@ -222,7 +216,6 @@ def get_matching_columns(
     source_sheet: str,
     target: list[DataColumnMap],
     target_sheet: str,
-    rule: str,
 ) -> tuple[ValidationResult | None, list[tuple[DataColumnMap, DataColumnMap]]]:
     """Get matching id columns between sheets.
 
@@ -246,7 +239,6 @@ def get_matching_columns(
     # should only be one matching id column between the sheets.
     if len(matching_columns) != 1:
         result = ValidationResult(
-            rule=rule,
             message=_(
                 "data_helpers.get_matching_columns",
                 source_sheet=source_sheet,
@@ -267,7 +259,6 @@ def get_matching_columns_alt(
     source_sheet: str,
     target: list[DataColumnMap],
     target_sheet: str,
-    rule: str,
 ) -> tuple[ValidationResult | None, list[DataColumnMap], list[DataColumnMap]]:
     """Attempts to find two id like columns that could be used to try
         and link two sheets.
@@ -290,7 +281,6 @@ def get_matching_columns_alt(
     source_columns, target_columns = match_sheet_columns_ids(source, target)
     if len(source_columns) != 1 or len(target_columns) != 1:
         result = ValidationResult(
-            rule=rule,
             message=_(
                 "data_helpers.get_matching_columns_alt",
                 source_sheet=source_sheet,
@@ -312,7 +302,6 @@ def get_id_linking_columns(
     data_loaded_sheets: dict[str, DataSheetMap],
     source_sheet: str,
     target_sheet: str,
-    rule: str,
     min_overlap: float = settings.MIN_COLUMN_MATCHING_OVERLAP,
     exclude_id_values: list[str] | None = None,
 ) -> (
@@ -361,7 +350,7 @@ def get_id_linking_columns(
     results: list[ValidationResult] = []
     exclude_id_values = [] if exclude_id_values is None else exclude_id_values
 
-    result, child_schema_loaded_sheet = get_schema_loaded_sheet(schema, source_sheet, rule)
+    result, child_schema_loaded_sheet = get_schema_loaded_sheet(schema, source_sheet)
     if result is not None:
         results.append(result)
         return results, None, None
@@ -373,7 +362,7 @@ def get_id_linking_columns(
     ):
         # if checking parent-child links
         result_source, source_sheet_id_column = get_data_loaded_column(
-            data_loaded_sheets[source_sheet], child_schema_loaded_sheet.parent_linking_column, rule
+            data_loaded_sheets[source_sheet], child_schema_loaded_sheet.parent_linking_column
         )
         if result_source is not None:
             results.append(result_source)
@@ -387,7 +376,6 @@ def get_id_linking_columns(
             schema=schema,
             sheet_name=source_sheet,
             loaded_sheet=data_loaded_sheets[source_sheet],
-            rule=rule,
             expected=1,
         )
 
@@ -395,7 +383,6 @@ def get_id_linking_columns(
         schema=schema,
         sheet_name=target_sheet,
         loaded_sheet=data_loaded_sheets[target_sheet],
-        rule=rule,
         expected=1,
     )
 
@@ -411,7 +398,6 @@ def get_id_linking_columns(
             if result_target is None
             else data_loaded_sheets[target_sheet].column_map,
             target_sheet=target_sheet,
-            rule=rule,
         )
         if result_match is not None:
             # if no exact name match attempt some alternate name matches
@@ -425,13 +411,11 @@ def get_id_linking_columns(
                     if result_target is None
                     else data_loaded_sheets[target_sheet].column_map,
                     target_sheet=target_sheet,
-                    rule=rule,
                 )
             )
             if result_match_alt is not None:
                 results.append(
                     ValidationResult(
-                        rule=rule,
                         message=_(
                             "data_helpers.get_id_linking_columns.no_columns",
                             source_sheet=source_sheet,
@@ -462,7 +446,6 @@ def get_id_linking_columns(
         target_column=target_sheet_id_column.data_column_name,
         target_sheet=target_sheet,
         data_loaded_sheets=data_loaded_sheets,
-        rule=rule,
         min_overlap=min_overlap,
         exclude_id_values=exclude_id_values,
     )
@@ -473,7 +456,6 @@ def get_id_linking_columns(
 
     results.append(
         ValidationResult(
-            rule=rule,
             message=_(
                 "data_helpers.get_id_linking_columns.linked_columns",
                 source_sheet=source_sheet,
@@ -494,7 +476,6 @@ def check_id_column_overlap(
     target_column: str,
     target_sheet: str,
     data_loaded_sheets: dict[str, DataSheetMap],
-    rule: str,
     min_overlap: float = settings.MIN_COLUMN_MATCHING_OVERLAP,
     exclude_id_values: list[str] | None = None,
 ) -> ValidationResult | None:
@@ -543,7 +524,6 @@ def check_id_column_overlap(
 
     if overlap < min_overlap:
         result = ValidationResult(
-            rule=rule,
             message=_(
                 "data_helpers.check_id_column_overlap",
                 source_sheet=source_sheet,
@@ -559,7 +539,7 @@ def check_id_column_overlap(
     return result
 
 
-def check_data_exists(data: pl.DataFrame, sheet: str, rule: str) -> ValidationResult | None:
+def check_data_exists(data: pl.DataFrame, sheet: str) -> ValidationResult | None:
     """Checks that a dataframe has data. If no data is found an error is returned.
 
     Args:
@@ -572,7 +552,6 @@ def check_data_exists(data: pl.DataFrame, sheet: str, rule: str) -> ValidationRe
     """
     if data.height < 1:
         return ValidationResult(
-            rule=rule,
             message=_(
                 "data_helpers.check_data_exists",
                 sheet=sheet,

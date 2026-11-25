@@ -1,0 +1,34 @@
+[project]
+name = "hermes"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+
+requires-python = ">=3.14"
+dependencies = [
+    "polars>=2.1.0",
+    "streamlit>=1.67.0",
+    "argus",
+    "pydantic>=2.14.4",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.4",
+]
+
+[tool.uv.sources]
+argus = { path = "../../common/argus" , editable = true }
+
+[project.scripts]
+hermes = "hermes:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["UP", "E", "F", "I", "B", "SIM"]

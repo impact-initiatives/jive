@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import BinaryIO
 
 import fastexcel
 import polars as pl
@@ -11,13 +12,28 @@ from .base import (
 )
 from .base_excel_loader import BaseExcelLoader
 
+ExcelSource = Path | str | BinaryIO | bytes
+
 
 class ExcelLoader(BaseExcelLoader):
     def __init__(self, schema_config: BaseDatasetSchema):
         self.schema: BaseDatasetSchema = schema_config
 
+    @staticmethod
+    def _to_source(source: ExcelSource) -> Path | str | bytes:
+        """Normalise any supported input to something fastexcel accepts."""
+        if isinstance(source, (Path, str)):
+            return source  # leave disk paths alone
+        if isinstance(source, bytes):
+            return source  # already bytes (e.g. an HTTP response body)
+        # BinaryIO: Streamlit UploadedFile, BytesIO, open binary file, ...
+        data = source.read()
+        if not data:
+            raise ValueError("Empty file-like object passed to ExcelLoader.load()")
+        return data
+
     def load(
-        self, filepath: Path, load_all_sheets: bool = False
+        self, filepath: ExcelSource, load_all_sheets: bool = False
     ) -> tuple[ExcelLoaderData, list[ValidationResult]]:
         """Loads an excel file, does some checking and sorting of the sheets.
 
@@ -33,7 +49,7 @@ class ExcelLoader(BaseExcelLoader):
         """
         results: list[ValidationResult] = []
         # get a list of excel sheet names
-        excel_file = fastexcel.read_excel(filepath)
+        excel_file = fastexcel.read_excel(self._to_source(filepath))
         all_sheets = excel_file.sheet_names
         # lower sheet names for easier comparison later
         # all_sheets = list(map(str.lower, all_sheets))
@@ -64,7 +80,6 @@ class ExcelLoader(BaseExcelLoader):
                 data_df = data_df.drop([str(column["name"]) for column in unnamed_columns])
                 results.append(
                     ValidationResult(
-                        rule="Unnamed sheet columns",
                         message=self._(
                             "excel_loader._load_excel_sheet.unnamed_columns",
                             sheet=sheet_name,
@@ -108,7 +123,6 @@ class ExcelLoader(BaseExcelLoader):
                 else:
                     results.append(
                         ValidationResult(
-                            rule="Getting Schema Sheet",
                             message=self._(
                                 "helpers.get_loaded_sheet", sheet=l_mapped_name, sheet_type="excel"
                             ),
@@ -161,7 +175,6 @@ class ExcelLoader(BaseExcelLoader):
             if l_mapped_name and l_results and u_mapped_name and u_results:
                 results.append(
                     ValidationResult(
-                        rule="Match excel sheeet to schema",
                         message=self._(
                             "excel_loader.load.multiple_matches", sheet=excel_sheet_name
                         ),

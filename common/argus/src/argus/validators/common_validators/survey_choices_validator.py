@@ -6,7 +6,13 @@ from ...common.list_matching import filter_loaded_sheets, match_list
 from ...config import settings
 from ...loaders.base_excel_loader import ExcelLoaderData
 from ...models.base_dataset_schemas import BaseDatasetSchema
-from ..base import BaseValidator, SeverityLevel, ValidationResult
+from ..base import (
+    BaseValidator,
+    MissingComponents,
+    SeverityLevel,
+    ValidationResult,
+    ValidatorResponse,
+)
 from ..helpers.data_helpers import (
     get_data_loaded_columns,
     get_data_loaded_sheets,
@@ -70,9 +76,7 @@ class SurveyChoicesCheck(BaseValidator):
         return "SurveyChoicesCheck"
 
     @override
-    def validate(
-        self, data: ExcelLoaderData, **kwargs: str | int | float
-    ) -> list[ValidationResult]:
+    def validate(self, data: ExcelLoaderData, **kwargs: str | int | float) -> ValidatorResponse:
         """Checks that clean_data values are valid when they come from
         kobo select_one or select_multiple questions.
 
@@ -161,228 +165,359 @@ class SurveyChoicesCheck(BaseValidator):
                 )
                 return difference_df
 
-        results: list[ValidationResult] = []
-        # kobo quesiton types to find
-        column_selector = r"select_one|select_multiple"
-        # pre-validation
-        missing_choices: list[dict[str, str]] = []
-        missing_binary_quesitons: list[dict[str, str]] = []
-        value_difference_suffix = "value_has_difference"
-        binary_value_difference_suffix = "binary_value_has_difference"
+        with self._validation() as response:
+            results: list[ValidationResult] = []
+            # kobo quesiton types to find
+            column_selector = r"select_one|select_multiple"
+            # pre-validation
+            missing_choices: list[dict[str, str]] = []
+            missing_binary_quesitons: list[dict[str, str]] = []
+            value_difference_suffix = "value_has_difference"
+            binary_value_difference_suffix = "binary_value_has_difference"
 
-        results_df: pl.DataFrame = pl.DataFrame(
-            [
-                pl.Series("uuid", [], dtype=pl.String),
-                pl.Series("sheet", [], dtype=pl.String),
-                pl.Series("question", [], dtype=pl.String),
-                pl.Series("value", [], dtype=pl.Int32),
-                pl.Series("issue", [], dtype=pl.String),
-            ]
-        )
-
-        result, data_loaded_sheets = get_data_loaded_sheets(
-            data=data,
-            sheet_names=[self.survey_sheet, self.choices_sheet, *self.check_sheets],
-            rule=self.name,
-        )
-
-        if result is not None:
-            results.append(result)
-            return results
-
-        result, data_loaded_columns = get_data_loaded_columns(
-            data={
-                self.survey_type_column: data_loaded_sheets[self.survey_sheet],
-                self.survey_name_column: data_loaded_sheets[self.survey_sheet],
-                self.choices_name_column: data_loaded_sheets[self.choices_sheet],
-                self.choices_list_name_column: data_loaded_sheets[self.choices_sheet],
-            },
-            rule=self.name,
-        )
-
-        if result is not None:
-            results.append(result)
-            return results
-
-        filtered_loaded_sheets = filter_loaded_sheets(self.check_sheets, data_loaded_sheets)
-        result, data_id_columns = get_data_sheet_ids(
-            schema=self.schema, data=filtered_loaded_sheets, rule=self.name
-        )
-
-        if result:
-            results.extend(result)
-            return results
-
-        # get the choices and turn it into a dict
-        choices_dict = (
-            data_loaded_sheets[self.choices_sheet]
-            .data.select(
+            results_df: pl.DataFrame = pl.DataFrame(
                 [
+                    pl.Series("uuid", [], dtype=pl.String),
+                    pl.Series("sheet", [], dtype=pl.String),
+                    pl.Series("question", [], dtype=pl.String),
+                    pl.Series("value", [], dtype=pl.Int32),
+                    pl.Series("issue", [], dtype=pl.String),
+                ]
+            )
+
+            result, data_loaded_sheets = get_data_loaded_sheets(
+                data=data,
+                sheet_names=[self.survey_sheet, self.choices_sheet, *self.check_sheets],
+            )
+
+            if result is not None:
+                raise MissingComponents([result])
+
+            result, data_loaded_columns = get_data_loaded_columns(
+                data={
+                    self.survey_type_column: data_loaded_sheets[self.survey_sheet],
+                    self.survey_name_column: data_loaded_sheets[self.survey_sheet],
+                    self.choices_name_column: data_loaded_sheets[self.choices_sheet],
+                    self.choices_list_name_column: data_loaded_sheets[self.choices_sheet],
+                },
+            )
+
+            if result is not None:
+                raise MissingComponents([result])
+
+            filtered_loaded_sheets = filter_loaded_sheets(self.check_sheets, data_loaded_sheets)
+            result, data_id_columns = get_data_sheet_ids(
+                schema=self.schema, data=filtered_loaded_sheets
+            )
+
+            if result:
+                raise MissingComponents(result)
+
+            # get the choices and turn it into a dict
+            choices_dict = (
+                data_loaded_sheets[self.choices_sheet]
+                .data.select(
+                    [
+                        pl.col(
+                            data_loaded_columns[self.choices_list_name_column].data_column_name
+                        ).str.strip_chars(" "),
+                        pl.col(data_loaded_columns[self.choices_name_column].data_column_name)
+                        .str.to_lowercase()
+                        # .str.replace("_", "", literal=True)
+                        .str.strip_chars(" "),
+                    ]
+                )
+                .filter(
                     pl.col(
                         data_loaded_columns[self.choices_list_name_column].data_column_name
-                    ).str.strip_chars(" "),
-                    pl.col(data_loaded_columns[self.choices_name_column].data_column_name)
-                    .str.to_lowercase()
-                    # .str.replace("_", "", literal=True)
-                    .str.strip_chars(" "),
-                ]
-            )
-            .filter(
-                pl.col(
-                    data_loaded_columns[self.choices_list_name_column].data_column_name
-                ).is_not_null()
-                & (
-                    pl.col(data_loaded_columns[self.choices_list_name_column].data_column_name)
-                    != ""
-                )
-            )
-            .group_by(data_loaded_columns[self.choices_list_name_column].data_column_name)
-            .agg(
-                v_list=pl.col(
-                    data_loaded_columns[self.choices_name_column].data_column_name
-                ).implode()
-            )
-            .with_columns(pl.col("v_list").alias("values"))
-            .select(
-                [
-                    data_loaded_columns[self.choices_list_name_column].data_column_name,
-                    "values",
-                ]
-            )
-            .to_dicts()
-        )
-
-        choices_dict = {
-            row[data_loaded_columns[self.choices_list_name_column].data_column_name]: row["values"]
-            for row in choices_dict
-        }
-
-        # get the survey questions that are selected from a list
-        # and transform the data
-        survey_category_questions_df = (
-            data_loaded_sheets[self.survey_sheet]
-            .data.select(
-                [
-                    data_loaded_columns[self.survey_type_column].data_column_name,
-                    data_loaded_columns[self.survey_name_column].data_column_name,
-                ]
-            )
-            .filter(
-                pl.col(data_loaded_columns[self.survey_type_column].data_column_name).str.contains(
-                    column_selector
-                )
-            )
-            .with_columns(
-                pl.col(data_loaded_columns[self.survey_type_column].data_column_name)
-                .str.replace(r"[\"']", "")
-                .str.strip_chars(" ")
-                .str.split(" ")
-                .list.to_struct(fields=["type_only", "choice_list_name"])
-                .alias("choice_list_name")
-            )
-            .unnest("choice_list_name")
-            .filter(pl.col("choice_list_name").is_not_null() & (pl.col("choice_list_name") != ""))
-        )
-        # split out the question types
-        survey_category_questions_select_one = (
-            survey_category_questions_df.filter(pl.col("type_only") == "select_one")
-            .select([data_loaded_columns[self.survey_name_column].data_column_name])
-            .unique()
-            .to_series()
-            .str.to_lowercase()
-            .to_list()
-        )
-
-        survey_category_questions_select_multiple = (
-            survey_category_questions_df.filter(pl.col("type_only") == "select_multiple")
-            .select([data_loaded_columns[self.survey_name_column].data_column_name])
-            .unique()
-            .to_series()
-            .str.to_lowercase()
-            .to_list()
-        )
-        survey_question_choices_dict = survey_category_questions_df.select(
-            [
-                pl.col(
-                    data_loaded_columns[self.survey_name_column].data_column_name
-                ).str.to_lowercase(),
-                "choice_list_name",
-            ]
-        ).to_dicts()
-
-        survey_question_choices_dict = {
-            row[data_loaded_columns[self.survey_name_column].data_column_name]: row[
-                "choice_list_name"
-            ]
-            for row in survey_question_choices_dict
-        }
-
-        for sheet in self.check_sheets:
-            filtered_questions_binary: list[str] = []
-            check_sheet_id_column = data_id_columns[sheet][0]
-            # only check the questions that are present on the sheet
-            filtered_questions_select_one: list[str] = match_list(
-                survey_category_questions_select_one,
-                data_loaded_sheets[sheet].data.columns,
-            )
-            filtered_questions_select_multiple: list[str] = match_list(
-                survey_category_questions_select_multiple,
-                data_loaded_sheets[sheet].data.columns,
-            )
-            filtered_questions = filtered_questions_select_one + filtered_questions_select_multiple
-
-            value_difference_expressions: list[pl.Expr] = []
-            binary_value_difference_expressions: list[pl.Expr] = []
-
-            # build an expression to find values that dont match
-            # for each question, compare the values in the survey choices
-            # to the values in the data sheet.
-            # currently leading/trailing spaces are replaced and the
-            # values are made lowercase.
-
-            # because multiple_select questions store data as a space delimited values,
-            # these values need to be split and compared individually.
-            # in the event that a survey choice option has a space in it this process
-            # will throw an error for the value being checked
-            #
-            # This step also checks the binary columns - they must be a 0 or 1 and
-            # must also match the parent column
-
-            for question in filtered_questions_select_multiple:
-                try:
-                    valid_choices: list[str] = choices_dict[survey_question_choices_dict[question]]
-                except KeyError:
-                    missing_choices.append(
-                        {
-                            "sheet": sheet,
-                            "question": question,
-                            "value": survey_question_choices_dict[question],
-                            "issue": self._(
-                                "survey_choices_validator.missing_choices.issue",
-                                sheet=self.choices_sheet,
-                            ),
-                        }
+                    ).is_not_null()
+                    & (
+                        pl.col(data_loaded_columns[self.choices_list_name_column].data_column_name)
+                        != ""
                     )
-                    filtered_questions.remove(question)
-                    continue
+                )
+                .group_by(data_loaded_columns[self.choices_list_name_column].data_column_name)
+                .agg(
+                    v_list=pl.col(
+                        data_loaded_columns[self.choices_name_column].data_column_name
+                    ).implode()
+                )
+                .with_columns(pl.col("v_list").alias("values"))
+                .select(
+                    [
+                        data_loaded_columns[self.choices_list_name_column].data_column_name,
+                        "values",
+                    ]
+                )
+                .to_dicts()
+            )
 
-                question_data_type = data_loaded_sheets[sheet].data.schema.get(question)
-                if question_data_type is not None:
-                    valid_choices = normalise_list(valid_choices, question_data_type)
+            choices_dict = {
+                row[data_loaded_columns[self.choices_list_name_column].data_column_name]: row[
+                    "values"
+                ]
+                for row in choices_dict
+            }
 
-                empty_question_column_expression = (
-                    pl.col(question).fill_null("").str.strip_chars().is_in(["", None])
+            # get the survey questions that are selected from a list
+            # and transform the data
+            survey_category_questions_df = (
+                data_loaded_sheets[self.survey_sheet]
+                .data.select(
+                    [
+                        data_loaded_columns[self.survey_type_column].data_column_name,
+                        data_loaded_columns[self.survey_name_column].data_column_name,
+                    ]
+                )
+                .filter(
+                    pl.col(
+                        data_loaded_columns[self.survey_type_column].data_column_name
+                    ).str.contains(column_selector)
+                )
+                .with_columns(
+                    pl.col(data_loaded_columns[self.survey_type_column].data_column_name)
+                    .str.replace(r"[\"']", "")
+                    .str.strip_chars(" ")
+                    .str.split(" ")
+                    .list.to_struct(fields=["type_only", "choice_list_name"])
+                    .alias("choice_list_name")
+                )
+                .unnest("choice_list_name")
+                .filter(
+                    pl.col("choice_list_name").is_not_null() & (pl.col("choice_list_name") != "")
+                )
+            )
+            # split out the question types
+            survey_category_questions_select_one = (
+                survey_category_questions_df.filter(pl.col("type_only") == "select_one")
+                .select([data_loaded_columns[self.survey_name_column].data_column_name])
+                .unique()
+                .to_series()
+                .str.to_lowercase()
+                .to_list()
+            )
+
+            survey_category_questions_select_multiple = (
+                survey_category_questions_df.filter(pl.col("type_only") == "select_multiple")
+                .select([data_loaded_columns[self.survey_name_column].data_column_name])
+                .unique()
+                .to_series()
+                .str.to_lowercase()
+                .to_list()
+            )
+            survey_question_choices_dict = survey_category_questions_df.select(
+                [
+                    pl.col(
+                        data_loaded_columns[self.survey_name_column].data_column_name
+                    ).str.to_lowercase(),
+                    "choice_list_name",
+                ]
+            ).to_dicts()
+
+            survey_question_choices_dict = {
+                row[data_loaded_columns[self.survey_name_column].data_column_name]: row[
+                    "choice_list_name"
+                ]
+                for row in survey_question_choices_dict
+            }
+
+            for sheet in self.check_sheets:
+                filtered_questions_binary: list[str] = []
+                check_sheet_id_column = data_id_columns[sheet][0]
+                # only check the questions that are present on the sheet
+                filtered_questions_select_one: list[str] = match_list(
+                    survey_category_questions_select_one,
+                    data_loaded_sheets[sheet].data.columns,
+                )
+                filtered_questions_select_multiple: list[str] = match_list(
+                    survey_category_questions_select_multiple,
+                    data_loaded_sheets[sheet].data.columns,
+                )
+                filtered_questions = (
+                    filtered_questions_select_one + filtered_questions_select_multiple
                 )
 
-                # expression to compare data values and choices values
-                value_difference_expression = (
-                    pl.when(empty_question_column_expression.not_())
-                    .then(
-                        pl.col(question)
-                        .cast(pl.String)
-                        .str.split(self.select_multiple_value_separator)
-                        .list.eval(
-                            pl.element()
+                value_difference_expressions: list[pl.Expr] = []
+                binary_value_difference_expressions: list[pl.Expr] = []
+
+                # build an expression to find values that dont match
+                # for each question, compare the values in the survey choices
+                # to the values in the data sheet.
+                # currently leading/trailing spaces are replaced and the
+                # values are made lowercase.
+
+                # because multiple_select questions store data as a space delimited values,
+                # these values need to be split and compared individually.
+                # in the event that a survey choice option has a space in it this process
+                # will throw an error for the value being checked
+                #
+                # This step also checks the binary columns - they must be a 0 or 1 and
+                # must also match the parent column
+
+                for question in filtered_questions_select_multiple:
+                    try:
+                        valid_choices: list[str] = choices_dict[
+                            survey_question_choices_dict[question]
+                        ]
+                    except KeyError:
+                        missing_choices.append(
+                            {
+                                "sheet": sheet,
+                                "question": question,
+                                "value": survey_question_choices_dict[question],
+                                "issue": self._(
+                                    "survey_choices_validator.missing_choices.issue",
+                                    sheet=self.choices_sheet,
+                                ),
+                            }
+                        )
+                        filtered_questions.remove(question)
+                        continue
+
+                    question_data_type = data_loaded_sheets[sheet].data.schema.get(question)
+                    if question_data_type is not None:
+                        valid_choices = normalise_list(valid_choices, question_data_type)
+
+                    empty_question_column_expression = (
+                        pl.col(question).fill_null("").str.strip_chars().is_in(["", None])
+                    )
+
+                    # expression to compare data values and choices values
+                    value_difference_expression = (
+                        pl.when(empty_question_column_expression.not_())
+                        .then(
+                            pl.col(question)
+                            .cast(pl.String)
+                            .str.split(self.select_multiple_value_separator)
+                            .list.eval(
+                                pl.element()
+                                .fill_null("")
+                                .str.to_lowercase()
+                                # .str.replace("_", "", literal=True)
+                                .str.strip_chars(" ")
+                                .is_in(valid_choices)
+                                .not_()
+                            )
+                            .list.any()
+                        )
+                        .otherwise(False)
+                        .alias(f"{question}_{value_difference_suffix}")
+                    )
+
+                    value_difference_expressions.append(value_difference_expression)
+
+                    # build list of binary columns
+                    questions_binary = [f"{question}.{choice}".lower() for choice in valid_choices]
+
+                    for question_binary in questions_binary:
+                        if question_binary not in data_loaded_sheets[sheet].data.columns:
+                            # check if column exists
+                            missing_binary_quesitons.append(
+                                {
+                                    "sheet": sheet,
+                                    "question": question,
+                                    "value": question_binary,
+                                    "issue": self._(
+                                        "survey_choices_validator.missing_binary_questions.issue",
+                                    ),
+                                }
+                            )
+                            continue
+
+                        filtered_questions_binary.append(question_binary)
+                        choice_name: str = (
+                            question_binary.replace(f"{question}.", "").strip().lower()
+                        )
+                        question_to_list_expression = (
+                            pl.col(question)
+                            .cast(pl.String)
+                            .str.split(self.select_multiple_value_separator)
+                            .list.eval(
+                                pl.element().fill_null("").str.to_lowercase().str.strip_chars(" ")
+                            )
+                            .list
+                        )
+                        binary_question_expression_base = (
+                            pl.col(question_binary).cast(pl.String).fill_null("").str.strip_chars()
+                        )
+
+                        # binary column should be 1 or 0 if the parent column has a value
+                        # binary and parent columns should match.
+                        binary_value_difference_expression = (
+                            # when parent is empty then binary column should be empty
+                            pl.when(empty_question_column_expression)
+                            .then(
+                                # this currently means that the binary columns can either be blank
+                                # or all 0's if the parent is empty
+                                ~binary_question_expression_base.is_in(["", None, "0", "0.0"])
+                            )
+                            .otherwise(
+                                # when binary column has a valid value then that
+                                # value should be reflected in the parent
+                                # if binary column has an invalid value or is not
+                                # reflected in the parent then this will return a difference
+                                pl.when(
+                                    binary_question_expression_base.is_in(["0", "1", "0.0", "1.0"])
+                                )
+                                .then(
+                                    pl.when(binary_question_expression_base.is_in(["1", "1.0"]))
+                                    # binary value not in parent
+                                    .then(question_to_list_expression.contains(choice_name).not_())
+                                    # binary value incorrectly in parent
+                                    .otherwise(question_to_list_expression.contains(choice_name))
+                                )
+                                .otherwise(True)
+                            )
+                            .alias(f"{question_binary}_{binary_value_difference_suffix}")
+                        )
+                        binary_value_difference_expressions.append(
+                            binary_value_difference_expression
+                        )
+
+                # build an expression to find values that dont match
+                # for each question, compare the values in the survey choices
+                # to the values in the data sheet.
+                # currently leading/trailing spaces are replaced and the
+                # values are made lowercase.
+
+                # choice values with spaces should not cause errors in this check
+
+                for question in filtered_questions_select_one:
+                    try:
+                        valid_choices: list[str] = choices_dict[
+                            survey_question_choices_dict[question]
+                        ]
+                    except KeyError:
+                        missing_choices.append(
+                            {
+                                "sheet": sheet,
+                                "question": question,
+                                "value": survey_question_choices_dict[question],
+                                "issue": self._(
+                                    "survey_choices_validator.missing_choices.issue",
+                                    sheet=self.choices_sheet,
+                                ),
+                            }
+                        )
+
+                        filtered_questions.remove(question)
+                        continue
+
+                    question_data_type = data_loaded_sheets[sheet].data.schema.get(question)
+                    if question_data_type is not None:
+                        valid_choices = normalise_list(valid_choices, question_data_type)
+
+                    difference_expression = (
+                        pl.when(
+                            pl.col(question)
+                            .fill_null("")
+                            .str.strip_chars()
+                            .is_in(["", None])
+                            .not_()
+                        )
+                        .then(
+                            pl.col(question)
+                            .cast(pl.String)
                             .fill_null("")
                             .str.to_lowercase()
                             # .str.replace("_", "", literal=True)
@@ -390,187 +525,72 @@ class SurveyChoicesCheck(BaseValidator):
                             .is_in(valid_choices)
                             .not_()
                         )
-                        .list.any()
+                        .otherwise(False)
+                        .alias(f"{question}_{value_difference_suffix}")
                     )
-                    .otherwise(False)
-                    .alias(f"{question}_{value_difference_suffix}")
+
+                    value_difference_expressions.append(difference_expression)
+
+                # calculate the actual differences from the built expressions
+                value_difference_df = _get_difference(
+                    value_difference_expressions, value_difference_suffix, filtered_questions
                 )
-
-                value_difference_expressions.append(value_difference_expression)
-
-                # build list of binary columns
-                questions_binary = [f"{question}.{choice}".lower() for choice in valid_choices]
-
-                for question_binary in questions_binary:
-                    if question_binary not in data_loaded_sheets[sheet].data.columns:
-                        # check if column exists
-                        missing_binary_quesitons.append(
-                            {
-                                "sheet": sheet,
-                                "question": question,
-                                "value": question_binary,
-                                "issue": self._(
-                                    "survey_choices_validator.missing_binary_questions.issue",
-                                ),
-                            }
-                        )
-                        continue
-
-                    filtered_questions_binary.append(question_binary)
-                    choice_name: str = question_binary.replace(f"{question}.", "").strip().lower()
-                    question_to_list_expression = (
-                        pl.col(question)
-                        .cast(pl.String)
-                        .str.split(self.select_multiple_value_separator)
-                        .list.eval(
-                            pl.element().fill_null("").str.to_lowercase().str.strip_chars(" ")
-                        )
-                        .list
-                    )
-                    binary_question_expression_base = (
-                        pl.col(question_binary).cast(pl.String).fill_null("").str.strip_chars()
-                    )
-
-                    # binary column should be 1 or 0 if the parent column has a value
-                    # binary and parent columns should match.
-                    binary_value_difference_expression = (
-                        # when parent is empty then binary column should be empty
-                        pl.when(empty_question_column_expression)
-                        .then(
-                            # this currently means that the binary columns can either be blank or
-                            # all 0's if the parent is empty
-                            ~binary_question_expression_base.is_in(["", None, "0", "0.0"])
-                        )
-                        .otherwise(
-                            # when binary column has a valid value then that
-                            # value should be reflected in the parent
-                            # if binary column has an invalid value or is not
-                            # reflected in the parent then this will return a difference
-                            pl.when(binary_question_expression_base.is_in(["0", "1", "0.0", "1.0"]))
-                            .then(
-                                pl.when(binary_question_expression_base.is_in(["1", "1.0"]))
-                                # binary value not in parent
-                                .then(question_to_list_expression.contains(choice_name).not_())
-                                # binary value incorrectly in parent
-                                .otherwise(question_to_list_expression.contains(choice_name))
-                            )
-                            .otherwise(True)
-                        )
-                        .alias(f"{question_binary}_{binary_value_difference_suffix}")
-                    )
-                    binary_value_difference_expressions.append(binary_value_difference_expression)
-
-            # build an expression to find values that dont match
-            # for each question, compare the values in the survey choices
-            # to the values in the data sheet.
-            # currently leading/trailing spaces are replaced and the
-            # values are made lowercase.
-
-            # choice values with spaces should not cause errors in this check
-
-            for question in filtered_questions_select_one:
-                try:
-                    valid_choices: list[str] = choices_dict[survey_question_choices_dict[question]]
-                except KeyError:
-                    missing_choices.append(
-                        {
-                            "sheet": sheet,
-                            "question": question,
-                            "value": survey_question_choices_dict[question],
-                            "issue": self._(
-                                "survey_choices_validator.missing_choices.issue",
-                                sheet=self.choices_sheet,
-                            ),
-                        }
-                    )
-
-                    filtered_questions.remove(question)
-                    continue
-
-                question_data_type = data_loaded_sheets[sheet].data.schema.get(question)
-                if question_data_type is not None:
-                    valid_choices = normalise_list(valid_choices, question_data_type)
-
-                difference_expression = (
-                    pl.when(
-                        pl.col(question).fill_null("").str.strip_chars().is_in(["", None]).not_()
-                    )
-                    .then(
-                        pl.col(question)
-                        .cast(pl.String)
-                        .fill_null("")
-                        .str.to_lowercase()
-                        # .str.replace("_", "", literal=True)
-                        .str.strip_chars(" ")
-                        .is_in(valid_choices)
-                        .not_()
-                    )
-                    .otherwise(False)
-                    .alias(f"{question}_{value_difference_suffix}")
-                )
-
-                value_difference_expressions.append(difference_expression)
-
-            # calculate the actual differences from the built expressions
-            value_difference_df = _get_difference(
-                value_difference_expressions, value_difference_suffix, filtered_questions
-            )
-            if value_difference_df is not None:
-                results_df = pl.concat([results_df, value_difference_df], how="vertical_relaxed")
-
-            # calculate the actual binary differences from the built expressions
-            if binary_value_difference_expressions:
-                binary_value_difference_df = _get_difference(
-                    binary_value_difference_expressions,
-                    binary_value_difference_suffix,
-                    filtered_questions_binary,
-                )
-
-                if binary_value_difference_df is not None:
+                if value_difference_df is not None:
                     results_df = pl.concat(
-                        [results_df, binary_value_difference_df], how="vertical_relaxed"
+                        [results_df, value_difference_df], how="vertical_relaxed"
                     )
 
-        if results_df.height > 0:
-            results.append(
-                ValidationResult(
-                    rule=self.name,
-                    message=self._(
-                        "survey_choices_validator.invalid_values",
-                        count=results_df.height,
-                        choices_sheet=self.choices_sheet,
-                    ),
-                    severity=SeverityLevel.ERROR,
-                    details=results_df.to_dict(as_series=False),
-                )
-            )
+                # calculate the actual binary differences from the built expressions
+                if binary_value_difference_expressions:
+                    binary_value_difference_df = _get_difference(
+                        binary_value_difference_expressions,
+                        binary_value_difference_suffix,
+                        filtered_questions_binary,
+                    )
 
-        if missing_choices:
-            results.append(
-                ValidationResult(
-                    rule=self.name,
-                    message=self._(
-                        "survey_choices_validator.missing_choices",
-                        count=len(missing_choices),
-                        survey_sheet=self.survey_sheet,
-                        choices_sheet=self.choices_sheet,
-                    ),
-                    severity=SeverityLevel.ERROR,
-                    details=pl.DataFrame(missing_choices).to_dict(as_series=False),
-                )
-            )
+                    if binary_value_difference_df is not None:
+                        results_df = pl.concat(
+                            [results_df, binary_value_difference_df], how="vertical_relaxed"
+                        )
 
-        if missing_binary_quesitons:
-            results.append(
-                ValidationResult(
-                    rule=self.name,
-                    message=self._(
-                        "survey_choices_validator.missing_binary_questions",
-                        count=len(missing_binary_quesitons),
-                    ),
-                    severity=SeverityLevel.ERROR,
-                    details=pl.DataFrame(missing_binary_quesitons).to_dict(as_series=False),
+            if results_df.height > 0:
+                results.append(
+                    ValidationResult(
+                        message=self._(
+                            "survey_choices_validator.invalid_values",
+                            count=results_df.height,
+                            choices_sheet=self.choices_sheet,
+                        ),
+                        severity=SeverityLevel.ERROR,
+                        details=results_df.to_dict(as_series=False),
+                    )
                 )
-            )
 
-        return results
+            if missing_choices:
+                results.append(
+                    ValidationResult(
+                        message=self._(
+                            "survey_choices_validator.missing_choices",
+                            count=len(missing_choices),
+                            survey_sheet=self.survey_sheet,
+                            choices_sheet=self.choices_sheet,
+                        ),
+                        severity=SeverityLevel.ERROR,
+                        details=pl.DataFrame(missing_choices).to_dict(as_series=False),
+                    )
+                )
+
+            if missing_binary_quesitons:
+                results.append(
+                    ValidationResult(
+                        message=self._(
+                            "survey_choices_validator.missing_binary_questions",
+                            count=len(missing_binary_quesitons),
+                        ),
+                        severity=SeverityLevel.ERROR,
+                        details=pl.DataFrame(missing_binary_quesitons).to_dict(as_series=False),
+                    )
+                )
+
+            response.details.extend(results)
+        return response

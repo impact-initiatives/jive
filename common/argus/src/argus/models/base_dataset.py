@@ -220,7 +220,6 @@ class BaseDataset:
         Returns any unexpected/missing links as errors.
         """
         results: list[ValidationResult] = []
-        rule = "SchemaValidation_SheetLinks"
 
         def _check_links(
             sheet_classification: SheetClassification,
@@ -241,7 +240,6 @@ class BaseDataset:
             if len(items) > min_items:
                 results.append(
                     ValidationResult(
-                        rule=rule,
                         message=_(
                             f"base_dataset.validate_schema.{issue_key}",
                             count=len(items),
@@ -266,7 +264,6 @@ class BaseDataset:
             if len(unique_items) > 1:
                 results.append(
                     ValidationResult(
-                        rule=rule,
                         message=_(
                             "base_dataset.validate_schema.multiple_parents",
                             count=len(unique_items),
@@ -396,7 +393,6 @@ class BaseDataset:
             if duplicate_column_names:
                 results.append(
                     ValidationResult(
-                        rule="SchemaValidation_DuplicateColumnNames",
                         message=f" Sheet {sheet} for schema {self.schema.programme_type} "
                         + f"{self.schema.output_type} has mandatory column standard/altername names"
                         + " listed on more than one column. Column names should be unique per sheet"
@@ -413,7 +409,6 @@ class BaseDataset:
         if duplicate_sheet_names:
             results.append(
                 ValidationResult(
-                    rule="SchemaValidation_DuplicateSheetNames",
                     message=f"The schema for {self.schema.programme_type} {self.schema.output_type}"
                     + " contains sheet names that are listed for more than one sheet. Sheet names"
                     + " and alternate sheet names should be unique to each schema."
