@@ -9,7 +9,7 @@ settings = get_settings()
 logging.getLogger("fastexcel.types.dtype").setLevel(level=logging.ERROR)
 
 st.set_page_config(
-    page_title="Hermes - a Frontend for Argus Data Validation",
+    page_title="Hermes - A Frontend for Argus Data Validation",
     layout="wide",
 )
 
