@@ -8,16 +8,18 @@ the summary page rendering.
 from __future__ import annotations
 
 import contextlib
+import io
 import re
 from collections.abc import Generator, Iterable
 from datetime import datetime
 from functools import cache
 from importlib import resources
-from typing import Any
+from typing import Any, NamedTuple
 
 import polars as pl
 import streamlit as st
 from argus.orchestrator.output_models import PipelineResponse, ValidatorResponse
+from argus.orchestrator.validation_pipeline import ValidationPipeline
 from argus.validators.base import SeverityLevel, ValidationResult, ValidatorResult
 
 from .config import get_settings
@@ -38,8 +40,8 @@ FOCUS_RULE_KEY = "results_focus_rule"
 RESULTS_PAGE = "pages/results.py"
 
 
-def load_session_results() -> PipelineResponse | None:
-    """The validated results stored by the validation page, or None."""
+def load_session_results() -> ValidationData | None:
+    """The validated data stored by the validation page, or None."""
     return st.session_state.get(SESSION_KEY)
 
 
@@ -91,6 +93,47 @@ _RESULT_BUCKETS: list[tuple[SeverityLevel, str]] = [
 def sort_severities(severities: Iterable[SeverityLevel]) -> list[SeverityLevel]:
     """Sort severities into SEVERITY_ORDER order."""
     return sorted(severities, key=SEVERITY_ORDER.index)
+
+
+# --- cached load: pipeline run + all derived frames, built once per file ----------
+
+
+class ValidationData(NamedTuple):
+    """Everything derived from one validated file, built once and reused."""
+
+    response: PipelineResponse
+    validators_frame: pl.DataFrame
+    #: (rule name, index within the validator's details) → detail frame or None
+    item_frames: dict[tuple[str, int], pl.DataFrame | None]
+
+
+@st.cache_data(show_spinner=False)
+def run_pipeline(
+    file_bytes: bytes, file_name: str, programme_type: str, dataset_type: str
+) -> ValidationData:
+    """... Cached on the file contents, its name, and both selects ..."""
+    buffer = io.BytesIO(file_bytes)
+    buffer.name = file_name
+    response = ValidationPipeline().run_all(buffer, programme_type, dataset_type)
+    item_frames: dict[tuple[str, int], pl.DataFrame | None] = {}
+    for _bucket, validator in iter_validator_items(response):
+        for result_index, result in enumerate(validator.details):
+            item_frames[(validator.name, result_index)] = build_item_frame(result)
+    return ValidationData(response, build_validators_frame(response), item_frames)
+
+
+def get_item_frame(
+    data: ValidationData, validator: ValidatorResponse, result: ValidationResult
+) -> pl.DataFrame | None:
+    """The precomputed detail frame for one result, or None.
+
+    Matches by identity, which is safe: within a session the results page
+    reads the very objects stored under SESSION_KEY.
+    """
+    for index, candidate in enumerate(validator.details):
+        if candidate is result:
+            return data.item_frames.get((validator.name, index))
+    return None
 
 
 # --- iteration over validators and results --------------------------------------
@@ -377,45 +420,60 @@ def render_drilldown_card(
 
 
 def render_validator_failures(results: PipelineResponse) -> None:
-    """One bordered card per validator reported as MISSING_COMPONENTS or
-    ORCHESTRATOR_ERROR, in severity order."""
-    failures = [
-        (severity, validator)
-        for severity, validator in iter_validator_items(results)
-        if validator.result in VALIDATOR_FAILURE_RESULTS
-    ]
+    """One bordered card per rule reported as MISSING_COMPONENTS or
+    ORCHESTRATOR_ERROR, in severity order.
+
+    A rule that ran multiple times (e.g. with different parameters) is
+    consolidated into a single card with merged, deduplicated messages.
+    """
+    # Collect per rule, in severity order (iter_validator_items already yields
+    # in SEVERITY_ORDER, so dict insertion order preserves it).
+    failures: dict[str, dict[str, Any]] = {}
+    for severity, validator in iter_validator_items(results):
+        if validator.result not in VALIDATOR_FAILURE_RESULTS:
+            continue
+        entry = failures.setdefault(
+            validator.name, {"severities": [], "result_names": [], "messages": []}
+        )
+        if severity not in entry["severities"]:
+            entry["severities"].append(severity)
+        result_name = validator.result.name
+        if result_name not in entry["result_names"]:
+            entry["result_names"].append(result_name)
+        for message in validator_messages(validator):
+            if message not in entry["messages"]:
+                entry["messages"].append(message)
+
     if not failures:
         return
 
-    failures.sort(key=lambda failure: SEVERITY_ORDER.index(failure[0]))
     st.subheader("Critical Issues")
     st.text(f"These {len(failures)} issues can prevent validation rules from running.")
 
-    for severity, validator in failures:
-        icon = SEVERITY_ICON.get(severity, "")
-        heading = f"**{icon} · {validator.name}** — reported `{validator.result.name}`"
+    for rule_name, entry in failures.items():
+        icons = " · ".join(SEVERITY_ICON[severity] for severity in entry["severities"])
+        result_names = " / ".join(entry["result_names"])
+        heading = f"**{icons} · {rule_name}** — reported `{result_names}`"
         render_drilldown_card(
             heading,
-            validator.name,
-            f"failure_details_{severity}_{validator.name}",
-            [(severity, validator_messages(validator))] if validator_messages(validator) else [],
+            rule_name,
+            f"failure_details_{rule_name}",
+            [(entry["severities"][0], entry["messages"])] if entry["messages"] else [],
             "No validator-level messages were recorded.",
         )
 
 
-def render_issue_summary(results: PipelineResponse) -> None:
+def render_issue_summary(frame: pl.DataFrame, results: PipelineResponse) -> None:
     """One row per rule, consolidating all ACTIONABLE severities, with row
     selection and drill-down."""
-    frame = build_validators_frame(results).filter(
-        pl.col("severity").is_in([severity.value for severity in ACTIONABLE])
-    )
-    if frame.height == 0:
+    actionable = frame.filter(pl.col("severity").is_in([severity.value for severity in ACTIONABLE]))
+    if actionable.height == 0:
         return
 
     st.subheader("Summary of validation issues")
 
     rollup = (
-        frame.group_by("rule")
+        actionable.group_by("rule")
         .agg(
             pl.col("failed_checks").sum().alias("failed_checks"),
             pl.col("issues").sum().alias("issues_found"),
@@ -468,10 +526,12 @@ def render_issue_summary(results: PipelineResponse) -> None:
     )
 
 
-def render_summary(results: PipelineResponse) -> None:
+def render_summary(data: ValidationData) -> None:
     """Render the full results summary: status banner, context line, KPI strip,
     validator-failure section, per-rule roll-up, and passed-checks paragraph."""
-    # --- status banner --------------------------------------------------------
+    results = data.response
+
+    # --- status banner ----------------------------------------------------------
     if results.success:
         st.success("✅ **JIVE VALIDATION PASSED**")
     else:
@@ -494,7 +554,7 @@ def render_summary(results: PipelineResponse) -> None:
     )
 
     # --- counts grouped by result severity ---------------------------------------
-    frame = build_validators_frame(results)
+    frame = data.validators_frame
     actionable_rows = frame.filter(
         pl.col("severity").is_in([severity.value for severity in ACTIONABLE])
     )
@@ -530,7 +590,7 @@ def render_summary(results: PipelineResponse) -> None:
 
     # --- failing validators and issue roll-up ------------------------------------
     render_validator_failures(results)
-    render_issue_summary(results)
+    render_issue_summary(frame, results)
 
     # --- passed checks -------------------------------------------------------------
     if passed_rules:

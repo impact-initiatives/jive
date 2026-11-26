@@ -1,10 +1,14 @@
 """Validate a dataset — uploader plus inline results summary on one page."""
 
 import streamlit as st
-from argus.orchestrator.output_models import PipelineResponse
-from argus.orchestrator.validation_pipeline import ValidationPipeline
 
-from hermes.common import RESULTS_PAGE, SESSION_KEY, load_session_results, render_summary
+from hermes.common import (
+    RESULTS_PAGE,
+    SESSION_KEY,
+    load_session_results,
+    render_summary,
+    run_pipeline,
+)
 
 st.title("Validate a Dataset")
 
@@ -39,8 +43,9 @@ if (
     and programme_type is not None
 ):
     with st.spinner("Validating…", width="stretch"):
-        results = ValidationPipeline().run_all(uploaded_file, programme_type, dataset_type)
-    st.session_state[SESSION_KEY] = PipelineResponse.model_validate(results)
+        st.session_state[SESSION_KEY] = run_pipeline(
+            uploaded_file.getvalue(), uploaded_file.name, programme_type, dataset_type
+        )
 
 # --- summary -------------------------------------------------------------------
 

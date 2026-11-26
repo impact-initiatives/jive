@@ -12,8 +12,9 @@ from hermes.common import (
     FOCUS_RULE_KEY,
     SEVERITY_ICON,
     SEVERITY_ORDER,
-    build_item_frame,
+    ValidationData,
     detail_column_config,
+    get_item_frame,
     iter_validator_items,
     load_session_results,
     render_rule_help,
@@ -21,8 +22,8 @@ from hermes.common import (
 
 st.title("Results Details")
 
-stored_results = load_session_results()
-if stored_results is None:
+stored: ValidationData | None = load_session_results()
+if stored is None:
     st.info("No validation results yet. Validate a dataset on the main page first.")
     st.stop()
 
@@ -39,8 +40,7 @@ def group_results_by_severity(
     return list(groups.items())
 
 
-findings = list(iter_validator_items(stored_results))
-
+findings = list(iter_validator_items(stored.response))
 if not findings:
     st.success("The validation produced no results to display.")
     st.stop()
@@ -135,11 +135,11 @@ def frame_contains(frame: pl.DataFrame, regex: str) -> bool:
     return frame.filter(match_mask).height > 0
 
 
-def result_matches(result: ValidationResult, regex: str) -> bool:
+def result_matches(validator: ValidatorResponse, result: ValidationResult, regex: str) -> bool:
     """True when the result's message or any detail cell matches the regex."""
     if re.search(regex, result.message):
         return True
-    frame = build_item_frame(result)
+    frame = get_item_frame(stored, validator, result)
     return frame is not None and frame_contains(frame, regex)
 
 
@@ -162,7 +162,7 @@ for bucket_severity, validator in findings:
         if (
             pattern
             and not name_match
-            and not any(result_matches(result, pattern) for result in results)
+            and not any(result_matches(validator, result, pattern) for result in results)
         ):
             continue
         kept_groups.append((severity, results))
@@ -195,7 +195,7 @@ for validator, kept_groups in visible:
                 )
                 if location:
                     st.caption(location)
-                frame = build_item_frame(result)
+                frame = get_item_frame(stored, validator, result)
                 if frame is None:
                     st.caption(
                         "This result has no further details; the message above is the whole story."
@@ -237,7 +237,7 @@ if visible:
                     pl.lit(result.sheet_name or "").alias("sheet_name"),
                     pl.lit(result.column_name or "").alias("column_name"),
                 )
-                frame = build_item_frame(result)
+                frame = get_item_frame(stored, validator, result)
                 export_frames.append(
                     identity.join(frame, how="cross") if frame is not None else identity
                 )
