@@ -455,5 +455,3 @@ def render_summary(results: PipelineResponse) -> None:
         st.markdown("*No core checks passed.*")
 
     # --- footer ---------------------------------------------------------------------
-    st.divider()
-    st.markdown(f"Version: {settings.jive_version}")

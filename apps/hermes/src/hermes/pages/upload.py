@@ -6,7 +6,7 @@ from argus.orchestrator.validation_pipeline import ValidationPipeline
 
 from hermes.common import SESSION_KEY, load_session_results, render_summary
 
-st.title("Validate a dataset")
+st.title("Validate a Dataset")
 
 # --- upload and run -----------------------------------------------------------
 input_column_1, input_column_2 = st.columns(2)
