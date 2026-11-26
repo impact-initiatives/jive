@@ -4,7 +4,7 @@ import streamlit as st
 from argus.orchestrator.output_models import PipelineResponse
 from argus.orchestrator.validation_pipeline import ValidationPipeline
 
-from hermes.common import SESSION_KEY, load_session_results, render_summary
+from hermes.common import RESULTS_PAGE, SESSION_KEY, load_session_results, render_summary
 
 st.title("Validate a Dataset")
 
@@ -47,5 +47,8 @@ if (
 stored_results = load_session_results()
 if stored_results is not None:
     render_summary(stored_results)
+    with st.bottom:
+        if st.button("View all result details →", use_container_width=True):
+            st.switch_page(RESULTS_PAGE)
 else:
     st.info("Upload a file above and run the validation to see the summary here.")

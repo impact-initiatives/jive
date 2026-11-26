@@ -11,17 +11,15 @@ from hermes.common import (
     rule_display,
 )
 
-st.title("Validation Rules")
-
-# --- search (top of page, so it stays reachable) -----------------------------------
-
-search = st.text_input("Search rule documentation", placeholder="e.g. rule name…")
-
 # --- overview readme -----------------------------------------------------------------
 
 readme = load_rules_readme()
 if readme:
     st.markdown(readme)
+
+# --- search -----------------------------------
+
+search = st.text_input("Search rule documentation", placeholder="e.g. rule name…")
 
 index = build_rules_index()
 if not index:

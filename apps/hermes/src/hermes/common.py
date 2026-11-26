@@ -65,6 +65,7 @@ SEVERITY_ICON: dict[SeverityLevel, str] = {
     SeverityLevel.ADMIN_ERROR: "🔥 Admin Error",
     SeverityLevel.WARNING: "⚠️ Warning",
     SeverityLevel.INFO: "ℹ️ Info",
+    SeverityLevel.ADMIN_INFO: "ℹ️ Admin Info",
     SeverityLevel.PASSED: "✅ Passed",
 }
 
