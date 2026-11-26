@@ -5,7 +5,7 @@ import streamlit as st
 logging.getLogger("fastexcel.types.dtype").setLevel(level=logging.ERROR)
 
 st.set_page_config(
-    page_title="JIVE Validation",
+    page_title="Hermes - a frontend for Argus Validation",
     layout="wide",
 )
 
