@@ -12,7 +12,7 @@ from hermes.common import (
 
 st.title("Validate a Dataset")
 
-# --- upload and run -----------------------------------------------------------
+# get validation input details
 input_column_1, input_column_2 = st.columns(2)
 with input_column_1:
     programme_type = st.selectbox(
@@ -36,6 +36,7 @@ run_validation = st.button(
     disabled=all([uploaded_file is None or dataset_type is None or programme_type is None]),
 )
 
+# run the validation process
 if (
     run_validation
     and uploaded_file is not None
@@ -47,7 +48,7 @@ if (
             uploaded_file.getvalue(), uploaded_file.name, programme_type, dataset_type
         )
 
-# --- summary -------------------------------------------------------------------
+# print the summary
 
 stored_results = load_session_results()
 if stored_results is not None:

@@ -56,7 +56,7 @@ SEVERITY_ORDER: list[SeverityLevel] = [
     SeverityLevel.PASSED,
 ]
 
-ACTIONABLE: list[SeverityLevel] = [
+ACTIONABLE_ISSUES: list[SeverityLevel] = [
     SeverityLevel.ADMIN_ERROR,
     SeverityLevel.ERROR,
     SeverityLevel.WARNING,
@@ -72,7 +72,7 @@ SEVERITY_ICON: dict[SeverityLevel, str] = {
 }
 
 #: Validator-level outcomes that get their own section on the summary page.
-VALIDATOR_FAILURE_RESULTS: frozenset[ValidatorResult] = frozenset(
+VALIDATOR_CRITICAL_ISSUES: frozenset[ValidatorResult] = frozenset(
     {
         ValidatorResult.MISSING_COMPONENTS,
         ValidatorResult.ORCHESTRATOR_ERROR,
@@ -95,7 +95,7 @@ def sort_severities(severities: Iterable[SeverityLevel]) -> list[SeverityLevel]:
     return sorted(severities, key=SEVERITY_ORDER.index)
 
 
-# --- cached load: pipeline run + all derived frames, built once per file ----------
+# run pipeline and restructure results----------
 
 
 class ValidationData(NamedTuple):
@@ -106,178 +106,6 @@ class ValidationData(NamedTuple):
     #: (rule name, index within the validator's details) → detail frame or None
     item_frames: dict[tuple[str, int], pl.DataFrame | None]
 
-
-@st.cache_data(show_spinner=False)
-def run_pipeline(
-    file_bytes: bytes, file_name: str, programme_type: str, dataset_type: str
-) -> ValidationData:
-    """... Cached on the file contents, its name, and both selects ..."""
-    buffer = io.BytesIO(file_bytes)
-    buffer.name = file_name
-    response = ValidationPipeline().run_all(buffer, programme_type, dataset_type)
-    item_frames: dict[tuple[str, int], pl.DataFrame | None] = {}
-    for _bucket, validator in iter_validator_items(response):
-        for result_index, result in enumerate(validator.details):
-            item_frames[(validator.name, result_index)] = build_item_frame(result)
-    return ValidationData(response, build_validators_frame(response), item_frames)
-
-
-def get_item_frame(
-    data: ValidationData, validator: ValidatorResponse, result: ValidationResult
-) -> pl.DataFrame | None:
-    """The precomputed detail frame for one result, or None.
-
-    Matches by identity, which is safe: within a session the results page
-    reads the very objects stored under SESSION_KEY.
-    """
-    for index, candidate in enumerate(validator.details):
-        if candidate is result:
-            return data.item_frames.get((validator.name, index))
-    return None
-
-
-# --- iteration over validators and results --------------------------------------
-
-
-def iter_validator_items(
-    response: PipelineResponse,
-) -> Generator[tuple[SeverityLevel, ValidatorResponse]]:
-    """Yield ``(severity, validator)`` for every validator, in severity order."""
-    for severity, attribute in _RESULT_BUCKETS:
-        for validator in getattr(response, attribute):
-            yield severity, validator
-
-
-def iter_result_items(
-    response: PipelineResponse,
-) -> Generator[tuple[SeverityLevel, ValidatorResponse, ValidationResult]]:
-    """Yield ``(severity, validator, result)`` per ValidationResult."""
-    for _bucket, validator in iter_validator_items(response):
-        for result in validator.details:
-            yield result.severity, validator, result
-
-
-def validator_messages(validator: ValidatorResponse) -> list[str]:
-    """Deduplicated, order-preserving messages across a validator's results."""
-    unique: list[str] = []
-    for result in validator.details:
-        if result.message and result.message not in unique:
-            unique.append(result.message)
-    return unique
-
-
-def render_message_groups(
-    message_groups: list[tuple[SeverityLevel, list[str]]], empty_caption: str
-) -> None:
-    """Messages grouped by severity; group labels shown only when a rule
-    spans multiple severities, so a single-severity card doesn't repeat
-    what its heading already states."""
-    if not message_groups:
-        st.caption(empty_caption)
-        return
-    single_severity = len(message_groups) == 1
-    for severity, messages in message_groups:
-        if not single_severity:
-            st.markdown(f"**{SEVERITY_ICON[severity]}**")
-        if len(messages) == 1:
-            st.markdown(messages[0])
-        else:
-            st.markdown("\n".join(f"- {message}" for message in messages))
-
-
-def severity_message_groups(
-    results: PipelineResponse, rule_name: str
-) -> list[tuple[SeverityLevel, list[str]]]:
-    """Deduplicated messages of one rule per ACTIONABLE severity,
-    in SEVERITY_ORDER order; severities without messages are omitted."""
-    groups: dict[SeverityLevel, list[str]] = {}
-    for severity, validator, result in iter_result_items(results):
-        if validator.name != rule_name or severity not in ACTIONABLE:
-            continue
-        messages = groups.setdefault(severity, [])
-        if result.message and result.message not in messages:
-            messages.append(result.message)
-    return [(severity, groups[severity]) for severity in sort_severities(groups.keys())]
-
-
-# --- rule documentation popovers -------------------------------------------------
-RULES_README_NAME = "readme.md"
-_FIRST_HEADING = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
-
-
-@cache
-def load_rule_doc(rule_name: str) -> str | None:
-    """A rule's markdown doc, wherever it sits in the rules-doc tree."""
-    candidates = [_RULES_DIR / f"{rule_name}.md"]  # tolerate files left at the root
-    candidates.extend(
-        directory / f"{rule_name}.md" for directory in _RULES_DIR.iterdir() if directory.is_dir()
-    )
-    for candidate in candidates:
-        if candidate.is_file():
-            return candidate.read_text(encoding="utf-8")
-    return None
-
-
-def render_rule_help(rule_name: str) -> None:
-    """'About this rule' popover for one rule; silently absent when undocumented."""
-    doc = load_rule_doc(rule_name)
-    if doc is None:
-        return
-    with st.popover("ℹ️ About this rule"):
-        st.markdown(doc)
-
-
-@cache
-def load_rules_readme() -> str | None:
-    """The rules overview document (the validators folder README), or None."""
-    try:
-        return (_RULES_DIR / RULES_README_NAME).read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return None
-
-
-@cache
-def build_rules_index() -> dict[str, list[str]]:
-    """Section folder → alphabetical rule names for every documented rule.
-
-    Files at the root (apart from the README) are grouped under "".
-    """
-    index: dict[str, list[str]] = {}
-    for entry in sorted(_RULES_DIR.iterdir(), key=lambda item: item.name):
-        if entry.is_dir():
-            names = sorted(
-                child.name.removesuffix(".md")
-                for child in entry.iterdir()
-                if child.is_file() and child.name.endswith(".md")
-            )
-            if names:
-                index[entry.name] = names
-        elif entry.name.endswith(".md") and entry.name != RULES_README_NAME:
-            index.setdefault("", []).append(entry.name.removesuffix(".md"))
-    return index
-
-
-def split_rule_title(doc: str | None) -> tuple[str, str | None]:
-    """Display title from the doc's first H1, plus the doc without that line.
-
-    Falls back to the file-derived name when the doc has no H1.
-    """
-    raise NotImplementedError
-
-
-def rule_display(name: str, doc: str | None) -> tuple[str, str | None]:
-    """(title, body) where title prefers the doc's own first heading."""
-    if not doc:
-        return name, doc
-    match = _FIRST_HEADING.search(doc)
-    if not match:
-        return name, doc
-    title = match.group(1).strip()
-    body = (doc[: match.start()] + doc[match.end() :]).lstrip("\n")
-    return title, body
-
-
-# --- Polars frames consolidated from the results ---------------------------------
 
 VALIDATOR_SCHEMA = {
     "severity": pl.String,
@@ -297,7 +125,7 @@ def build_validators_frame(response: PipelineResponse) -> pl.DataFrame:
     counts as one failed check producing one issue.
     """
     rows = []
-    for bucket_severity, validator in iter_validator_items(response):
+    for bucket_severity, validator in get_validator_items(response):
         if not validator.details:
             rows.append(
                 {
@@ -369,10 +197,179 @@ def _drop_empty_columns(frame: pl.DataFrame) -> pl.DataFrame:
     return frame.select(keep) if keep else frame
 
 
+@st.cache_data(show_spinner=False)
+def run_pipeline(
+    file_bytes: bytes, file_name: str, programme_type: str, dataset_type: str
+) -> ValidationData:
+    """Runs the argus pipeline.
+    Results are restructured and cached."""
+    buffer = io.BytesIO(file_bytes)
+    buffer.name = file_name
+    response = ValidationPipeline().run_all(buffer, programme_type, dataset_type)
+    item_frames: dict[tuple[str, int], pl.DataFrame | None] = {}
+    for _, validator in get_validator_items(response):
+        for result_index, result in enumerate(validator.details):
+            item_frames[(validator.name, result_index)] = build_item_frame(result)
+    return ValidationData(response, build_validators_frame(response), item_frames)
+
+
+def get_item_frame(
+    data: ValidationData, validator: ValidatorResponse, result: ValidationResult
+) -> pl.DataFrame | None:
+    """The precomputed detail frame for one result, or None.
+
+    Matches by identity, which is safe: within a session the results page
+    reads the very objects stored under SESSION_KEY.
+    """
+    for index, candidate in enumerate(validator.details):
+        if candidate is result:
+            return data.item_frames.get((validator.name, index))
+    return None
+
+
+# --- iteration over validators and results --------------------------------------
+
+
+def get_validator_items(
+    response: PipelineResponse,
+) -> Generator[tuple[SeverityLevel, ValidatorResponse]]:
+    """get ``(severity, validator)`` for every validator, in severity order."""
+    for severity, attribute in _RESULT_BUCKETS:
+        for validator in getattr(response, attribute):
+            yield severity, validator
+
+
+def get_result_items(
+    response: PipelineResponse,
+) -> Generator[tuple[SeverityLevel, ValidatorResponse, ValidationResult]]:
+    """Yield ``(severity, validator, result)`` per ValidationResult."""
+    for _bucket, validator in get_validator_items(response):
+        for result in validator.details:
+            yield result.severity, validator, result
+
+
+def validator_messages(validator: ValidatorResponse) -> list[str]:
+    """Deduplicated, order-preserving messages across a validator's results."""
+    unique: list[str] = []
+    for result in validator.details:
+        if result.message and result.message not in unique:
+            unique.append(result.message)
+    return unique
+
+
+def render_message_groups(
+    message_groups: list[tuple[SeverityLevel, list[str]]], empty_caption: str
+) -> None:
+    """Messages grouped by severity. group labels shown only when a rule
+    contains multiple severities, so a single-severity card doesn't repeat
+    what its heading already states."""
+    if not message_groups:
+        st.caption(empty_caption)
+        return
+    single_severity = len(message_groups) == 1
+    for severity, messages in message_groups:
+        if not single_severity:
+            st.markdown(f"**{SEVERITY_ICON[severity]}**")
+        if len(messages) == 1:
+            st.markdown(messages[0])
+        else:
+            st.markdown("\n".join(f"- {message}" for message in messages))
+
+
+def severity_message_groups(
+    results: PipelineResponse, rule_name: str
+) -> list[tuple[SeverityLevel, list[str]]]:
+    """Deduplicated messages of one rule per ACTIONABLE severity,
+    in SEVERITY_ORDER order; severities without messages are omitted."""
+    groups: dict[SeverityLevel, list[str]] = {}
+    for severity, validator, result in get_result_items(results):
+        if validator.name != rule_name or severity not in ACTIONABLE_ISSUES:
+            continue
+        messages = groups.setdefault(severity, [])
+        if result.message and result.message not in messages:
+            messages.append(result.message)
+    return [(severity, groups[severity]) for severity in sort_severities(groups.keys())]
+
+
+# --- rule documentation popovers -------------------------------------------------
+RULES_README_NAME = "readme.md"
+_FIRST_HEADING = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
+
+
+@cache
+def load_rule_doc(rule_name: str) -> str | None:
+    """Loads a rules documentation markdown file if its found"""
+    candidates = [_RULES_DIR / f"{rule_name}.md"]
+    candidates.extend(
+        directory / f"{rule_name}.md" for directory in _RULES_DIR.iterdir() if directory.is_dir()
+    )
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate.read_text(encoding="utf-8")
+    return None
+
+
+def render_rule_help(rule_name: str) -> None:
+    """'Adds a pop over button to display the rules documentation.
+    Displays nothing when there is no documentation."""
+    doc = load_rule_doc(rule_name)
+    if doc is None:
+        return
+    with st.popover("ℹ️ About this rule"):
+        st.markdown(doc)
+
+
+@cache
+def load_rules_readme() -> str | None:
+    """The rules overview document (the validators folder README), or None."""
+    try:
+        return (_RULES_DIR / RULES_README_NAME).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+
+
+@cache
+def build_rules_index() -> dict[str, list[str]]:
+    """Section folder → alphabetical rule names for every documented rule.
+
+    Files at the root (apart from the README) are grouped under "".
+    """
+    index: dict[str, list[str]] = {}
+    for entry in sorted(_RULES_DIR.iterdir(), key=lambda item: item.name):
+        if entry.is_dir():
+            names = sorted(
+                child.name.removesuffix(".md")
+                for child in entry.iterdir()
+                if child.is_file() and child.name.endswith(".md")
+            )
+            if names:
+                index[entry.name] = names
+        elif entry.name.endswith(".md") and entry.name != RULES_README_NAME:
+            index.setdefault("", []).append(entry.name.removesuffix(".md"))
+    return index
+
+
+def split_rule_title(doc: str | None) -> tuple[str, str | None]:
+    """Display title from the doc's first H1, plus the doc without that line.
+
+    Falls back to the file-derived name when the doc has no H1.
+    """
+    raise NotImplementedError
+
+
+def rule_display(name: str, doc: str | None) -> tuple[str, str | None]:
+    """(title, body) where title prefers the doc's own first heading."""
+    if not doc:
+        return name, doc
+    match = _FIRST_HEADING.search(doc)
+    if not match:
+        return name, doc
+    title = match.group(1).strip()
+    body = (doc[: match.start()] + doc[match.end() :]).lstrip("\n")
+    return title, body
+
+
 # --- column configuration ----------------------------------------------------------
-#
-# Wide text columns make st.dataframe's built-in cell expansion (hover →
-# expand icon) reveal the full text of long cells.
 
 
 def detail_column_config(frame: pl.DataFrame) -> dict:
@@ -380,31 +377,21 @@ def detail_column_config(frame: pl.DataFrame) -> dict:
     return {name: st.column_config.TextColumn(name, width="large") for name in frame.columns}
 
 
-def issue_summary_column_config() -> dict:
-    """Column configuration for the severity × rule roll-up table."""
-    return {
-        "rule": st.column_config.TextColumn("Rule", width="large"),
-        "severity_label": st.column_config.TextColumn("Severity"),
-        "failed_checks": st.column_config.NumberColumn("Failed Checks"),
-        "issues_found": st.column_config.NumberColumn("Issues Found"),
-    }
+# --- summary-page sections -------------------
 
 
-# --- shared rendering helpers -------------------------------------------------------
-
-
-def render_drilldown_card(
+def render_summary_card(
     heading: str,
     rule_name: str,
     button_key: str,
     message_groups: list[tuple[SeverityLevel, list[str]]],
     empty_caption: str,
 ) -> None:
-    """Bordered card with a heading, the rule's help popover, and a button that
+    """Bordered card with a heading, the rule's help button, and a button that
     opens the results page filtered to the rule."""
     with st.container(border=True):
         heading_column, help_column, link_column = st.columns(
-            [4, 1, 1.5], vertical_alignment="center"
+            [4, 1.5, 1.5], vertical_alignment="center"
         )
         heading_column.markdown(heading)
         with help_column:
@@ -416,23 +403,21 @@ def render_drilldown_card(
         render_message_groups(message_groups, empty_caption)
 
 
-# --- summary-page sections ----------------------------------------------------------
+def render_critical_issues(results: PipelineResponse) -> None:
+    """Builds one card per rule where the rule result is reported as
+    a an entry VALIDATOR_CRITICAL_FAILURES
 
+    If a rule is run multiple times and reports critical failures
+    the messages are consolidated.
 
-def render_validator_failures(results: PipelineResponse) -> None:
-    """One bordered card per rule reported as MISSING_COMPONENTS or
-    ORCHESTRATOR_ERROR, in severity order.
-
-    A rule that ran multiple times (e.g. with different parameters) is
-    consolidated into a single card with merged, deduplicated messages.
     """
-    # Collect per rule, in severity order (iter_validator_items already yields
-    # in SEVERITY_ORDER, so dict insertion order preserves it).
-    failures: dict[str, dict[str, Any]] = {}
-    for severity, validator in iter_validator_items(results):
-        if validator.result not in VALIDATOR_FAILURE_RESULTS:
+
+    # turn results into a dict of rules, results and messages
+    critical_validator_responses: dict[str, dict[str, Any]] = {}
+    for severity, validator in get_validator_items(results):
+        if validator.result not in VALIDATOR_CRITICAL_ISSUES:
             continue
-        entry = failures.setdefault(
+        entry = critical_validator_responses.setdefault(
             validator.name, {"severities": [], "result_names": [], "messages": []}
         )
         if severity not in entry["severities"]:
@@ -444,17 +429,22 @@ def render_validator_failures(results: PipelineResponse) -> None:
             if message not in entry["messages"]:
                 entry["messages"].append(message)
 
-    if not failures:
+    # only display the section if there are issues
+    if not critical_validator_responses:
         return
 
     st.subheader("Critical Issues")
-    st.text(f"These {len(failures)} issues can prevent validation rules from running.")
+    st.text(
+        f"These {len(critical_validator_responses)} issues can prevent validation rules from"
+        + " running. Address these issues and re-run the validation process."
+    )
 
-    for rule_name, entry in failures.items():
+    # build the cards
+    for rule_name, entry in critical_validator_responses.items():
         icons = " · ".join(SEVERITY_ICON[severity] for severity in entry["severities"])
         result_names = " / ".join(entry["result_names"])
         heading = f"**{icons} · {rule_name}** — reported `{result_names}`"
-        render_drilldown_card(
+        render_summary_card(
             heading,
             rule_name,
             f"failure_details_{rule_name}",
@@ -464,16 +454,25 @@ def render_validator_failures(results: PipelineResponse) -> None:
 
 
 def render_issue_summary(frame: pl.DataFrame, results: PipelineResponse) -> None:
-    """One row per rule, consolidating all ACTIONABLE severities, with row
-    selection and drill-down."""
-    actionable = frame.filter(pl.col("severity").is_in([severity.value for severity in ACTIONABLE]))
-    if actionable.height == 0:
+    """Builds an issues summary table. Has one row per rule which consolidates
+    all the issues, severities generated by that rule. only lists
+    ACTIONABLE_ISSUES severities
+
+    Contains a row selection option which reveals more details below the table
+
+    """
+
+    # check if there are any issues to display
+    actionable_validator_responses = frame.filter(
+        pl.col("severity").is_in([severity.value for severity in ACTIONABLE_ISSUES])
+    )
+    if actionable_validator_responses.height == 0:
         return
 
     st.subheader("Summary of validation issues")
 
-    rollup = (
-        actionable.group_by("rule")
+    consolidate_issues_df = (
+        actionable_validator_responses.group_by("rule")
         .agg(
             pl.col("failed_checks").sum().alias("failed_checks"),
             pl.col("issues").sum().alias("issues_found"),
@@ -482,42 +481,54 @@ def render_issue_summary(frame: pl.DataFrame, results: PipelineResponse) -> None
         )
         .sort("most_severe", "rule")
     )
+
+    # join severities for the issues
     severity_labels = [
         " · ".join(
             SEVERITY_ICON[severity]
             for severity in sort_severities(SeverityLevel(value) for value in values)
         )
-        for values in rollup["severities"].to_list()
+        for values in consolidate_issues_df["severities"].to_list()
     ]
-    display_frame = (
-        rollup.with_columns(pl.Series("severity_label", severity_labels))
+
+    # issues to display
+    display_df = (
+        consolidate_issues_df.with_columns(pl.Series("severity_label", severity_labels))
         .select(
             ["rule", "severity_label", "failed_checks", "issues_found", "most_severe", "severities"]
         )
         .with_row_index("_row")
     )
 
+    # display issues
     selection = st.dataframe(
-        display_frame.drop("_row", "most_severe", "severities"),
+        display_df.drop("_row", "most_severe", "severities"),
         width="stretch",
         hide_index=True,
         selection_mode="single-row",
         on_select="rerun",
         key="issue_summary_selection",
-        column_config=issue_summary_column_config(),
+        column_config={
+            "rule": st.column_config.TextColumn("Rule", width="large"),
+            "severity_label": st.column_config.TextColumn("Severity"),
+            "failed_checks": st.column_config.NumberColumn("Failed Checks"),
+            "issues_found": st.column_config.NumberColumn("Issues Found"),
+        },
     )
 
+    # check if a row is selected
     selected_rows = selection.get("selection", {}).get("rows", [])
     if not selected_rows:
         st.caption("Select a row above to see its messages and open the results view.")
         return
 
-    picked = display_frame.row(int(selected_rows[0]), named=True)
+    # display the details of the selected row
+    picked = display_df.row(int(selected_rows[0]), named=True)
     heading = (
         f"**{picked['rule']}** — "
         f"{picked['failed_checks']} failed check(s), {picked['issues_found']} issue(s)"
     )
-    render_drilldown_card(
+    render_summary_card(
         heading,
         picked["rule"],
         "issue_summary_drilldown",
@@ -531,13 +542,13 @@ def render_summary(data: ValidationData) -> None:
     validator-failure section, per-rule roll-up, and passed-checks paragraph."""
     results = data.response
 
-    # --- status banner ----------------------------------------------------------
+    #  status banner
     if results.success:
         st.success("✅ **JIVE VALIDATION PASSED**")
     else:
         st.error("❌ **JIVE VALIDATION FAILED**")
 
-    # --- context line -----------------------------------------------------------
+    #  context line
     metadata = results.metadata
     validated_at = ""
     if metadata.validation_date:
@@ -553,10 +564,10 @@ def render_summary(data: ValidationData) -> None:
         f"Validated: {validated_at}"
     )
 
-    # --- counts grouped by result severity ---------------------------------------
+    #  counts grouped by result severity
     frame = data.validators_frame
     actionable_rows = frame.filter(
-        pl.col("severity").is_in([severity.value for severity in ACTIONABLE])
+        pl.col("severity").is_in([severity.value for severity in ACTIONABLE_ISSUES])
     )
     actionable_rules = set(actionable_rows["rule"].to_list())
     passed_rules = sorted(
@@ -567,19 +578,16 @@ def render_summary(data: ValidationData) -> None:
         )
     )
 
-    # --- KPI strip ---------------------------------------------------------------
+    #  KPI strip
     kpi_order = [
         SeverityLevel.ADMIN_ERROR,
         SeverityLevel.ERROR,
         SeverityLevel.WARNING,
         SeverityLevel.PASSED,
     ]
-    failed_counts = {
-        row["severity"]: row["failed_checks"]
-        for row in actionable_rows.group_by("severity")
-        .agg(pl.col("failed_checks").sum())
-        .iter_rows(named=True)
-    }
+    grouped = actionable_rows.group_by("severity").agg(pl.col("failed_checks").sum())
+    failed_counts = dict(zip(grouped["severity"], grouped["failed_checks"], strict=False))
+
     metric_values = {**failed_counts, "passed": len(passed_rules)}
     metric_columns = st.columns(len(kpi_order))
     for column, severity in zip(metric_columns, kpi_order, strict=False):
@@ -588,11 +596,11 @@ def render_summary(data: ValidationData) -> None:
             value=f"{metric_values.get(severity.value, 0):,}",
         )
 
-    # --- failing validators and issue roll-up ------------------------------------
-    render_validator_failures(results)
+    #  failing validators and issue roll-up
+    render_critical_issues(results)
     render_issue_summary(frame, results)
 
-    # --- passed checks -------------------------------------------------------------
+    # show passed checks
     if passed_rules:
         st.markdown(
             f"*{len(passed_rules)} core quality checks passed successfully ✅ "
@@ -600,5 +608,3 @@ def render_summary(data: ValidationData) -> None:
         )
     else:
         st.markdown("*No core checks passed.*")
-
-    # --- footer ---------------------------------------------------------------------
