@@ -21,6 +21,7 @@ page = st.navigation(
         ],
         "Resources": [
             st.Page("pages/about.py", title="About"),
+            st.Page("pages/validation_rules.py", title="Validation Rules"),
             st.Page("pages/programme_documentation.py", title="Programme Documentation"),
         ],
     }
