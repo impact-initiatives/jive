@@ -5,7 +5,10 @@ import re
 import streamlit as st
 
 from hermes.common import (
+    SEVERITY_HELP,
+    SEVERITY_ORDER,
     build_rules_index,
+    build_severity_badge,
     load_rule_doc,
     load_rules_readme,
     rule_display,
@@ -16,6 +19,11 @@ from hermes.common import (
 readme = load_rules_readme()
 if readme:
     st.markdown(readme)
+
+
+st.markdown("**Validation Severities**")
+for severity in SEVERITY_ORDER:
+    st.markdown(f"{build_severity_badge(severity)} - {SEVERITY_HELP[severity]}")
 
 # --- search -----------------------------------
 

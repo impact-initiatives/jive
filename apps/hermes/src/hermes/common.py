@@ -63,8 +63,8 @@ ACTIONABLE_ISSUES: list[SeverityLevel] = [
 ]
 
 SEVERITY_ICON: dict[SeverityLevel, str] = {
-    SeverityLevel.ERROR: "❌ Error",
     SeverityLevel.ADMIN_ERROR: "🔥 Admin Error",
+    SeverityLevel.ERROR: "❌ Error",
     SeverityLevel.WARNING: "⚠️ Warning",
     SeverityLevel.INFO: "ℹ️ Info",
     SeverityLevel.ADMIN_INFO: "ℹ️ Admin Info",
@@ -78,6 +78,17 @@ SEVERITY_BADGE_COLOR: dict[SeverityLevel, str] = {
     SeverityLevel.INFO: "gray",
     SeverityLevel.ADMIN_INFO: "gray",
     SeverityLevel.PASSED: "green",
+}
+
+SEVERITY_HELP: dict[SeverityLevel, str] = {
+    SeverityLevel.ADMIN_ERROR: "Application errors or schema design errors. Report these errors.",
+    SeverityLevel.ERROR: "Critical errors from the validation process related to the dataset that"
+    + " should be reviewed and addressed.",
+    SeverityLevel.WARNING: "Warnings from the validation process. Review and evaluate.",
+    SeverityLevel.INFO: "Information for user awareness.",
+    SeverityLevel.ADMIN_INFO: "Information about internal processes that could be useful for"
+    + " investigations/debugging.",
+    SeverityLevel.PASSED: "Validation rule that passed without any errors or warnings.",
 }
 
 #: Validator-level outcomes that get their own section on the summary page.
@@ -459,7 +470,7 @@ def render_critical_issues(results: PipelineResponse) -> None:
     for rule_name, entry in critical_validator_responses.items():
         icons = " · ".join(build_severity_badge(severity) for severity in entry["severities"])
         result_names = " / ".join(entry["result_names"])
-        heading = f"{icons} **· {rule_name}** — reported `{result_names}`"
+        heading = f"{icons} **{rule_name}** — reported `{result_names}`"
         render_summary_card(
             heading,
             rule_name,
@@ -613,6 +624,7 @@ def render_summary(data: ValidationData) -> None:
         column.metric(
             label=f"{build_severity_badge(severity)}",
             value=f"{metric_values.get(severity.value, 0):,}",
+            help=SEVERITY_HELP[severity],
         )
 
     #  failing validators and issue roll-up
