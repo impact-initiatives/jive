@@ -10,7 +10,7 @@ from argus.validators.base import SeverityLevel, ValidationResult
 
 from hermes.common import (
     FOCUS_RULE_KEY,
-    SEVERITY_ICON,
+    SEVERITY_ICON_BADGE,
     SEVERITY_ORDER,
     ValidationData,
     detail_column_config,
@@ -179,7 +179,9 @@ st.markdown(f"**{len(visible_validator_responses)}** finding(s) match the curren
 for validator, filtered_validator_response_groups in visible_validator_responses:
     # parent validator
     severity_summary = " · ".join(
-        f"{SEVERITY_ICON[severity]} ({len(results)})" if results else SEVERITY_ICON[severity]
+        f"{SEVERITY_ICON_BADGE[severity]} ({len(results)})"
+        if results
+        else SEVERITY_ICON_BADGE[severity]
         for severity, results in filtered_validator_response_groups
     )
     with st.expander(f"{validator.name} -- {severity_summary}"):
@@ -193,7 +195,7 @@ for validator, filtered_validator_response_groups in visible_validator_responses
             # for each severity grouping in the parent
             for result in results:
                 # for each result in the severity grouping
-                st.markdown(f"**{SEVERITY_ICON[severity]}** — {result.message}")
+                st.markdown(f"{SEVERITY_ICON_BADGE[severity]} — {result.message}")
 
                 result_details_df = get_item_frame(stored, validator, result)
                 if result_details_df is None:

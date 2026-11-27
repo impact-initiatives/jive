@@ -71,6 +71,15 @@ SEVERITY_ICON: dict[SeverityLevel, str] = {
     SeverityLevel.PASSED: "✅ Passed",
 }
 
+SEVERITY_ICON_BADGE: dict[SeverityLevel, str] = {
+    SeverityLevel.ERROR: ":red-badge[❌ Error]",
+    SeverityLevel.ADMIN_ERROR: ":violet-badge[🔥 Admin Error]",
+    SeverityLevel.WARNING: ":orange-badge[⚠️ Warning]",
+    SeverityLevel.INFO: ":gray-badge[ℹ️ Info]",
+    SeverityLevel.ADMIN_INFO: ":gray-badge[ℹ️ Admin Info]",
+    SeverityLevel.PASSED: ":green-badge[✅ Passed]",
+}
+
 #: Validator-level outcomes that get their own section on the summary page.
 VALIDATOR_CRITICAL_ISSUES: frozenset[ValidatorResult] = frozenset(
     {
@@ -269,7 +278,7 @@ def render_message_groups(
     single_severity = len(message_groups) == 1
     for severity, messages in message_groups:
         if not single_severity:
-            st.markdown(f"**{SEVERITY_ICON[severity]}**")
+            st.markdown(f"{SEVERITY_ICON_BADGE[severity]}")
         if len(messages) == 1:
             st.markdown(messages[0])
         else:
@@ -441,9 +450,9 @@ def render_critical_issues(results: PipelineResponse) -> None:
 
     # build the cards
     for rule_name, entry in critical_validator_responses.items():
-        icons = " · ".join(SEVERITY_ICON[severity] for severity in entry["severities"])
+        icons = " · ".join(SEVERITY_ICON_BADGE[severity] for severity in entry["severities"])
         result_names = " / ".join(entry["result_names"])
-        heading = f"**{icons} · {rule_name}** — reported `{result_names}`"
+        heading = f"{icons} **· {rule_name}** — reported `{result_names}`"
         render_summary_card(
             heading,
             rule_name,
@@ -524,8 +533,10 @@ def render_issue_summary(frame: pl.DataFrame, results: PipelineResponse) -> None
 
     # display the details of the selected row
     picked = display_df.row(int(selected_rows[0]), named=True)
+    severities = sort_severities(SeverityLevel(value) for value in picked["severities"])
+    icon = f"{SEVERITY_ICON_BADGE[severities[0]]} " if len(severities) == 1 else ""
     heading = (
-        f"**{picked['rule']}** — "
+        f"{icon} **{picked['rule']}** — "
         f"{picked['failed_checks']} failed check(s), {picked['issues_found']} issue(s)"
     )
     render_summary_card(
@@ -591,8 +602,9 @@ def render_summary(data: ValidationData) -> None:
     metric_values = {**failed_counts, "passed": len(passed_rules)}
     metric_columns = st.columns(len(kpi_order))
     for column, severity in zip(metric_columns, kpi_order, strict=False):
+        # column.markdown(f"{SEVERITY_ICON_BADGE[severity]}")
         column.metric(
-            label=severity.value.replace("_", " ").title(),
+            label=f"{SEVERITY_ICON_BADGE[severity]}",
             value=f"{metric_values.get(severity.value, 0):,}",
         )
 

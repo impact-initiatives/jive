@@ -16,8 +16,8 @@ st.set_page_config(
 page = st.navigation(
     {
         "Validator": [
-            st.Page("pages/upload.py", title="Upload a file", default=True),
-            st.Page("pages/results.py", title="Results Details"),
+            st.Page("pages/upload.py", title="Validate a Dataset", default=True),
+            st.Page("pages/results.py", title="Validation Results"),
         ],
         "Resources": [
             st.Page("pages/about.py", title="About"),
