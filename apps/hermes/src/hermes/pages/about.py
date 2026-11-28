@@ -64,16 +64,16 @@ This separation is intentional. It means:
 dataset type
 - Rules and schemas can evolve independently
 
-### Argus is Open Source
+### Argus and Hermes is Open Source
 
-Every aspect of Argus is open source and available on GitHub. See the 
-[Argus code here](https://github.com/impact-initiatives/jive/tree/hermes/common/argus). 
+Every aspect of Argus and Hermes is open source and available on GitHub. See the 
+[Argus code here](https://github.com/impact-initiatives/jive/tree/main/common/argus)
+and the [Hermes code here](https://github.com/impact-initiatives/jive/tree/main/apps/hermes). 
 
 Details on the currently supported schemas is 
-[available here](https://github.com/impact-initiatives/jive/tree/hermes/common/argus_schemas).
+[available here](https://github.com/impact-initiatives/jive/tree/main/common/argus_schemas).
 
 Details on the currently supported validation rules is 
-[available here](https://github.com/impact-initiatives/jive/tree/hermes/common/argus/src/docs/validators).
-
+[available here](https://github.com/impact-initiatives/jive/tree/main/common/argus/src/docs/validators).
 
 """)

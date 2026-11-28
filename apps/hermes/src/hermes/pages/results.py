@@ -13,7 +13,6 @@ from hermes.common import (
     SEVERITY_ORDER,
     ValidationData,
     build_severity_badge,
-    detail_column_config,
     get_item_frame,
     get_validator_items,
     load_session_results,
@@ -178,7 +177,7 @@ st.markdown(f"**{len(visible_validator_responses)}** finding(s) match the curren
 
 for validator, filtered_validator_response_groups in visible_validator_responses:
     # parent validator
-    severity_summary = " · ".join(
+    severity_summary = " ".join(
         build_severity_badge(severity, f"({len(results)})")
         if results
         else build_severity_badge(severity)
@@ -205,7 +204,6 @@ for validator, filtered_validator_response_groups in visible_validator_responses
                         result_details_df,
                         width="stretch",
                         hide_index=True,
-                        column_config=detail_column_config(result_details_df),
                     )
 
 #  export results

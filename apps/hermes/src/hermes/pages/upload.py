@@ -43,7 +43,7 @@ if (
     and dataset_type is not None
     and programme_type is not None
 ):
-    with st.spinner("Validating…", width="stretch"):
+    with st.spinner("Validating…", width="stretch", show_time=True):
         st.session_state[SESSION_KEY] = run_pipeline(
             uploaded_file.getvalue(), uploaded_file.name, programme_type, dataset_type
         )

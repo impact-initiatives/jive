@@ -21,7 +21,7 @@ if readme:
     st.markdown(readme)
 
 
-st.markdown("**Validation Severities**")
+st.markdown("**Validation Result Severities**")
 for severity in SEVERITY_ORDER:
     st.markdown(f"{build_severity_badge(severity)} - {SEVERITY_HELP[severity]}")
 

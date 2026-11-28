@@ -396,14 +396,6 @@ def rule_display(name: str, doc: str | None) -> tuple[str, str | None]:
     return title, body
 
 
-# --- column configuration ----------------------------------------------------------
-
-
-def detail_column_config(frame: pl.DataFrame) -> dict:
-    """Wide text columns for a finding's detail frame."""
-    return {name: st.column_config.TextColumn(name, width="large") for name in frame.columns}
-
-
 # --- summary-page sections -------------------
 
 
@@ -496,7 +488,7 @@ def render_issue_summary(frame: pl.DataFrame, results: PipelineResponse) -> None
     if actionable_validator_responses.height == 0:
         return
 
-    st.subheader("Summary of validation issues")
+    st.subheader("Summary Of Validation Issues")
 
     consolidate_issues_df = (
         actionable_validator_responses.group_by("rule")
@@ -511,7 +503,7 @@ def render_issue_summary(frame: pl.DataFrame, results: PipelineResponse) -> None
 
     # join severities for the issues
     severity_labels = [
-        " · ".join(
+        " ".join(
             SEVERITY_ICON[severity]
             for severity in sort_severities(SeverityLevel(value) for value in values)
         )
